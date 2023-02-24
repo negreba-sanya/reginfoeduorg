@@ -14,18 +14,40 @@ if(!defined('ABSPATH')){
 
 class RegInfoEduOrg
 {
-    function __construct(){
-        add_action('init', [$this, 'custom_post_type']);
+  function __construct() {
+    add_action( 'init', array( $this, 'my_plugin_add_sections' ) );
+    add_filter( 'wp_nav_menu_items', array( $this, 'my_nav_menu_items' ), 10, 2 );
+  }
+
+ function my_plugin_add_sections() {
+  // проверяем, существует ли страница с заголовком "New Page"
+  $page_id = get_page_by_title( 'New Page' );
+
+  // если страницы не существует, создаем новую страницу
+  if ( !$page_id ) {
+    $page_data = array(
+      'post_title'    => 'New Page',
+      'post_content'  => 'This is my new page!',
+      'post_status'   => 'publish',
+      'post_author'   => 1,
+      'post_type'     => 'page',
+    );
+    $page_id = wp_insert_post( $page_data );
+  }
+}
+
+  function my_nav_menu_items( $items, $args ) {
+    $page_id = get_page_by_title( 'New Page' );
+
+    // добавляем ссылку на раздел в меню сайта, только если страницы не существует
+    if ( !$page_id ) {
+      return $items;
     }
 
-    function custom_post_type(){
-        register_post_type('reginfo',
-            [
-                'public' => true,
-                'label' => esc_html__('RegInfo', 'reginfoeduorg'),
-            ]
-        ); 
-    }
+    $new_item = '<li><a href="' . get_permalink( $page_id ) . '">New Page</a></li>';
+
+    return $items . $new_item;
+  }
 }
 
 if(class_exists('RegInfoEduOrg')){
