@@ -79,9 +79,8 @@ class RegInfoEduOrg
         }
     }     
 
-    function print_sections_input() 
+    function print_sections_input($options) 
     {
-        $options = get_option( 'reginfoeduorg_options' );
         $pages = array(
             'Основные сведения',
             'Структура и органы управления образовательной организацией',
@@ -95,38 +94,9 @@ class RegInfoEduOrg
             'Финансово-хозяйственная деятельность',
             'Вакантные места для приема (перевода)',
         );
-        $parent_page_id = get_page_by_title( 'Сведения об образовательной организации' );
-        $existing_pages = get_pages( array( 'parent' => $parent_page_id ) );
-        foreach ( $existing_pages as $page ) {
-            if ( ! isset( $options[ $page->post_title ] ) ) {
-                wp_delete_post( $page->ID, true );
-            }
-        }
         foreach ( $pages as $page ) {
-            if ( isset( $options[ $page ] ) ) {
-                if ( ! get_page_by_title( $page, 'OBJECT', 'page' ) ) {
-                    $page_id = wp_insert_post( array(
-                        'post_title' => $page,
-                        'post_content' => '',
-                        'post_type' => 'page',
-                        'post_parent' => $parent_page_id,
-                        'post_status' => 'publish'
-                    ) );
-                }
-            } else {
-                $page_id = get_page_by_title( $page, 'OBJECT', 'page' );
-                if ( $page_id ) {
-                    wp_delete_post( $page_id->ID, true );
-                }
-            }
-        }
-        $existing_pages = get_pages( array( 'parent' => $parent_page_id ) );
-        foreach ( $existing_pages as $page ) {
-            $checked = '';
-            if ( isset( $options[ $page->post_title ] ) ) {
-                $checked = 'checked';
-            }
-            echo '<label><input type="checkbox" name="reginfoeduorg_options[' . $page->post_title . ']" value="1" ' . $checked . ' /> ' . $page->post_title . '</label><br />';
+            $checked = isset($options[$page]) ? 'checked' : '';
+            echo '<label><input type="checkbox" name="reginfoeduorg_options[' . $page . ']" value="1" ' . $checked . ' /> ' . $page . '</label><br />';
         }
     }
 
@@ -199,6 +169,7 @@ class RegInfoEduOrg
 
     function my_plugin_settings_page() 
     {
+        $options = get_option( 'reginfoeduorg_options' );
         ?>
         <div class="wrap">
             <h1>Настройки RegInfoEduOrg</h1>
@@ -206,6 +177,7 @@ class RegInfoEduOrg
                 <?php
                 settings_fields( 'reginfoeduorg_options' );
                 do_settings_sections( 'reginfoeduorg' );
+                print_sections_input($options); // Передаем $options в качестве параметра
                 submit_button();
                 ?>
             </form>
