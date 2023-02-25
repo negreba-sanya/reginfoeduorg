@@ -78,28 +78,7 @@ class RegInfoEduOrg
             }
         }
     }     
-
-    function print_sections_input($options) 
-    {
-        $pages = array(
-            'Основные сведения',
-            'Структура и органы управления образовательной организацией',
-            'Документы',
-            'Образование',
-            'Образовательные стандарты',
-            'Руководство. Педагогический (научно-педагогический) состав',
-            'Материально-техническое обеспечение и оснащенность образовательного процесса',
-            'Стипендии и иные виды материальной поддержки',
-            'Платные образовательные услуги',
-            'Финансово-хозяйственная деятельность',
-            'Вакантные места для приема (перевода)',
-        );
-        foreach ( $pages as $page ) {
-            $checked = isset($options[$page]) ? 'checked' : '';
-            echo '<label><input type="checkbox" name="reginfoeduorg_options[' . $page . ']" value="1" ' . $checked . ' /> ' . $page . '</label><br />';
-        }
-    }
-
+    
     function my_plugin_settings_menu() 
     {
         add_options_page('RegInfoEduOrg Settings', 'RegInfoEduOrg', 'manage_options', 'reginfoeduorg_settings', array($this, 'my_plugin_settings_page'));
@@ -165,6 +144,28 @@ class RegInfoEduOrg
             }
         }
         return $input;
+    }
+
+    function print_sections_input($options) 
+    {
+        $pages = array(
+            'Основные сведения',
+            'Структура и органы управления образовательной организацией',
+            'Документы',
+            'Образование',
+            'Образовательные стандарты',
+            'Руководство. Педагогический (научно-педагогический) состав',
+            'Материально-техническое обеспечение и оснащенность образовательного процесса',
+            'Стипендии и иные виды материальной поддержки',
+            'Платные образовательные услуги',
+            'Финансово-хозяйственная деятельность',
+            'Вакантные места для приема (перевода)',
+        );
+        foreach ( $pages as $page ) 
+        {
+            $checked = isset($options[$page]) ? 'checked' : '';
+            echo '<label><input type="checkbox" name="reginfoeduorg_options[' . $page . ']" value="1" ' . $checked . ' /> ' . $page . '</label><br />';
+        }
     }
 
     function my_plugin_settings_page() 
