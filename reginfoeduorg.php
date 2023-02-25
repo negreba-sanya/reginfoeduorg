@@ -91,59 +91,31 @@ class RegInfoEduOrg
         register_setting( 'reginfoeduorg_options', 'reginfoeduorg_options', array($this,'my_plugin_options_validate') );
     }
 
-    function my_plugin_options_validate( $input ) 
-    {
-        // Создаем родительскую страницу, если её еще нет
-        $parent_page_id = get_page_by_title( 'Сведения об образовательной организации' );
-        if ( ! $parent_page_id ) {
-            $page_data = array(
-                'post_title'    => 'Сведения об образовательной организации',
-                'post_content'  => '',
-                'post_status'   => 'publish',
-                'post_author'   => 1,
-                'post_type'     => 'page',
-            );
-            $parent_page_id = wp_insert_post( $page_data );
-        }
-    
-        // Перед сохранением проверяем, есть ли на сайте страницы с нужными именами
-        foreach ( $input as $key => $value ) {
-            if ( $key == 'reginfoeduorg_pages' ) {
-                continue;
+    function my_plugin_options_validate($input) {
+        $output = array();
+        $pages = get_pages();
+
+        foreach ($pages as $page) {
+            if ($page->post_title == "Сведения об образовательной организации") {
+                $output[$page->ID] = $page->post_title;
+                break;
             }
-            if ( get_page_by_title( $key, 'OBJECT', 'page' ) ) {
-                if ( $value == false ) {
-                    // Если страница существует и checkbox не выбран, удаляем страницу
-                    wp_delete_post( get_page_by_title( $key, 'OBJECT', 'page' )->ID, true );
-                } else {
-                    // Если страница существует и checkbox выбран, обновляем страницу
-                    $page = get_page_by_title( $key, 'OBJECT', 'page' );
-                    $my_post = array(
-                        'ID'           => $page->ID,
-                        'post_content' => '',
-                        'post_title'   => $key,
-                        'post_status'  => 'publish',
-                        'post_type'    => 'page',
-                        'post_parent'  => $parent_page_id // добавляем родительскую страницу
-                    );
-                    wp_update_post( $my_post );
-                }
-            } else {
-                if ( $value == true ) {
-                    // Если страница не существует и checkbox выбран, создаем страницу
-                    $my_post = array(
-                        'post_title'   => $key,
-                        'post_content' => '',
-                        'post_status'  => 'publish',
-                        'post_author'  => 1,
-                        'post_type'    => 'page',
-                        'post_parent'  => $parent_page_id // добавляем родительскую страницу
-                    );
-                    $page_id = wp_insert_post( $my_post );
+        }
+
+        if (!empty($input['page'])) {
+            foreach ($input['page'] as $key => $value) {
+                if ($value == 'on') {
+                    foreach ($pages as $page) {
+                        if ($page->post_title == $key) {
+                            $output[$page->ID] = $page->post_title;
+                            break;
+                        }
+                    }
                 }
             }
         }
-        return $input;
+
+        return $output;
     }
 
     function print_sections_input($options) 
@@ -178,13 +150,17 @@ class RegInfoEduOrg
                 <?php
                 settings_fields( 'reginfoeduorg_options' );
                 do_settings_sections( 'reginfoeduorg' );
-                print_sections_input($options); // Передаем $options в качестве параметра
-                submit_button();
                 ?>
+                <table class="form-table">
+                    <?php print_sections_input($options); ?>
+                </table>
+                <?php submit_button(); ?>
             </form>
         </div>
         <?php
     }
+
+
       
     function add_menu_pages() 
     {
