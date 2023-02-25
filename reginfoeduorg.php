@@ -82,21 +82,25 @@ class RegInfoEduOrg
         register_setting('reginfoeduorg_options', 'reginfoeduorg_options', array($this, 'my_plugin_options_validate'));
     }
 
-    function my_plugin_options_validate($input) {
+    function my_plugin_options_validate($input) 
+    {
         $output = array();
+        $pages = array(
+            'Основные сведения',
+            'Структура и органы управления образовательной организацией',
+            'Документы',
+            'Образование',
+            'Образовательные стандарты',
+            'Руководство. Педагогический (научно-педагогический) состав',
+            'Материально-техническое обеспечение и оснащенность образовательного процесса',
+            'Стипендии и иные виды материальной поддержки',
+            'Платные образовательные услуги',
+            'Финансово-хозяйственная деятельность',
+            'Вакантные места для приема (перевода)',
+        );
 
-        if (!empty($input['reginfoeduorg_options'])) {
-            $pages = get_pages();
-            foreach ($pages as $page) {
-                if ($page->post_title == "Сведения об образовательной организации") {
-                    $output['parent'] = $page->ID;
-                    break;
-                }
-            }
-
-            foreach ($input['reginfoeduorg_options'] as $page_id) {
-                $output[$page_id] = $page_id;
-            }
+        foreach ($pages as $page) {
+            $output[$page] = isset($input[$page]) ? '1' : '0';
         }
 
         return $output;
@@ -121,9 +125,10 @@ class RegInfoEduOrg
 
         foreach ($pages as $page) {
             $checked = isset($options[$page]) ? 'checked' : '';
-            echo '<p><label><input type="checkbox" name="reginfoeduorg_options[]" value="' . get_page_by_title($page)->ID . '" ' . $checked . ' /> ' . $page . '</label></p>';
+            echo '<p><label><input type="checkbox" name="reginfoeduorg_options[]" value="' . $page . '" ' . $checked . ' /> ' . $page . '</label></p>';
         }
     }
+
 
 
     function my_plugin_settings_page() 
@@ -138,9 +143,7 @@ class RegInfoEduOrg
                 do_settings_sections( 'reginfoeduorg' );
                 ?>
                 <table class="form-table">
-                    <?php 
-                    $this->print_sections_input($options); // вызываем метод напрямую в контексте класса
-                    ?>
+                    <?php do_settings_fields('reginfoeduorg', 'reginfoeduorg_sections'); ?>
                 </table>
                 <?php submit_button(); ?>
             </form>
