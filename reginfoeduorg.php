@@ -19,7 +19,7 @@ class RegInfoEduOrg
         add_action('init', array($this, 'my_plugin_add_sections'));
         add_action('admin_menu', array($this, 'my_plugin_settings_menu'));
         add_action('admin_init', array($this, 'my_plugin_settings_init'));
-        add_action('admin_menu', array($this, 'add_admin_menu'));
+        add_action('admin_menu', array($this, 'add_menu_pages'));
     }
 
     function print_sections_info($section) 
@@ -30,7 +30,7 @@ class RegInfoEduOrg
     function my_plugin_add_sections() 
     {
         // Проверяем, существует ли страница "Сведения об образовательной организации"
-        $parent_page = get_page_by_title( 'Сведения об образовательной организации' );
+        $parent_page = get_post( 'Сведения об образовательной организации' );
 
         // Если страницы не существует, создаем новую страницу
         if ( ! $parent_page ) {
@@ -142,7 +142,7 @@ class RegInfoEduOrg
                   'post_type'    => 'page',
                   'post_parent'  => $parent_page_id
                 );
-                $page_id = wp_insert_post( $my_post );
+                $page_id = wp_update_post( $my_post );
             }
         }
         return $input;
@@ -164,14 +164,14 @@ class RegInfoEduOrg
         <?php
     }
       
-    function add_admin_menu() 
+    function add_menu_pages() 
     {
         add_menu_page(
             'RegInfoEduOrg',
             'RegInfoEduOrg',
             'manage_options',
             'reginfoeduorg',
-            array( $this, 'my_plugin_settings_page' )
+            'my_plugin_settings_page',
         );
     }
 }
