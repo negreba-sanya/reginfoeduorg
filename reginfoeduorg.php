@@ -30,7 +30,7 @@ class RegInfoEduOrg
     function my_plugin_add_sections() 
     {
         // Проверяем, существует ли страница "Сведения об образовательной организации"
-        $parent_page = get_post( 'Сведения об образовательной организации' );
+        $parent_page = get_page_by_title( 'Сведения об образовательной организации' );
 
         // Если страницы не существует, создаем новую страницу
         if ( ! $parent_page ) {
@@ -171,7 +171,7 @@ class RegInfoEduOrg
             'RegInfoEduOrg',
             'manage_options',
             'reginfoeduorg',
-            'my_plugin_settings_page',
+            array( $this, 'my_plugin_settings_page' )
         );
     }
 }
