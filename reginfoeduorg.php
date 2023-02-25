@@ -114,28 +114,38 @@ class RegInfoEduOrg
         register_setting( 'reginfoeduorg_options', 'reginfoeduorg_options', array($this,'my_plugin_options_validate') );
     }
 
-    function my_plugin_options_validate( $input ) 
-    {
-        // Получаем список всех страниц
-        $all_pages = get_pages(array('post_type' => 'page'));
+    function my_plugin_options_validate( $input ) {
+        $parent_page_id = get_page_by_title( 'Сведения об образовательной организации' );
 
-        // Получаем список страниц, которые нужно оставить
-        $selected_pages = array();
-        if (!empty($input)) {
-            foreach ($input as $key => $value) {
+        // Перед сохранением проверяем, есть ли на сайте страницы с нужными именами
+        foreach ( $input as $key => $value ) {
+            if ( get_page_by_title( $key, 'OBJECT', 'page' ) ) {
+                $page = get_page_by_title( $key, 'OBJECT', 'page' );
                 if ($value) {
-                    $selected_pages[] = $key;
+                    $my_post = array(
+                      'ID'           => $page->ID,
+                      'post_content' => '',
+                      'post_title'   => $key,
+                      'post_status'  => 'publish',
+                      'post_type'    => 'page',
+                      'post_parent'  => $parent_page_id
+                    );
+                    wp_update_post( $my_post );
+                } else {
+                    wp_delete_post( $page->ID );
                 }
+            } elseif ($value) {
+                $my_post = array(
+                  'post_title'   => $key,
+                  'post_content' => '',
+                  'post_status'  => 'publish',
+                  'post_author'  => 1,
+                  'post_type'    => 'page',
+                  'post_parent'  => $parent_page_id
+                );
+                $page_id = wp_insert_post( $my_post );
             }
         }
-
-        // Удаляем страницы, которые не выбраны в настройках плагина
-        foreach ($all_pages as $page) {
-            if (!in_array($page->post_title, $selected_pages)) {
-                wp_delete_post($page->ID, true);
-            }
-        }        
-
         return $input;
     }
 
