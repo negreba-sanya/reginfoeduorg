@@ -17,22 +17,32 @@ class RegInfoEduOrg
     function __construct() 
     {
         add_action('init', array($this, 'my_plugin_add_sections'));
-        add_action('admin_menu', array($this, 'my_plugin_settings_menu'));
-        add_action('admin_init', array($this, 'my_plugin_settings_init'));
         add_action('admin_menu', array($this, 'add_menu_pages'));
     }
 
-    function print_sections_info($section) 
-    {
-        echo '<p>Родительская страница: ' . get_page_by_title('Сведения об образовательной организации')->post_title . '</p>';
-        echo '<p>Выберите страницы, которые будут содержать информацию о вашей организации:</p>';
-    }
-
-
     function my_plugin_add_sections() {
-        $parent_page_id = get_page_by_title('Сведения об образовательной организации')->ID;
-
-        $pages = array(
+        $page_title = 'Сведения об образовательной организации';
+        $page_content = '';
+        $parent_id = 0;
+        $parent_page = get_page_by_title($page_title);
+    
+        // Check if the parent page exists, if not create one
+        if (empty($parent_page)) {
+            $page_args = array(
+                'post_title' => $page_title,
+                'post_content' => $page_content,
+                'post_status' => 'publish',
+                'post_type' => 'page',
+                'post_parent' => $parent_id
+            );
+        
+            $parent_id = wp_insert_post($page_args);
+        } else {
+            $parent_id = $parent_page->ID;
+        }
+    
+        // Check if each child page exists, if not create one
+        $child_sections = array(
             'Основные сведения',
             'Структура и органы управления образовательной организацией',
             'Документы',
@@ -43,28 +53,24 @@ class RegInfoEduOrg
             'Стипендии и иные виды материальной поддержки',
             'Платные образовательные услуги',
             'Финансово-хозяйственная деятельность',
-            'Вакантные места для приема (перевода)',
+            'Вакантные места для приема (перевода)'
         );
-
-        foreach ($pages as $page) {
-            $child_page_id = get_page_by_title($page, OBJECT, 'page')->ID;
-            $selected = get_option('reginfoeduorg_options');
-            $selected = isset($selected[$page]) && $selected[$page] === '1';
-
-            if ($child_page_id) {
-                if (!$selected) {
-                    wp_delete_post($child_page_id, true);
-                }
-            } else {
-                if ($selected) {
-                    wp_insert_post(array(
-                        'post_title' => $page,
-                        'post_content' => '',
-                        'post_type' => 'page',
-                        'post_parent' => $parent_page_id,
-                        'post_status' => 'publish',
-                    ));
-                }
+    
+        foreach ($child_sections as $child_section) {
+            $child_page_title = $child_section;
+            $child_page_content = '';
+            $child_page_args = array(
+                'post_title' => $child_page_title,
+                'post_content' => $child_page_content,
+                'post_status' => 'publish',
+                'post_type' => 'page',
+                'post_parent' => $parent_id
+            );
+        
+            $child_page = get_page_by_title($child_page_title);
+        
+            if (empty($child_page)) {
+                wp_insert_post($child_page_args);
             }
         }
     }
@@ -75,60 +81,7 @@ class RegInfoEduOrg
         add_options_page('RegInfoEduOrg Settings', 'RegInfoEduOrg', 'manage_options', 'reginfoeduorg_settings', array($this, 'my_plugin_settings_page'));
     }
 
-    function my_plugin_settings_init() 
-    {
-        add_settings_field('reginfoeduorg_pages', 'Выберите страницы', array($this, 'print_sections_input'), 'reginfoeduorg', 'reginfoeduorg_sections');
-        register_setting('reginfoeduorg_options', 'reginfoeduorg_options', array($this, 'my_plugin_options_validate'));
-    }
-
-    function my_plugin_options_validate($input) 
-    {
-        $output = array();
-        $pages = array(
-            'Основные сведения',
-            'Структура и органы управления образовательной организацией',
-            'Документы',
-            'Образование',
-            'Образовательные стандарты',
-            'Руководство. Педагогический (научно-педагогический) состав',
-            'Материально-техническое обеспечение и оснащенность образовательного процесса',
-            'Стипендии и иные виды материальной поддержки',
-            'Платные образовательные услуги',
-            'Финансово-хозяйственная деятельность',
-            'Вакантные места для приема (перевода)',
-        );
-
-        foreach ($pages as $page) {
-            $output[$page] = isset($input[$page]) ? '1' : '0';
-        }
-
-        return $output;
-    }
-
-
-    function print_sections_input($options) 
-    {
-        $pages = array(
-            'Основные сведения',
-            'Структура и органы управления образовательной организацией',
-            'Документы',
-            'Образование',
-            'Образовательные стандарты',
-            'Руководство. Педагогический (научно-педагогический) состав',
-            'Материально-техническое обеспечение и оснащенность образовательного процесса',
-            'Стипендии и иные виды материальной поддержки',
-            'Платные образовательные услуги',
-            'Финансово-хозяйственная деятельность',
-            'Вакантные места для приема (перевода)',
-        );
-
-        foreach ($pages as $page) {
-            $checked = isset($options[$page]) ? 'checked' : '';
-            echo '<p><label><input type="checkbox" name="reginfoeduorg_options[]" value="' . $page . '" ' . $checked . ' /> ' . $page . '</label></p>';
-        }
-    }
-
-
+   
 
     function my_plugin_settings_page() 
     {
