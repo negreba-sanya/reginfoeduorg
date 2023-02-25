@@ -77,7 +77,6 @@ class RegInfoEduOrg
 
     function my_plugin_settings_init() 
     {
-        add_settings_section('reginfoeduorg_sections', 'Настройки RegInfoEduOrg', array($this, 'print_sections_info'), 'reginfoeduorg');
         add_settings_field('reginfoeduorg_pages', 'Выберите страницы', array($this, 'print_sections_input'), 'reginfoeduorg', 'reginfoeduorg_sections');
         register_setting('reginfoeduorg_options', 'reginfoeduorg_options', array($this, 'my_plugin_options_validate'));
     }
