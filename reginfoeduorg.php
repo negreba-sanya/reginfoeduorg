@@ -29,6 +29,7 @@ class RegInfoEduOrg
 
     function my_plugin_add_sections() 
     {
+
         // Проверяем, существует ли страница "Сведения об образовательной организации"
         $parent_page = get_page_by_title( 'Сведения об образовательной организации' );
 
@@ -41,7 +42,9 @@ class RegInfoEduOrg
                 'post_author'   => 1,
                 'post_type'     => 'page',
             );
-            $parent_page = wp_insert_post( $page_data );
+            $parent_page_id = wp_insert_post( $page_data );
+        } else {
+            $parent_page_id = $parent_page->ID;
         }
 
         // Создаем подразделы на странице "Сведения об образовательной организации"
@@ -59,21 +62,29 @@ class RegInfoEduOrg
             'Вакантные места для приема (перевода)',
         );
 
-        foreach ( $pages as $page_title ) {
-            // проверяем, есть ли на сайте необходимые разделы и если их нет, добавляем
-            $page = get_page_by_title( $page_title, 'OBJECT', 'page' );
-            if ( ! $page ) {
-                $page_data = array(
-                    'post_title'   => $page_title,
-                    'post_content' => '',
-                    'post_type'    => 'page',
-                    'post_parent'  => $parent_page->ID,
-                    'post_status'  => 'publish'
-                );
-                wp_insert_post( $page_data );
+        foreach ( $pages as $page ) 
+        {
+            $option_value = isset( $this->options[ $page ] ) ? $this->options[ $page ] : '';
+            if ( $option_value ) {
+                // проверяем, есть ли на сайте необходимые разделы и если их нет, добавляем
+                if ( ! get_page_by_title( $page, 'OBJECT', 'page' ) ) {
+                    $page_id = wp_insert_post( array(
+                        'post_title' => $page,
+                        'post_content' => '',
+                        'post_type' => 'page',
+                        'post_parent' => $parent_page_id,
+                        'post_status' => 'publish'
+                    ) );
+                }
+            } else {
+                // Если раздел уже создан, то удаляем его
+                $page = get_page_by_title( $page );
+                if ( $page ) {
+                    wp_delete_post( $page->ID, true );
+                }
             }
-        }
-    }        
+        }  
+    }      
 
     function print_sections_input() 
     {
