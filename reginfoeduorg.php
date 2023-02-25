@@ -86,10 +86,11 @@ class RegInfoEduOrg
     {
         add_settings_section( 'reginfoeduorg_sections', 'Настройки RegInfoEduOrg', array($this, 'print_sections_info'), 'reginfoeduorg' );
         add_settings_field( 'reginfoeduorg_pages', 'Выберите страницы', array($this, 'print_sections_input'), 'reginfoeduorg', 'reginfoeduorg_sections' );
-        register_setting( 'reginfoeduorg_options', 'reginfoeduorg_options', 'my_plugin_options_validate' );
+        register_setting( 'reginfoeduorg_options', 'reginfoeduorg_options', array($this,'my_plugin_options_validate') );
     }
 
-    function my_plugin_options_validate( $input ) {
+    function my_plugin_options_validate( $input ) 
+    {
         // Получаем список всех страниц
         $all_pages = get_pages(array('post_type' => 'page'));
 
@@ -194,8 +195,8 @@ class RegInfoEduOrg
             array( $this, 'my_plugin_settings_page' )
         );
     }
-
-} 
+}
+ 
 
 if(class_exists('RegInfoEduOrg'))
 {
