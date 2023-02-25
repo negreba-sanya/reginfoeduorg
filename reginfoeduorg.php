@@ -22,7 +22,7 @@ class RegInfoEduOrg
         add_action('admin_menu', array($this, 'add_admin_menu'));
     }
 
-    function print_sections_info() 
+    function print_sections_info($section) 
     {
         echo 'Выберите страницы, которые будут содержать информацию о вашей организации:';
     }
@@ -77,6 +77,31 @@ class RegInfoEduOrg
         }  
     }          
 
+    function print_sections_input() 
+    {
+        $options = get_option( 'reginfoeduorg_options' );
+        $pages = array(
+            'Основные сведения',
+            'Структура и органы управления образовательной организацией',
+            'Документы',
+            'Образование',
+            'Образовательные стандарты',
+            'Руководство. Педагогический (научно-педагогический) состав',
+            'Материально-техническое обеспечение и оснащенность образовательного процесса',
+            'Стипендии и иные виды материальной поддержки',
+            'Платные образовательные услуги',
+            'Финансово-хозяйственная деятельность',
+            'Вакантные места для приема (перевода)',
+        );
+        foreach ( $pages as $page ) {
+            $checked = '';
+            if ( isset( $options[ $page ] ) ) {
+                $checked = 'checked';
+            }
+            echo '<label><input type="checkbox" name="reginfoeduorg_options[' . $page . ']" value="1" ' . $checked . ' /> ' . $page . '</label><br />';
+        }
+    }
+
     function my_plugin_settings_menu() 
     {
         add_options_page('RegInfoEduOrg Settings', 'RegInfoEduOrg', 'manage_options', 'reginfoeduorg_settings', array($this, 'my_plugin_settings_page'));
@@ -109,35 +134,7 @@ class RegInfoEduOrg
             if (!in_array($page->post_title, $selected_pages)) {
                 wp_delete_post($page->ID, true);
             }
-        }
-
-        // Создаем или обновляем страницы, которые были отмечены
-        foreach ( $input as $key => $value ) {
-            if ( $value == 1 ) {
-                if ( get_page_by_title( $key, 'OBJECT', 'page' ) ) {
-                    // Страница уже существует, обновляем ее
-                    $page = get_page_by_title( $key );
-                    $my_post = array(
-                        'ID' => $page->ID,
-                        'post_content' => '',
-                        'post_title' => $key,
-                        'post_status' => 'publish',
-                        'post_type' => 'page',
-                    );
-                    wp_update_post( $my_post );
-                } else {
-                    // Страница не существует, создаем ее
-                    $my_post = array(
-                        'post_title' => $key,
-                        'post_content' => '',
-                        'post_status' => 'publish',
-                        'post_author' => 1,
-                        'post_type' => 'page',
-                    );
-                    wp_insert_post( $my_post );
-                }
-            }
-        }
+        }        
 
         return $input;
     }
@@ -157,34 +154,7 @@ class RegInfoEduOrg
         </div>
         <?php
     }
-
-    function print_sections_input() 
-    {
-        $options = get_option( 'reginfoeduorg_options' );
-        $pages = array(
-            'Основные сведения',
-            'Структура и органы управления образовательной организацией',
-            'Документы',
-            'Образование',
-            'Образовательные стандарты',
-            'Руководство. Педагогический (научно-педагогический) состав',
-            'Материально-техническое обеспечение и оснащенность образовательного процесса',
-            'Стипендии и иные виды материальной поддержки',
-            'Платные образовательные услуги',
-            'Финансово-хозяйственная деятельность',
-            'Вакантные места для приема (перевода)',
-        );
-        foreach ( $pages as $page ) 
-        {
-            $checked = '';
-            if ( isset( $options[ $page ] ) ) 
-            {
-                $checked = 'checked';
-            }
-            echo '<label><input type="checkbox" name="reginfoeduorg_options[' . $page . ']" value="1" ' . $checked . ' /> ' . $page . '</label><br />';
-        }
-    }
-  
+      
     function add_admin_menu() 
     {
         add_menu_page(
