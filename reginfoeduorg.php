@@ -152,13 +152,16 @@ class RegInfoEduOrg
                 do_settings_sections( 'reginfoeduorg' );
                 ?>
                 <table class="form-table">
-                    <?php print_sections_input($options); ?>
+                    <?php 
+                    $this->print_sections_input($options); // вызываем метод напрямую в контексте класса
+                    ?>
                 </table>
                 <?php submit_button(); ?>
             </form>
         </div>
         <?php
     }
+
 
 
       
