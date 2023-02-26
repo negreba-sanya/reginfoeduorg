@@ -55,99 +55,10 @@ class RegInfoEduOrg
             'Настройка содержания подразделов',
             'manage_options',
             'reginfoeduorg-content',
-            array( $this, 'submenu_content_page' )
+            array( $this, 'display_selected_subsections' )
         );
     }
 
-    function get_selected_subsections() 
-    {
-        // Получаем список выбранных подразделов
-        $selected_subsections = get_option('reginfoeduorg_subsections', array());
-
-        // Создаем пустой массив для выбранных подразделов на сайте
-        $selected_pages = array();
-
-        // Проходим по всем выбранным подразделам и проверяем, существует ли соответствующая страница
-        foreach ($selected_subsections as $subsection) 
-        {
-            $subsection_slug = sanitize_title($subsection);
-            $subsection_page = get_page_by_path($subsection_slug);
-            if ($subsection_page) {
-                $selected_pages[] = array(
-                    'title' => $subsection,
-                    'url' => get_permalink($subsection_page->ID)
-                );
-            }
-        }
-
-        return $selected_pages;
-    }
-
-
-    function submenu_content_page() {
-        // Получение массива выбранных подразделов
-        $selected_subsections = $this->get_selected_subsections();
-
-        $child_sections = array(
-            'Основные сведения',
-            'Структура и органы управления образовательной организацией',
-            'Документы',
-            'Образование',
-            'Образовательные стандарты',
-            'Руководство. Педагогический (научно-педагогический) состав',
-            'Материально-техническое обеспечение и оснащенность образовательного процесса',
-            'Стипендии и иные виды материальной поддержки',
-            'Платные образовательные услуги',
-            'Финансово-хозяйственная деятельность',
-            'Вакантные места для приема (перевода)'
-        );
-        $this->child_sections = $child_sections;
-
-
-        // Отфильтруем список подразделов по выбранным в настройках
-        $child_sections = array_filter($child_sections, function($subsection_title) use ($selected_subsections) {
-            $subsection_slug = sanitize_title($subsection_title);
-            return in_array($subsection_slug, $selected_subsections);
-        });
-
-        $editor_settings = array(
-            'media_buttons' => true,
-            'textarea_rows' => 10,
-            'teeny' => true,
-            'quicktags' => true,
-            'tinymce' => array(
-                'toolbar1' => 'bold,italic,underline,strikethrough,bullist,numlist,blockquote,hr,alignleft,aligncenter,alignright,link,unlink,spellchecker,wp_fullscreen,wp_adv',
-                'toolbar2' => '',
-                'toolbar3' => '',
-                'toolbar4' => '',
-            )
-        );
-
-        if (isset($_POST['submit'])) {
-            // Обработка отправленной формы
-            foreach ($child_sections as $child_section) {
-                $child_section_slug = sanitize_title($child_section);
-                $content = isset($_POST[$child_section_slug]) ? wp_kses_post($_POST[$child_section_slug]) : '';
-                update_post_meta(get_page_by_title($child_section)->ID, '_reginfoeduorg_content', $content);
-            }
-            // Опционально: добавить сообщение об успешном сохранении
-            echo '<div id="message" class="updated notice is-dismissible"><p>Settings saved.</p></div>';
-        }
-
-        ?>
-        <div class="wrap">
-        <h1>Настройка содержимого подразделов:</h1>
-        <form method="post" action="">
-            <?php foreach ($child_sections as $child_section) : ?>
-                <?php $child_section_slug = sanitize_title($child_section); ?>
-                <h2><?php echo $child_section; ?></h2>
-                <?php wp_editor(get_post_meta(get_page_by_title($child_section)->ID, '_reginfoeduorg_content', true), $child_section_slug, $editor_settings); ?>
-            <?php endforeach; ?>
-                <?php submit_button( 'Сохранить настройки', 'primary', 'submit', false ); ?>
-            </form>
-        </div>
-        <?php
-    }
 
 
     function get_subsection_content($subsection_title) {
@@ -340,6 +251,75 @@ class RegInfoEduOrg
             }
         }
     }
+
+
+    function display_selected_subsections() 
+    {
+        // Получение массива выбранных подразделов
+        $selected_subsections = $this->get_selected_subsections();
+
+        $child_sections = array(
+            'Основные сведения',
+            'Структура и органы управления образовательной организацией',
+            'Документы',
+            'Образование',
+            'Образовательные стандарты',
+            'Руководство. Педагогический (научно-педагогический) состав',
+            'Материально-техническое обеспечение и оснащенность образовательного процесса',
+            'Стипендии и иные виды материальной поддержки',
+            'Платные образовательные услуги',
+            'Финансово-хозяйственная деятельность',
+            'Вакантные места для приема (перевода)'
+        );
+
+        // Отфильтруем список подразделов по выбранным в настройках
+        $child_sections = array_filter($child_sections, function($subsection_title) use ($selected_subsections) {
+            $subsection_slug = sanitize_title($subsection_title);
+            return in_array($subsection_slug, $selected_subsections);
+        }, ARRAY_FILTER_USE_KEY);
+
+        $editor_settings = array(
+            'media_buttons' => true,
+            'textarea_rows' => 10,
+            'teeny' => true,
+            'quicktags' => true,
+            'tinymce' => array(
+                'toolbar1' => 'bold,italic,underline,strikethrough,bullist,numlist,blockquote,hr,alignleft,aligncenter,alignright,link,unlink,spellchecker,wp_fullscreen,wp_adv',
+                'toolbar2' => '',
+                'toolbar3' => '',
+                'toolbar4' => '',
+            )
+        );
+
+        if (isset($_POST['submit'])) 
+        {
+            // Обработка отправленной формы
+            foreach ($child_sections as $child_section) {
+                $child_section_slug = sanitize_title($child_section);
+                $content = isset($_POST[$child_section_slug]) ? wp_kses_post($_POST[$child_section_slug]) : '';
+                update_post_meta(get_page_by_title($child_section)->ID, '_reginfoeduorg_content', $content);
+            }
+            // Опционально: добавить сообщение об успешном сохранении
+            echo '<div id="message" class="updated notice is-dismissible"><p>Settings saved.</p></div>';
+        }
+
+        ?>
+        <div class="wrap">
+        <h1>Настройка содержимого подразделов:</h1>
+        <form method="post" action="">
+            <?php foreach ($selected_subsections as $subsection_title) : ?>
+                <?php $subsection_slug = sanitize_title($subsection_title); ?>
+                <h2><?php echo $subsection_title; ?></h2>
+                <?php wp_editor(get_post_meta(get_page_by_title($subsection_title)->ID, '_reginfoeduorg_content', true), $subsection_slug, $editor_settings); ?>
+            <?php endforeach; ?>
+            <?php submit_button('Сохранить настройки', 'primary', 'submit', false); ?>
+        </form>
+        </div>
+        <?php 
+    }
+
+
+
 
     function my_plugin_settings_page() 
     {
