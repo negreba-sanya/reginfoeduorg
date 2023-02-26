@@ -19,7 +19,6 @@ class RegInfoEduOrg
         add_action('init', array($this, 'my_plugin_add_sections'));
         add_action('admin_init', array( $this, 'register_settings' ) );
         add_action('admin_menu', array($this, 'add_menu_pages'));
-        add_action('the_content', array($this, 'filter_content'));
     }
 
 
@@ -58,16 +57,6 @@ class RegInfoEduOrg
             'reginfoeduorg-content',
             array( $this, 'display_selected_subsections' )
         );*/
-    }
-
-
-
-    function get_subsection_content($subsection_title) {
-        $subsection = get_page_by_title($subsection_title);
-        if ($subsection) {
-            return get_post_meta($subsection->ID, '_reginfoeduorg_content', true);
-        }
-        return '';
     }
 
 
@@ -137,59 +126,6 @@ class RegInfoEduOrg
         <?php
     }
 
-    function filter_content($content) {
-        // Получаем список выбранных подразделов
-        $selected_subsections = get_option('reginfoeduorg_subsections', array());
-
-        // Получаем ID родительской страницы
-        $parent_page = get_page_by_title('Сведения об образовательной организации');
-        $parent_id = $parent_page->ID;
-
-        // Получаем список дочерних страниц
-        $child_pages = get_pages(array(
-            'child_of' => $parent_id
-        ));
-
-        // Обходим список дочерних страниц
-        foreach ($child_pages as $child_page) {
-            $child_section = $child_page->post_title;
-            $child_section_id = $child_page->ID;
-
-            // Если подраздел не выбран, скрываем его
-            if (!in_array($child_section, $selected_subsections)) {
-                $content = str_replace('[reginfoeduorg-' . sanitize_title($child_section) . ']', '', $content);
-            }
-        }
-
-        return $content;
-    }
-
-
-
-    function show_child_sections() 
-    {
-        $reginfoeduorg_subsections = get_option('reginfoeduorg_subsections', array());
-
-        $parent_page = get_page_by_title('Сведения об образовательной организации');
-        $args = array(
-            'post_parent' => $parent_page->ID,
-            'post_type' => 'page',
-            'orderby' => 'menu_order',
-            'order' => 'ASC',
-            'post_status' => 'publish',
-            'numberposts' => -1,
-        );
-        $child_pages = get_children($args);
-
-        foreach ($child_pages as $child_page) {
-            $title = $child_page->post_title;
-            if (in_array($title, $reginfoeduorg_subsections)) {
-                echo '<h2>' . $title . '</h2>';
-                echo apply_filters('the_content', $child_page->post_content);
-            }
-        }
-    }
-
 
     function my_plugin_add_sections() {
         $page_title = 'Сведения об образовательной организации';
@@ -252,14 +188,6 @@ class RegInfoEduOrg
             }
         }
     }
-
-    public function get_selected_subsections() {
-        $selected_subsections = get_option('reginfoeduorg_selected_subsections');
-        if (empty($selected_subsections)) {
-            $selected_subsections = array();
-        }
-        return $selected_subsections;
-    }  
 
 
     function my_plugin_settings_page() 
