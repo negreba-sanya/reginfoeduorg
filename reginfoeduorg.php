@@ -21,14 +21,11 @@ class RegInfoEduOrg
         add_action('admin_menu', array($this, 'add_menu_pages'));
     }
 
-
-
     function register_settings() 
     {
         register_setting( 'reginfoeduorg', 'reginfoeduorg_options' );
         add_settings_section( 'my-section-id', false, false, 'reginfoeduorg' );
     }
-
 
     function add_menu_pages() 
     {
@@ -49,15 +46,49 @@ class RegInfoEduOrg
             array( $this, 'submenu_page' )
         );
 
-        /*add_submenu_page(
+        add_submenu_page(
             'reginfoeduorg',
             'Настройка содержания подразделов',
             'Настройка содержания подразделов',
             'manage_options',
             'reginfoeduorg-content',
-            array( $this, 'display_selected_subsections' )
-        );*/
+            array( $this, 'reginfoeduorg_submenu' )
+        );
     }
+
+    function reginfoeduorg_submenu() {
+
+        if (isset($_POST['reginfoeduorg_subsections'])) {
+            $sections = $_POST['reginfoeduorg_subsections'];
+            update_option('reginfoeduorg_subsections', $sections);
+            echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Изменения сохранены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
+        }
+        // Получаем список подразделов из базы данных
+        $sections = get_option('reginfoeduorg_subsections');
+        // Выводим верстку
+        echo '<div class="wrap">';
+        echo '<h1>Настройка содержания подразделов</h1>';
+        echo '<form method="post" action="">';
+        echo '<table class="form-table">';
+        if (is_array($sections)) {
+            foreach ($sections as $key => $section) {                
+                echo '<tr><th><label for="section-'.$key.'">'.esc_attr($section).':</label></th><td>';
+                $content = "";
+                $editor_id = 'section-' . $key;
+                $settings = array(
+                    'textarea_name' => 'reginfoeduorg_subsections['.$key.']',
+                    'editor_height' => 200,
+                    'media_buttons' => true,
+                );
+                wp_editor($content, $editor_id, $settings);                
+            }
+        }
+        echo '</table>';
+        echo '<p><input type="submit" class="button-primary" value="Сохранить изменения"></p>';
+        echo '</form>';
+        echo '</div>';
+    }
+
 
 
     function submenu_page() 
@@ -126,8 +157,8 @@ class RegInfoEduOrg
         <?php
     }
 
-
-    function my_plugin_add_sections() {
+    function my_plugin_add_sections() 
+    {
         $page_title = 'Сведения об образовательной организации';
         $page_content = '';
         $parent_id = 0;
@@ -189,7 +220,6 @@ class RegInfoEduOrg
         }
     }
 
-
     function my_plugin_settings_page() 
     {
         if (isset($_POST['submit'])) {
@@ -217,8 +247,7 @@ class RegInfoEduOrg
         </div>
         <?php
     }
-}
- 
+} 
 
 if(class_exists('RegInfoEduOrg'))
 {
