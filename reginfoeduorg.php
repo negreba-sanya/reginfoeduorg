@@ -60,9 +60,10 @@ class RegInfoEduOrg
 
         if (isset($_POST['reginfoeduorg_subsections'])) {
             $sections = $_POST['reginfoeduorg_subsections'];
-            update_option('reginfoeduorg_subsections', $sections);
+            
             echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Изменения сохранены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
         }
+
         // Получаем список подразделов из базы данных
         $sections = get_option('reginfoeduorg_subsections');
         // Выводим верстку
@@ -200,24 +201,26 @@ class RegInfoEduOrg
         // Check if each child page exists and either publish or unpublish it based on the checked subsections
         foreach ($all_subsections as $child_section) {
             $child_page_title = $child_section;
-            $child_page_content = '';
             $child_page_args = array(
                 'post_title' => $child_page_title,
-                'post_content' => $child_page_content,
                 'post_status' => in_array($child_section, $checked_subsections) ? 'publish' : 'draft',
                 'post_type' => 'page',
                 'post_parent' => $parent_id
             );
-
             $child_page = get_page_by_title($child_page_title);
-
             if (empty($child_page)) {
-                wp_insert_post($child_page_args);
+                $child_page_id = wp_insert_post($child_page_args);
             } else {
-                $child_page_args['ID'] = $child_page->ID;
+                $child_page_id = $child_page->ID;
+                $child_page_args['ID'] = $child_page_id;
                 wp_update_post($child_page_args);
             }
+            // Сохраняем контент подразделов на странице подраздела
+            $section_key = array_search($child_section, $all_subsections);
+            $section_content = isset($_POST['reginfoeduorg_subsection_content'][$section_key]) ? $_POST['reginfoeduorg_subsection_content'][$section_key] : '';
+            update_post_meta($child_page_id, 'reginfoeduorg_subsection_content_'.$section_key, $section_content);
         }
+
     }
 
     function my_plugin_settings_page() 
