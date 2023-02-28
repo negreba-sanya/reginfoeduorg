@@ -58,9 +58,26 @@ class RegInfoEduOrg
 
     function reginfoeduorg_submenu() {
 
-        if (isset($_POST['reginfoeduorg_subsections'])) {
-            $sections = $_POST['reginfoeduorg_subsections'];
+        // Проверяем, была ли кнопка "Сохранить изменения" нажата
+        if (isset($_POST['reginfoeduorg_save_changes'])) {
+            // Получаем список подразделов из базы данных
+            $sections = get_option('reginfoeduorg_subsections');
             
+            // Перебираем все подразделы и обновляем контент, если он был изменен
+            foreach ($sections as $key => $section) {
+                $post_id = get_page_by_title($section)->ID;
+                $content = $_POST['reginfoeduorg_subsections'][$key];
+               
+                if ($post_id && $content) {
+                    $post = array(
+                        'ID' => $post_id,
+                        'post_content' => $content,
+                    );
+                    wp_update_post($post);
+                }
+            }
+        
+            // Выводим сообщение об успешном сохранении изменений
             echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Изменения сохранены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
         }
 
@@ -74,7 +91,8 @@ class RegInfoEduOrg
         if (is_array($sections)) {
             foreach ($sections as $key => $section) {                
                 echo '<tr><th><label for="section-'.$key.'">'.esc_attr($section).':</label></th><td>';
-                $content = "";
+                $post = get_page_by_title($section);
+                $content = $post ? $post->post_content : '';
                 $editor_id = 'section-' . $key;
                 $settings = array(
                     'textarea_name' => 'reginfoeduorg_subsections['.$key.']',
@@ -85,7 +103,7 @@ class RegInfoEduOrg
             }
         }
         echo '</table>';
-        echo '<p><input type="submit" class="button-primary" value="Сохранить изменения"></p>';
+        echo '<p><input type="submit" name="reginfoeduorg_save_changes" class="button-primary" value="Сохранить изменения"></p>';
         echo '</form>';
         echo '</div>';
     }
