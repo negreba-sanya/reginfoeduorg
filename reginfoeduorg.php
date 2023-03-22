@@ -6,7 +6,7 @@ Version: 1.0
 Author: Негреба Александр
 License: GPLv2 or later
 Text Domain: reginfoeduorg
-*/
+ */
 
 if (!defined('ABSPATH')) {
     die;
@@ -19,7 +19,7 @@ class RegInfoEduOrg
         add_action('init', array($this, 'my_plugin_add_sections'));
         add_action('admin_init', array( $this, 'register_settings' ) );
         add_action('admin_menu', array($this, 'add_menu_pages'));
-       //add_action('admin_init', array($this,'reginfoeduorg_add_roles_and_capabilities'));
+        //add_action('admin_init', array($this,'reginfoeduorg_add_roles_and_capabilities'));
     }
 
     function register_settings() 
@@ -56,7 +56,7 @@ class RegInfoEduOrg
             'my_plugin_roles', 
             array( $this,'my_plugin_roles_page')
         );
-    
+        
         add_submenu_page(
             'reginfoeduorg',
             'Подразделы сайта',
@@ -81,7 +81,7 @@ class RegInfoEduOrg
         $roles = wp_roles()->get_names();
 
         
-        ?>
+?>
         <div class="wrap">
             <h1>Настройка ролей</h1>
             <form method="post">
@@ -125,17 +125,33 @@ class RegInfoEduOrg
     function reginfoeduorg_submenu() 
     {
 
-        // Обработка POST-запроса
-        if ( isset( $_POST['import_file_submit'] ) ) {
-            // Проверка загруженного файла
-            if ( ! empty( $_FILES['import_file']['tmp_name'] ) && is_uploaded_file( $_FILES['import_file']['tmp_name'] ) ) {
-                $xml_data = simplexml_load_file( $_FILES['import_file']['tmp_name'] );
-                // Обработка XML данных и сохранение в базу данных
-            } else {
-                echo '<div id="message" class="error"><p>Ошибка загрузки файла.</p></div>';
+        if ( isset( $_POST['import_file_submit'] ) && isset( $_FILES['import_file'] ) ) {
+            $xml = simplexml_load_file( $_FILES['import_file']['tmp_name'] );
+            $editor_id = 'section-0';
+            $section_title = 'Основные сведения';
+            $file_contents = '';
+            foreach ( $xml->section as $section ) {
+                if ( (string) $section->section_title === $section_title ) {
+                    $section_content = $section->section_content->general_information;
+                    foreach ($section_content->children() as $child) {
+                        $file_contents .= (string)$child . "<br>";
+                    }
+                    break;
+                }
             }
+                ?>
+            <script>
+            jQuery(document).ready(function() {
+                var new_content = <?php echo json_encode($file_contents); ?>;
+                var editor = tinyMCE.get('<?php echo $editor_id; ?>');
+                editor.setContent(new_content);
+            });
+            </script>
+            <?php
         }
 
+
+        
         // Проверяем, была ли кнопка "Сохранить изменения" нажата
         if (isset($_POST['reginfoeduorg_save_changes'])) {
             // Получаем список подразделов из базы данных
@@ -145,7 +161,7 @@ class RegInfoEduOrg
             foreach ($sections as $key => $section) {
                 $post_id = get_page_by_title($section)->ID;
                 $content = $_POST['reginfoeduorg_subsections'][$key];
-               
+                
                 if ($post_id && $content) {
                     $post = array(
                         'ID' => $post_id,
@@ -154,7 +170,7 @@ class RegInfoEduOrg
                     wp_update_post($post);
                 }
             }
-        
+            
             // Выводим сообщение об успешном сохранении изменений
             echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Изменения сохранены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
         }
@@ -164,7 +180,7 @@ class RegInfoEduOrg
         // Выводим верстку
         echo '<div class="wrap">';
         echo '<h1>Настройка содержания подразделов</h1>';
-        echo '<form method="post" action="">';
+        echo '<form method="post" action="" enctype="multipart/form-data">';
         echo '<table class="form-table">';
         if (is_array($sections)) {
             foreach ($sections as $key => $section) {                
@@ -183,13 +199,15 @@ class RegInfoEduOrg
         echo '</table>';
         echo '<p><input type="submit" name="reginfoeduorg_save_changes" class="button-primary" value="Сохранить изменения"></p>';
         
+        
         echo '<table class="form-table">';
-    echo '<tr>';
-    echo '<th><label for="import-file">Загрузить XML файл:</label></th>';
-    echo '<td><input type="file" name="import_file" id="import-file" /></td>';
-    echo '</tr>';
-    echo '</table>';
-    echo '<p><input type="submit" class="button-primary" name="import_file_submit" value="Импортировать данные"></p>';
+        echo '<tr>';
+        echo '<th><label for="import-file">Загрузить XML файл:</label></th>';
+        echo '<td><input type="file" name="import_file" id="import-file" /></td>';
+        echo '</tr>';
+        echo '</table>';
+        echo '<p><input type="submit" class="button-primary" name="import_file_submit" value="Импортировать данные"></p>';
+        
         echo '</form>';
         echo '</div>';
     }
@@ -342,7 +360,7 @@ class RegInfoEduOrg
         {
             return;
         }
-      
+        
         echo '<h1>Настройка плагина</h1>';
         
     }
