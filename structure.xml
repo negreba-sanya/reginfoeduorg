@@ -1,0 +1,281 @@
+<reginfoeduorg>
+
+	<section>
+		<section_title>Основные сведения</section_title>
+		<section_content>
+			<general_information>
+				<creation_date>Дата создания образовательной организации</creation_date>
+				<founder>Учредитель</founder>
+				<founders>Учредители образовательной организации</founders>
+				<location>Место нахождения образовательной организации</location>
+				<branches>Филиалы образовательной организации</branches>
+				<working_hours>График работы</working_hours>
+				<contact_phones>Контактные телефоны</contact_phones>
+				<email_addresses>Адреса электронной почты</email_addresses>
+			</general_information>
+		</section_content>
+	</section>
+
+	<section>
+		<section_title>Образование</section_title>
+		<section_content>
+			<education_levels>
+				<level_title>Уровни образования</level_title>
+				<level_info>Информация о реализуемых уровнях образования (начальное, основное, среднее), нормативных сроках обучения и формах обучения</level_info>
+			</education_levels>
+			<educational_programs>
+				<program_title>Образовательные программы</program_title>
+				<program_info>Информация о реализуемых образовательных программах, в том числе адаптированных, с указанием учебных предметов, курсов, дисциплин, практики, предусмотренных образовательной программой, а также о языках, на которых осуществляется обучение</program_info>
+				<program_attachment>Приложение с копией образовательной программы</program_attachment>
+			</educational_programs>
+			<educational_plan>
+				<plan_title>Учебный план</plan_title>
+				<plan_info>Информация об учебном плане, его копия</plan_info>
+			</educational_plan>
+			<educational_schedule>
+				<schedule_title>Календарный учебный график</schedule_title>
+				<schedule_info>Информация о календарном учебном графике, его копия</schedule_info>
+			</educational_schedule>
+			<educational_documents>
+				<documents_title>Документы для обеспечения образовательного процесса</documents_title>
+				<documents_info>Информация о методических и иных документах, разработанных образовательной организацией для обеспечения образовательного процесса</documents_info>
+			</educational_documents>
+		</section_content>
+	</section>
+
+	<section>
+		<section_title>Образовательные стандарты</section_title>
+		<section_content>
+			<federal_standards>
+				<standard_title>Федеральные государственные образовательные стандарты</standard_title>
+				<standard_info>Информация о ФГОС</standard_info>
+				<standard_copy>Копия ФГОС</standard_copy>
+			</federal_standards>
+			<educational_standards>
+				<standard_title>Образовательные стандарты</standard_title>
+				<standard_info>Информация об образовательных стандартах</standard_info>
+				<standard_copy>Копия образовательных стандартов</standard_copy>
+			</educational_standards>
+		</section_content>
+	</section>
+
+	<section>
+		<section_title>Структура и органы управления образовательной организацией</section_title>
+		<section_content>
+			<management_structure>
+				<structural_units>
+					<structural_unit>
+						<name>Наименование структурного подразделения</name>
+						<leader>ФИО руководителя структурного подразделения</leader>
+						<position>Должность руководителя структурного подразделения</position>
+						<location>Местонахождение структурного подразделения</location>
+						<official_website>Адрес официального сайта структурного подразделения</official_website>
+						<email>Адрес электронной почты структурного подразделения</email>
+						<regulations>Сведения о положении о структурном подразделении (об органе управления) с приложением копии указанного положения</regulations>
+					</structural_unit>
+				</structural_units>
+				<management_bodies>
+					<management_body>
+						<name>Наименование органа управления</name>
+						<leader>ФИО руководителя органа управления</leader>
+						<position>Должность руководителя органа управления</position>
+						<location>Местонахождение органа управления</location>
+						<official_website>Адрес официального сайта органа управления</official_website>
+						<email>Адрес электронной почты органа управления</email>
+						<regulations>Сведения о положении об органе управления с приложением копии указанного положения</regulations>
+					</management_body>
+				</management_bodies>
+			</management_structure>
+		</section_content>
+	</section>
+
+	<section>
+		<section_title>Документы</section_title>
+		<section_content>
+			<documents>
+				<charter>ссылка на файл устава образовательной организации</charter>
+				<license>ссылка на файл лицензии на осуществление образовательной деятельности</license>
+				<accreditation>ссылка на файл свидетельства о государственной аккредитации</accreditation>
+				<finance_plan>ссылка на файл плана финансово-хозяйственной деятельности образовательной организации</finance_plan>
+				<normative_acts>
+					<local_normative_acts>ссылка на файл локальных нормативных актов, предусмотренных законодательством</local_normative_acts>
+					<student_internal_rules>ссылка на файл правил внутреннего распорядка обучающихся</student_internal_rules>
+					<employee_internal_rules>ссылка на файл правил внутреннего трудового распорядка</employee_internal_rules>
+					<collective_agreement>ссылка на файл коллективного договора</collective_agreement>
+				</normative_acts>
+				<self_evaluation_report>ссылка на файл отчета о результатах самообследования</self_evaluation_report>
+				<paid_services>
+					<paid_services_document>ссылка на документ о порядке оказания платных образовательных услуг</paid_services_document>
+					<contract_example>ссылка на образец договора об оказании платных образовательных услуг</contract_example>
+					<tuition_fee>ссылка на документ об утверждении стоимости обучения по каждой образовательной программе</tuition_fee>
+					<maintenance_fee>ссылка на документ об установлении размера платы за присмотр и уход за детьми в образовательной организации</maintenance_fee>
+				</paid_services>
+				<supervision_reports>
+					<supervision_report>ссылка на отчеты об исполнении предписаний органов, осуществляющих государственный контроль (надзор) в сфере образования</supervision_report>
+				</supervision_reports>
+			</documents>
+		</section_content>
+	</section>
+
+	<section>
+		<section_title>Руководство. Педагогический (научно-педагогический) состав</section_title>
+		<section_content>
+			<management>
+				<director>
+					<full_name>ФИО руководителя</full_name>
+					<position>Должность руководителя</position>
+					<contact_phones>Контактные телефоны руководителя</contact_phones>
+					<email_addresses>Адреса электронной почты руководителя</email_addresses>
+				</director>
+				<deputy_directors>
+					<deputy_director>
+						<full_name>ФИО заместителя руководителя</full_name>
+						<position>Должность заместителя руководителя</position>
+						<contact_phones>Контактные телефоны заместителя руководителя</contact_phones>
+						<email_addresses>Адреса электронной почты заместителя руководителя</email_addresses>
+					</deputy_director>
+				</deputy_directors>
+				<branch_directors>
+					<branch_director>
+						<full_name>ФИО руководителя филиала</full_name>
+						<position>Должность руководителя филиала</position>
+						<contact_phones>Контактные телефоны руководителя филиала</contact_phones>
+						<email_addresses>Адреса электронной почты руководителя филиала</email_addresses>
+					</branch_director>
+				</branch_directors>
+			</management>
+
+			<pedagogical_staff>
+				<pedagogical_worker>
+					<full_name>ФИО педагогического работника</full_name>
+					<positions>Занимаемые должности</positions>
+					<subjects>Преподаваемые учебные предметы, курсы, дисциплины (модули)</subjects>
+					<education_levels>Уровни профессионального образования</education_levels>
+					<academic_degree>Ученая степень</academic_degree>
+					<academic_rank>Ученое звание</academic_rank>
+					<qualification_improvement>Сведения о повышении квалификации</qualification_improvement>
+					<professional_retraining>Сведения о профессиональной переподготовке</professional_retraining>
+					<experience>Опыт работы</experience>
+					<education_program>Наименование образовательной программы</education_program>
+				</pedagogical_worker>
+			</pedagogical_staff>
+		</section_content>
+	</section>
+
+	<section>
+		<section_title>Студенческие стипендии и материальная поддержка</section_title>
+		<section_content>
+			<scholarships>
+				<scholarship_title>Студенческие стипендии</scholarship_title>
+				<scholarship_info>Условия предоставления стипендий для обучающихся</scholarship_info>
+			</scholarships>
+			<social_support>
+				<support_title>Меры социальной поддержки</support_title>
+				<support_info>Условия и порядок предоставления мер социальной поддержки</support_info>
+			</social_support>
+			<dormitories>
+				<dormitory_title>Общежития и интернаты</dormitory_title>
+				<dormitory_info>Информация о наличии общежитий и интернатов для иногородних обучающихся, в том числе приспособленных для использования инвалидами и лицами с ограниченными возможностями здоровья, количестве жилых помещений в общежитии, формировании платы за проживание</dormitory_info>
+			</dormitories>
+			<employment>
+				<employment_title>Трудоустройство выпускников</employment_title>
+				<employment_info>Информация о трудоустройстве выпускников</employment_info>
+			</employment>
+		</section_content>
+	</section>
+
+	<section>
+		<section_title>Платные образовательные услуги</section_title>
+		<section_content>
+			<paid_services_info>Информация о порядке оказания платных образовательных услуг, включая перечень услуг, цены, порядок оплаты и возврата средств, информацию о скидках и льготах и другие существенные условия оказания услуг</paid_services_info>
+		</section_content>
+	</section>
+
+	<section>
+		<section_title>Финансово-хозяйственная деятельность</section_title>
+		<section_content>
+			<funding_sources>
+				<funding_title>Источники финансирования</funding_title>
+				<funding_info>Информация об объеме образовательной деятельности, финансовое обеспечение которой осуществляется за счет бюджетных ассигнований федерального бюджета, бюджетов субъектов Российской Федерации, местных бюджетов, по договорам об образовании за счет средств физических и (или) юридических лиц</funding_info>
+			</funding_sources>
+			<financial_report>
+				<report_title>Финансовый отчет</report_title>
+				<report_info>Информация о поступлении финансовых и материальных средств и об их расходовании по итогам финансового года</report_info>
+			</financial_report>
+		</section_content>
+	</section>
+
+	<section>
+		<section_title>Вакантные места для приема (перевода)</section_title>
+		<section_content>
+			<vacancies_info>
+				<vacancies_title>Информация о вакантных местах</vacancies_title>
+				<vacancies_list>
+					<program>
+						<program_name>Название образовательной программы</program_name>
+						<profession>Профессия</profession>
+						<specialization>Специальность</specialization>
+						<study_direction>Направление подготовки</study_direction>
+						<budget_vacancies>Количество вакантных мест за счет бюджетных ассигнований</budget_vacancies>
+						<contract_vacancies>Количество вакантных мест по договорам об образовании</contract_vacancies>
+					</program>
+				</vacancies_list>
+			</vacancies_info>
+		</section_content>
+	</section>
+
+	<section>
+		<section_title>Материально-техническое обеспечение и оснащенность образовательного процесса</section_title>
+		<section_content>
+			<technical_equipment>
+				<classrooms>
+					<classroom>
+						<name>Наименование учебного кабинета</name>
+						<type>Тип учебного кабинета</type>
+						<equipment>Список оборудования в кабинете</equipment>
+						<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
+					</classroom>
+				</classrooms>
+				<training_objects>
+					<training_object>
+						<name>Наименование объекта для практических занятий</name>
+						<type>Тип объекта</type>
+						<equipment>Список оборудования на объекте</equipment>
+						<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
+					</training_object>
+				</training_objects>
+				<library>
+					<name>Название библиотеки</name>
+					<collection>Описание коллекции книг и других материалов в библиотеке</collection>
+					<services>Описание услуг, предоставляемых библиотекой</services>
+					<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
+				</library>
+				<sports_facilities>
+					<sports_facility>
+						<name>Наименование объекта спорта</name>
+						<type>Тип объекта</type>
+						<equipment>Список оборудования на объекте</equipment>
+						<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
+					</sports_facility>
+				</sports_facilities>
+				<learning_resources>
+					<resource>
+						<name>Наименование средства обучения и воспитания</name>
+						<type>Тип средства</type>
+						<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
+					</resource>
+				</learning_resources>
+				<facilities_for_disabled>
+					<facility>
+						<name>Наименование объекта, оборудованного для использования инвалидами и лицами с ограниченными возможностями здоровья</name>
+						<type>Тип объекта</type>
+						<equipment>Список оборудования на объекте</equipment>
+					</facility>
+				</facilities_for_disabled>
+			</technical_equipment>
+		</section_content>
+	</section>
+
+
+</reginfoeduorg>
+

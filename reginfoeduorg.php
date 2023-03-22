@@ -35,17 +35,26 @@ class RegInfoEduOrg
             'RegInfoEduOrg', 
             'RegInfoEduOrg', 
             'manage_options', 
-            'my_plugin_settings', 
+            'reginfoeduorg', 
             array( $this, 'my_plugin_settings_page' )
         );
 
         add_submenu_page( 
-            'my_plugin_settings',
+            'reginfoeduorg',
             'Настройка прав доступа пользователей', 
             'Пользователи',
             'manage_options', 
             'my_plugin_users', 
             array( $this,'my_plugin_users_page') 
+        );
+
+        add_submenu_page( 
+            'reginfoeduorg', 
+            'Настройка ролей', 
+            'Роли', 
+            'manage_options', 
+            'my_plugin_roles', 
+            array( $this,'my_plugin_roles_page')
         );
     
         add_submenu_page(
@@ -67,8 +76,65 @@ class RegInfoEduOrg
         );
     }
 
+    function my_plugin_roles_page() {
+        // Получаем список всех ролей
+        $roles = wp_roles()->get_names();
+
+        
+        ?>
+        <div class="wrap">
+            <h1>Настройка ролей</h1>
+            <form method="post">
+                <table class="form-table">
+                    <tr>
+                        <th><label for="add-role">Добавить роль</label></th>
+                        <td>
+                            <input type="text" name="add_role" id="add-role" />
+                            <input type="submit" name="submit_add_role" class="button-secondary" value="Добавить" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="delete-role">Удалить роль</label></th>
+                        <td>
+                            <select name="delete_role" id="delete-role">
+                                <?php foreach ( $roles as $role => $name ) : ?>
+                                    <option value="<?php echo $role; ?>"><?php echo $name; ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <input type="submit" name="submit_delete_role" class="button-secondary" value="Удалить" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="rename-role">Переименовать роль</label></th>
+                        <td>
+                            <select name="rename_role" id="rename-role">
+                                <?php foreach ( $roles as $role => $name ) : ?>
+                                    <option value="<?php echo $role; ?>"><?php echo $name; ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <input type="text" name="new_name" />
+                            <input type="submit" name="submit_rename_role" class="button-secondary" value="Переименовать" />
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+        <?php
+    }
+
     function reginfoeduorg_submenu() 
     {
+
+        // Обработка POST-запроса
+        if ( isset( $_POST['import_file_submit'] ) ) {
+            // Проверка загруженного файла
+            if ( ! empty( $_FILES['import_file']['tmp_name'] ) && is_uploaded_file( $_FILES['import_file']['tmp_name'] ) ) {
+                $xml_data = simplexml_load_file( $_FILES['import_file']['tmp_name'] );
+                // Обработка XML данных и сохранение в базу данных
+            } else {
+                echo '<div id="message" class="error"><p>Ошибка загрузки файла.</p></div>';
+            }
+        }
 
         // Проверяем, была ли кнопка "Сохранить изменения" нажата
         if (isset($_POST['reginfoeduorg_save_changes'])) {
@@ -116,11 +182,17 @@ class RegInfoEduOrg
         }
         echo '</table>';
         echo '<p><input type="submit" name="reginfoeduorg_save_changes" class="button-primary" value="Сохранить изменения"></p>';
+        
+        echo '<table class="form-table">';
+    echo '<tr>';
+    echo '<th><label for="import-file">Загрузить XML файл:</label></th>';
+    echo '<td><input type="file" name="import_file" id="import-file" /></td>';
+    echo '</tr>';
+    echo '</table>';
+    echo '<p><input type="submit" class="button-primary" name="import_file_submit" value="Импортировать данные"></p>';
         echo '</form>';
         echo '</div>';
     }
-
-
 
     function submenu_page() 
     {
@@ -270,140 +342,11 @@ class RegInfoEduOrg
         {
             return;
         }
-        if ( isset( $_POST['my_plugin_roles_settings'] ) ) {
-            $editor_capabilities = isset( $_POST['my_plugin_editor_capabilities'] ) ? $_POST['my_plugin_editor_capabilities'] : array();
-            update_option( 'my_plugin_editor_capabilities', $editor_capabilities );
-            echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Настройки ролей сохранены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
-        }
-        if ( isset( $_POST['my_plugin_add_user'] ) ) {
-            $username = isset( $_POST['my_plugin_username'] ) ? sanitize_text_field( $_POST['my_plugin_username'] ) : '';
-            $password = isset( $_POST['my_plugin_password'] ) ? $_POST['my_plugin_password'] : '';
-            $email = isset( $_POST['my_plugin_email'] ) ? sanitize_email( $_POST['my_plugin_email'] ) : '';
-
-            if ( !empty( $username ) && !empty( $password ) && !empty( $email ) ) {
-                $user_id = wp_create_user( $username, $password, $email );
-                if ( !is_wp_error( $user_id ) ) {
-                    echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Пользователь успешно добавлен.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
-                } else {
-                    echo '<div id="message" class="error notice notice-error is-dismissible"><p>Не удалось добавить пользователя.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
-                }
-            } 
-            else 
-            {
-                echo '<div id="message" class="error notice notice-error is-dismissible"><p>Заполните все поля формы добавления пользователя.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
-            }
-        }
-
-        if ( isset( $_POST['my_plugin_delete_user'] ) ) {
-            $user_id = isset( $_POST['my_plugin_user_id'] ) ? intval( $_POST['my_plugin_user_id'] ) : 0;
-
-            if ( $user_id > 0 ) {
-                if ( wp_delete_user( $user_id ) ) {
-                    echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Пользователь успешно удален.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
-                } 
-                else {
-                    echo '<div id="message" class="error notice notice-error is-dismissible"><p>Не удалось удалить пользователя.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
-                }
-            } 
-            else {
-                echo '<div id="message" class="error notice notice-error is-dismissible"><p>Не выбран пользователь для удаления.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
-            }
-        }
-
-        $users = get_users( array(
-            'orderby' => 'ID',
-            'order' => 'ASC',
-        ) );
-
-                // Получаем список прав доступа для пользователей-редакторов
-        $editor_capabilities = get_option( 'my_plugin_editor_capabilities', array() );
-
-        // Выводим верстку формы настроек ролей пользователей
-        echo '<div class="wrap">';
-        echo '<h1>Настройка ролей пользователей</h1>';
-        echo '<form method="post" action="">';
-
-        // Выводим список пользователей WordPress
-        echo '<h2>Список пользователей</h2>';
-        echo '<table class="widefat">';
-        echo '<thead><tr><th>ID</th><th>Имя пользователя</th><th>Email</th><th>Роль</th><th>Действия</th></tr></thead>';
-        echo '<tbody>';
-        foreach ( $users as $user ) {
-            echo '<tr>';
-            echo '<td>' . $user->ID . '</td>';
-            echo '<td>' . $user->user_login . '</td>';
-            echo '<td>' . $user->user_email . '</td>';
-            echo '<td>';
-            echo '<select name="my_plugin_editor_capabilities[' . $user->ID . ']">';
-            echo '<option value="">-- Не назначена --</option>';
-            foreach ( wp_roles()->get_names() as $role_name ) {
-                $selected = isset( $editor_capabilities[$user->ID] ) && $editor_capabilities[$user->ID] == $role_name ? ' selected="selected"' : '';
-                echo '<option value="' . $role_name . '"' . $selected . '>' . $role_name . '</option>';
-            }
-            echo '</select>';
-            echo '</td>';
-            echo '<td><a href="' . get_edit_user_link( $user->ID ) . '">Редактировать</a> | ';
-            echo '<button type="submit" class="button-link" name="my_plugin_delete_user" onclick="return confirm(\'Вы уверены, что хотите удалить этого пользователя?\')">Удалить</button>';
-            echo '<input type="hidden" name="my_plugin_user_id" value="' . $user->ID . '">';
-            echo '</td>';
-            echo '</tr>';
-        }
-        echo '</tbody>';
-        echo '</table>';
-
-        echo '<h2>Добавление пользователя</h2>';
-        echo '<table class="form-table">';
-        echo '<tr><th><label for="my_plugin_username">Имя пользователя:</label></th><td><input type="text" name="my_plugin_username" id="my_plugin_username"></td></tr>';
-        echo '<tr><th><label for="my_plugin_password">Пароль:</label></th><td><input type="password" name="my_plugin_password" id="my_plugin_password"></td></tr>';
-        echo '<tr><th><label for="my_plugin_email">Email:</label></th><td><input type="email" name="my_plugin_email" id="my_plugin_email"></td></tr>';
-        echo '<tr><th><label for="my_plugin_role">Роль:</label></th><td>';
-        echo '<select name="my_plugin_role">';
-        foreach ( wp_roles()->get_names() as $role_name ) {
-            echo '<option value="' . $role_name . '">' . $role_name . '</option>';
-        }
-        echo '</select>';
-        echo '</td></tr>';
-        echo '</table>';
-        echo '<p><input type="submit" class="button-primary" value="Добавить пользователя"></p>';
-        echo '</form>';
-        echo '</div>';
+      
+        echo '<h1>Настройка плагина</h1>';
+        
     }
     
-    function my_plugin_settings_page_handle() 
-    {
-        if ( isset( $_POST['my_plugin_editor_capabilities'] ) ) {
-            $editor_capabilities = $_POST['my_plugin_editor_capabilities'];
-            update_option( 'my_plugin_editor_capabilities', $editor_capabilities );
-            echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Настройки ролей пользователей успешно сохранены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
-        }
-
-        if ( isset( $_POST['my_plugin_delete_user'] ) ) {
-            $user_id = absint( $_POST['my_plugin_user_id'] );
-            if ( $user_id > 0 ) {
-                wp_delete_user( $user_id );
-                echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Пользователь успешно удален.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
-            } else {
-                echo '<div id="message" class="error notice notice-error is-dismissible"><p>Не удалось удалить пользователя.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
-            }
-        }
-        if ( isset( $_POST['my_plugin_add_user'] ) ) 
-        {
-            $username = sanitize_text_field( $_POST['my_plugin_username'] );
-            $password = sanitize_text_field( $_POST['my_plugin_password'] );
-            $email = sanitize_email( $_POST['my_plugin_email'] );
-            $role = sanitize_text_field( $_POST['my_plugin_role'] );
-            $user_id = wp_create_user( $username, $password, $email );
-            if ( ! is_wp_error( $user_id ) ) {
-                $user = get_user_by( 'id', $user_id );
-                $user->set_role( $role );
-                echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Пользователь успешно добавлен.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
-            } 
-            else 
-            {
-                echo '<div id="message" class="error notice notice-error is-dismissible"><p>Не удалось добавить пользователя.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</</span></button></div>';
-            }
-        }
-    }
 
     function my_plugin_users_page() 
     {
