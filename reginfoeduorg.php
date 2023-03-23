@@ -126,28 +126,430 @@ class RegInfoEduOrg
     {
 
         if ( isset( $_POST['import_file_submit'] ) && isset( $_FILES['import_file'] ) ) {
-            $xml = simplexml_load_file( $_FILES['import_file']['tmp_name'] );
-            $editor_id = 'section-0';
-            $section_title = 'Основные сведения';
-            $file_contents = '';
-            foreach ( $xml->section as $section ) {
-                if ( (string) $section->section_title === $section_title ) {
-                    $section_content = $section->section_content->general_information;
-                    foreach ($section_content->children() as $child) {
-                        $file_contents .= (string)$child . "<br>";
-                    }
-                    break;
+            if ( $_FILES['import_file']['error'] === UPLOAD_ERR_OK ) {
+                $xml = simplexml_load_file( $_FILES['import_file']['tmp_name'] );
+                $editor_id = '';
+                $section_title = 'Основные сведения';
+                $file_contents = '';
+                foreach ( $xml->section as $section ) {
+                    switch ((string) $section->section_title)
+                    {
+                        case 'Основные сведения':
+                            $editor_id = 'section-0';
+                            $section_content = $section->section_content->general_information;
+                            $file_contents = '<h4>Основные сведения:</h4><br>';
+                            $file_contents .= "<b>Дата создания образовательной организации:</b> {$section_content->creation_date}<br>";
+                            $file_contents .= "<b>Учредитель:</b> {$section_content->founder}<br>";
+                            $file_contents .= "<b>Учредители образовательной организации:</b> {$section_content->founders}<br>";
+                            $file_contents .= "<b>Место нахождения образовательной организации:</b> {$section_content->location}<br>";
+                            $file_contents .= "<b>Филиалы образовательной организации:</b> {$section_content->branches}<br>";
+                            $file_contents .= "<b>График работы:</b> {$section_content->working_hours}<br>";
+                            $file_contents .= "<b>Контактные телефоны:</b> {$section_content->contact_phones}<br>";
+                            $file_contents .= "<b>Адреса электронной почты:</b> {$section_content->email_addresses}<br>";
+        ?>
+                                <script>
+                                jQuery(document).ready(function() {
+                                    var new_content = <?php echo json_encode($file_contents); ?>;
+                                    var editor = tinyMCE.get('<?php echo $editor_id; ?>');
+                                    editor.setContent(new_content);
+                                });
+                                </script>
+                            <?php
+                            break;
+
+                        case 'Структура и органы управления образовательной организацией':
+                            $editor_id = 'section-1';
+                            $section_content = $section->section_content->management_structure;
+                            $file_contents = '<p><b>Структурные подразделения</b></p>';
+
+                            // выводим информацию о структурных подразделениях
+                            $structural_units = $section_content->structural_units;
+                            foreach ($structural_units->children() as $child) {
+                                $file_contents .= "<b>Наименование структурного подразделения:</b> {$child->name}<br>";
+                                $file_contents .= "<b>ФИО руководителя структурного подразделения:</b> {$child->leader}<br>";
+                                $file_contents .= "<b>Должность руководителя структурного подразделения:</b> {$child->position}<br>";
+                                $file_contents .= "<b>Местонахождение структурного подразделения:</b> {$child->location}<br>";
+                                $file_contents .= "<b>Адрес официального сайта структурного подразделения:</b> {$child->official_website}<br>";
+                                $file_contents .= "<b>Адрес электронной почты структурного подразделения:</b> {$child->email}<br>";
+                                $file_contents .= "<b>Сведения о положении о структурном подразделении (об органе управления) с приложением копии указанного положения:</b> {$child->regulations}<br><br>";
+                            }
+
+                            $file_contents .= '<p><b>Органы управления</b></p>';
+                            // выводим информацию об органах управления
+                            $management_bodies = $section_content->management_bodies;
+                            foreach ($management_bodies->children() as $child) {
+                                $file_contents .= "<b>Наименование органа управления:</b> {$child->name}<br>";
+                                $file_contents .= "<b>ФИО руководителя органа управления:</b> {$child->leader}<br>";
+                                $file_contents .= "<b>Должность руководителя органа управления:</b> {$child->position}<br>";
+                                $file_contents .= "<b>Местонахождение органа управления:</b> {$child->location}<br>";
+                                $file_contents .= "<b>Адрес официального сайта органа управления:</b> {$child->official_website}<br>";
+                                $file_contents .= "<b>Адрес электронной почты органа управления:</b> {$child->email}<br>";
+                                $file_contents .= "<b>Сведения о положении об органе управления с приложением копии указанного положения:</b> {$child->regulations}<br><br>";
+                            }
+
+                            ?>
+                            <script>
+                                jQuery(document).ready(function() {
+                                    var new_content = <?php echo json_encode($file_contents); ?>;
+                                    var editor = tinyMCE.get('<?php echo $editor_id; ?>');
+                                    editor.setContent(new_content);
+                                });
+                            </script>
+                            <?php
+                            break;
+
+                        case 'Документы':
+                            $editor_id = 'section-2';
+                            $section_content = $section->section_content->documents;
+                            $file_contents = '<strong>Документы:</strong><br>';
+                            foreach ($section_content->children() as $child) {
+                                $title = $child->getName();
+                                if ($title === 'normative_acts') {
+                                    $file_contents .= "<strong>Нормативные акты:</strong><br>";
+                                    foreach ($child->children() as $inner_child) {
+                                        $inner_title = $inner_child->getName();
+                                        $inner_info = (string) $inner_child;
+                                        $file_contents .= "<a href='$inner_child'>$inner_child</a><br>";
+                                    }
+                                }
+                                if ($title === 'self_evaluation_report') 
+                                {
+                                    $file_contents .= "<strong>Отчеты:</strong><br>";
+                                    $info = (string) $child;
+                                    $file_contents .= "<a href='$info'>$info</a><br>";
+                                }
+                                if ($title === 'paid_services') {
+                                    $file_contents .= "<strong>Платные образовательные услуги:</strong><br>";
+                                    foreach ($child->children() as $inner_child) {
+                                        $inner_title = $inner_child->getName();
+                                        $inner_info = (string) $inner_child;
+                                        $file_contents .= "<a href='$inner_child'>$inner_child</a><br>";
+                                    }
+                                } 
+                                else {
+                                    $info = (string) $child;
+                                    $file_contents .= "<a href='$info'>$info</a><br>";
+                                }
+                            }
+                            ?>
+                            <script>
+                                jQuery(document).ready(function() {
+                                    var new_content = <?php echo json_encode($file_contents); ?>;
+                                    var editor = tinyMCE.get('<?php echo $editor_id; ?>');
+                                    editor.setContent(new_content);
+                                });
+                            </script>
+                            <?php
+                            break;
+
+
+                        case 'Образование':
+                            $editor_id = 'section-3';
+                            $section_content = $section->section_content;
+                            $file_contents = '';
+                            
+                            $education_levels = $section_content->education_levels;
+                            $file_contents .= '<p><b>Уровни образования:</b></p>';
+                            $level_info = $education_levels->level_info;
+                            $file_contents .= "<p>$level_info</p>";
+                            
+
+                            // выводим информацию об образовательных программах
+                            $educational_programs = $section_content->educational_programs;
+                            $file_contents .= '<p><b>Образовательные программы:</b></p>';
+                            $program_info = $educational_programs->program_info;
+                            $program_attachment = $educational_programs->program_attachment;
+                            $file_contents .= "<p>$program_info</p><p><b>Приложение с копией образовательной программы:</b> $program_attachment</p>";
+                            
+
+                            // выводим информацию об учебном плане
+                            $educational_plan = $section_content->educational_plan;
+                            $plan_title = $educational_plan->plan_title;
+                            $plan_info = $educational_plan->plan_info;
+                            $file_contents .= "<p><b>$plan_title:</b> $plan_info</p>";
+
+                            // выводим информацию о календарном учебном графике
+                            $educational_schedule = $section_content->educational_schedule;
+                            $schedule_title = $educational_schedule->schedule_title;
+                            $schedule_info = $educational_schedule->schedule_info;
+                            $file_contents .= "<p><b>$schedule_title:</b> $schedule_info</p>";
+
+                            // выводим информацию о документах для обеспечения образовательного процесса
+                            $educational_documents = $section_content->educational_documents;
+                            $documents_title = $educational_documents->documents_title;
+                            $documents_info = $educational_documents->documents_info;
+                            $file_contents .= "<p><b>$documents_title:</b> $documents_info</p>";
+                            ?>
+                        <script>
+                        jQuery(document).ready(function() {
+                            var new_content = <?php echo json_encode($file_contents); ?>;
+                            var editor = tinyMCE.get('<?php echo $editor_id; ?>');
+                            editor.setContent(new_content);
+                        });
+                        </script>
+                        <?php
+                            break;
+
+                        case 'Образовательные стандарты':
+                            $editor_id = 'section-4';
+                            $section_content = $section->section_content;
+                            $file_contents = '';
+                            foreach ($section_content->children() as $child) {
+                                foreach ( $child->children() as $inner_child ) {
+                                    $title = $inner_child->getName();
+                                    $info = (string) $inner_child;
+                                    $file_contents .= "$info<br>";
+                                }
+                            }
+                        ?>
+                        <script>
+                        jQuery(document).ready(function() {
+                            var new_content = <?php echo json_encode($file_contents); ?>;
+                            var editor = tinyMCE.get('<?php echo $editor_id; ?>');
+                            editor.setContent(new_content);
+                        });
+                        </script>
+                        <?php
+                            break;
+
+                        case 'Руководство. Педагогический (научно-педагогический) состав':
+                            $editor_id = 'section-5';
+                            $section_content = $section->section_content;
+                            $file_contents = '';
+                            foreach ($section_content->children() as $inner_child) {
+                                $title = $inner_child->getName();
+                                if ($title == 'management') {
+                                    $director = $inner_child->director;
+                                    $file_contents .= "<h4>Руководитель:</h4><br>";
+                                    $file_contents .= "<b>ФИО:</b> {$director->full_name}<br>";
+                                    $file_contents .= "<b>Должность:</b> {$director->position}<br>";
+                                    $file_contents .= "<b>Контактные телефоны:</b> {$director->contact_phones}<br>";
+                                    $file_contents .= "<b>Адреса электронной почты:</b> {$director->email_addresses}<br><br>";
+                                    $deputy_directors = $inner_child->deputy_directors;
+                                    $file_contents .= "<h4>Заместители руководителя:</h4><br>";
+                                    foreach ($deputy_directors->children() as $deputy_director) {
+                                        $file_contents .= "<b>ФИО:</b> {$deputy_director->full_name}<br>";
+                                        $file_contents .= "<b>Должность:</b> {$deputy_director->position}<br>";
+                                        $file_contents .= "<b>Контактные телефоны:</b> {$deputy_director->contact_phones}<br>";
+                                        $file_contents .= "<b>Адреса электронной почты:</b> {$deputy_director->email_addresses}<br><br>";
+                                    }
+                                    $branch_directors = $inner_child->branch_directors;
+                                    $file_contents .= "<h4>Руководители филиалов:</h4><br>";
+                                    foreach ($branch_directors->children() as $branch_director) {
+                                        $file_contents .= "<b>ФИО:</b> {$branch_director->full_name}<br>";
+                                        $file_contents .= "<b>Должность:</b> {$branch_director->position}<br>";
+                                        $file_contents .= "<b>Контактные телефоны:</b> {$branch_director->contact_phones}<br>";
+                                        $file_contents .= "<b>Адреса электронной почты:</b> {$branch_director->email_addresses}<br><br>";
+                                    }
+                                } else if ($title == 'pedagogical_staff') {
+                                    $pedagogical_worker = $inner_child->pedagogical_worker;
+                                    $file_contents .= "<h4>Педагогический работник:</h4><br>";
+                                    $file_contents .= "<b>ФИО:</b> {$pedagogical_worker->full_name}<br>";
+                                    $file_contents .= "<b>Занимаемые должности:</b> {$pedagogical_worker->positions}<br>";
+                                    $file_contents .= "<b>Преподаваемые учебные предметы:</b> {$pedagogical_worker->subjects}<br>";
+                                    $file_contents .= "<b>Уровни профессионального образования:</b> {$pedagogical_worker->education_levels}<br>";
+                                    $file_contents .= "<b>Ученая степень:</b> {$pedagogical_worker->academic_degree}<br>";
+                                    $file_contents .= "<b>Ученое звание:</b> {$pedagogical_worker->academic_rank}<br>";
+                                    $file_contents .= "<b>Сведения о повышении квалификации:</b> {$pedagogical_worker->qualification_improvement}<br>";
+                                    $file_contents .= "<b>Сведения о профессиональной переподготовке:</b> {$pedagogical_worker->professional_retraining}<br>";
+                                    $file_contents .= "<b>Опыт работы:</b> {$pedagogical_worker->experience}<br>";
+                                    $file_contents .= "<b>Наименование образовательной программы:</b> {$pedagogical_worker->education_program}<br>";
+
+                                }
+                            }
+                            
+                        ?>
+                            <script>
+                            jQuery(document).ready(function() {
+                                var new_content = <?php echo json_encode($file_contents); ?>;
+                                var editor = tinyMCE.get('<?php echo $editor_id; ?>');
+                                editor.setContent(new_content);
+                            });
+                            </script>
+                            <?php
+                            break;
+
+
+                        case 'Материально-техническое обеспечение и оснащенность образовательного процесса':
+                            $editor_id = 'section-6';
+                            $section_content = $section->section_content;
+                            $file_contents = '';
+                            foreach ($section_content->technical_equipment->children() as $child) {
+                                $title = $child->getName();
+                                if ($title == 'classrooms') {
+                                    $file_contents .= "<h4>Учебные кабинеты:</h4><br>";
+                                    foreach ($child->children() as $classroom) {
+                                        $file_contents .= "<b>Наименование:</b> {$classroom->name}<br>";
+                                        $file_contents .= "<b>Тип:</b> {$classroom->type}<br>";
+                                        $file_contents .= "<b>Оборудование:</b> {$classroom->equipment}<br>";
+                                        $file_contents .= "<b>Доступность для инвалидов:</b> {$classroom->accessibility}<br><br>";
+                                    }
+                                } else if ($title == 'training_objects') {
+                                    $file_contents .= "<h4>Объекты для практических занятий:</h4><br>";
+                                    foreach ($child->children() as $training_object) {
+                                        $file_contents .= "<b>Наименование:</b> {$training_object->name}<br>";
+                                        $file_contents .= "<b>Тип:</b> {$training_object->type}<br>";
+                                        $file_contents .= "<b>Оборудование:</b> {$training_object->equipment}<br>";
+                                        $file_contents .= "<b>Доступность для инвалидов:</b> {$training_object->accessibility}<br><br>";
+                                    }
+                                } else if ($title == 'library') {
+                                    $file_contents .= "<h4>Библиотека:</h4><br>";
+                                    $file_contents .= "<b>Название:</b> {$child->name}<br>";
+                                    $file_contents .= "<b>Коллекция:</b> {$child->collection}<br>";
+                                    $file_contents .= "<b>Услуги:</b> {$child->services}<br>";
+                                    $file_contents .= "<b>Доступность для инвалидов:</b> {$child->accessibility}<br><br>";
+                                } else if ($title == 'sports_facilities') {
+                                    $file_contents .= "<h4>Спортивные объекты:</h4><br>";
+                                    foreach ($child->children() as $sports_facility) {
+                                        $file_contents .= "<b>Наименование:</b> {$sports_facility->name}<br>";
+                                        $file_contents .= "<b>Тип:</b> {$sports_facility->type}<br>";
+                                        $file_contents .= "<b>Оборудование:</b> {$sports_facility->equipment}<br>";
+                                        $file_contents .= "<b>Доступность для инвалидов:</b> {$sports_facility->accessibility}<br><br>";
+                                    }
+                                } else if ($title == 'learning_resources') {
+                                    $file_contents .= "<h4>Средства обучения и воспитания:</h4><br>";
+                                    foreach ($child->children() as $resource) {
+                                        $file_contents .= "<b>Тип:</b> {$resource->type}<br>";
+                                        $file_contents .= "<b>Доступность для инвалидов:</b> {$resource->accessibility}<br><br>";
+                                    }
+                                }
+                                else if ($title == 'facilities_for_disabled') {
+                                    $file_contents .= "<h4>Объекты для инвалидов:</h4><br>";
+                                    foreach ($child->children() as $facility) {
+                                        $file_contents .= "<b>Тип:</b> {$facility->type}<br>";
+                                        $file_contents .= "<b>Список оборудования:</b> {$facility->equipment}<br><br>";
+                                    }
+                                }
+                            }
+                            ?>
+                            <script>
+                            jQuery(document).ready(function() {
+                                var new_content = <?php echo json_encode($file_contents); ?>;
+                                var editor = tinyMCE.get('<?php echo $editor_id; ?>');
+                                editor.setContent(new_content);
+                            });
+                            </script>
+                            <?php
+                            break;
+
+
+                        
+                        case 'Студенческие стипендии и материальная поддержка':
+                            $editor_id = 'section-7';
+                            $section_content = $section->section_content;
+                            $file_contents = '';
+                            foreach ($section_content->children() as $child) {
+                                $title = $child->getName();
+                                if ($title == 'scholarships') {
+                                    $scholarship_title = $child->scholarship_title;
+                                    $file_contents .= "<h4>{$scholarship_title}</h4><br>";
+                                    $scholarship_info = $child->scholarship_info;
+                                    $file_contents .= "<p>{$scholarship_info}</p><br>";
+                                } else if ($title == 'social_support') {
+                                    $support_title = $child->support_title;
+                                    $file_contents .= "<h4>{$support_title}</h4><br>";
+                                    $support_info = $child->support_info;
+                                    $file_contents .= "<p>{$support_info}</p><br>";
+                                } else if ($title == 'dormitories') {
+                                    $dormitory_title = $child->dormitory_title;
+                                    $file_contents .= "<h4>{$dormitory_title}</h4><br>";
+                                    $dormitory_info = $child->dormitory_info;
+                                    $file_contents .= "<p>{$dormitory_info}</p><br>";
+                                } else if ($title == 'employment') {
+                                    $employment_title = $child->employment_title;
+                                    $file_contents .= "<h4>{$employment_title}</h4><br>";
+                                    $employment_info = $child->employment_info;
+                                    $file_contents .= "<p>{$employment_info}</p><br>";
+                                }
+                            }
+                            ?>
+                            <script>
+                            jQuery(document).ready(function() {
+                                var new_content = <?php echo json_encode($file_contents); ?>;
+                                var editor = tinyMCE.get('<?php echo $editor_id; ?>');
+                                editor.setContent(new_content);
+                            });
+                            </script>
+                            <?php
+                            break;
+
+
+                        case 'Платные образовательные услуги':
+                            $editor_id = 'section-8';
+                            $section_content = $section->section_content;
+                            $file_contents = '';
+                            foreach ($section_content->children() as $child) {
+                                $info = (string) $child;
+                                $file_contents .= "$info<br>";
+                            }
+                            ?>
+                            <script>
+                                jQuery(document).ready(function() {
+                                    var new_content = <?php echo json_encode($file_contents); ?>;
+                                    var editor = tinyMCE.get('<?php echo $editor_id; ?>');
+                                    editor.setContent(new_content);
+                                });
+                            </script>
+                            <?php
+                            break;
+
+                        case 'Финансово-хозяйственная деятельность':
+                            $editor_id = 'section-9';
+                            $section_content = $section->section_content;
+                            $file_contents = '';
+                            foreach ($section_content->children() as $child) {
+                                foreach ( $child->children() as $inner_child ) {
+                                    $title = $inner_child->getName();
+                                    $info = (string) $inner_child;
+                                    $file_contents .= "$info<br>";
+                                }
+                            }
+                            ?>
+                            <script>
+                                jQuery(document).ready(function() {
+                                    var new_content = <?php echo json_encode($file_contents); ?>;
+                                    var editor = tinyMCE.get('<?php echo $editor_id; ?>');
+                                    editor.setContent(new_content);
+                                });
+                            </script>
+                            <?php
+                            break;
+
+                        case 'Вакантные места для приема (перевода)':
+                            $editor_id = 'section-10';
+                            $vacancies = $section->section_content->vacancies_info;
+                            $file_contents = '<p><b>Информация о вакантных местах</b></p>';
+                            foreach ($vacancies->vacancies_list->program as $program) {
+                                $program_name = (string)$program->program_name;
+                                $profession = (string)$program->profession;
+                                $specialization = (string)$program->specialization;
+                                $study_direction = (string)$program->study_direction;
+                                $budget_vacancies = (string)$program->budget_vacancies;
+                                $contract_vacancies = (string)$program->contract_vacancies;
+                                $file_contents .= "<p>$program_name<br>$profession, $specialization, $study_direction<br>Бюджетные места: $budget_vacancies, по договорам: $contract_vacancies</p>";
+                            }
+                            ?>
+                            <script>
+                                jQuery(document).ready(function() {
+                                    var new_content = <?php echo json_encode($file_contents); ?>;
+                                    var editor = tinyMCE.get('<?php echo $editor_id; ?>');
+                                    editor.setContent(new_content);
+                                });
+                            </script>
+                            <?php
+                            break;
+
+
+                        
+                    } 
+                    
                 }
+                echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Импорт успешно выполнен</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
+                
             }
-                ?>
-            <script>
-            jQuery(document).ready(function() {
-                var new_content = <?php echo json_encode($file_contents); ?>;
-                var editor = tinyMCE.get('<?php echo $editor_id; ?>');
-                editor.setContent(new_content);
-            });
-            </script>
-            <?php
+            else {
+                echo '<div id="message" class="error notice notice-error is-dismissible"><p>Файл не загружен</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
+            }
         }
 
 
@@ -240,7 +642,7 @@ class RegInfoEduOrg
 
         $reginfoeduorg_subsections = get_option('reginfoeduorg_subsections', array());
 
-        ?>
+                            ?>
         <div class="wrap">
             <h1>Подразделы сайта:</h1>
             <form method="post" action="">
