@@ -2,8 +2,8 @@
 /*
 Plugin Name: RegInfoEduOrg
 Description: Обеспечение публикации регламентированных сведений на сайтах образовательных организаций.
-Version: 1.0
-Author: Негреба Александр
+Version: 0.0.1
+Author: Negreba Aleksandr
 License: GPLv2 or later
 Text Domain: reginfoeduorg
  */
@@ -763,7 +763,7 @@ class RegInfoEduOrg
             return;
         }
         
-        echo '<h1>Настройка плагина</h1>';
+        echo '<h1>Плагин RegInfoEduOrg</h1>';
         
     }
     
