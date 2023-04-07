@@ -19,7 +19,6 @@ class RegInfoEduOrg
         add_action('init', array($this, 'my_plugin_add_sections'));
         add_action('admin_init', array( $this, 'register_settings' ) );
         add_action('admin_menu', array($this, 'add_menu_pages'));
-        //add_action('admin_init', array($this,'reginfoeduorg_add_roles_and_capabilities'));
     }
 
     function register_settings() 
@@ -68,8 +67,8 @@ class RegInfoEduOrg
 
         add_submenu_page(
             'reginfoeduorg',
-            'Настройка содержания подразделов',
-            'Настройка содержания подразделов',
+            'Содержание подразделов',
+            'Содержание подразделов',
             'manage_options',
             'reginfoeduorg-content',
             array( $this, 'reginfoeduorg_submenu' )
@@ -77,50 +76,233 @@ class RegInfoEduOrg
     }
 
     function my_plugin_roles_page() {
-        // Получаем список всех ролей
-        $roles = wp_roles()->get_names();
+        $roles = get_option('my_plugin_roles', array());
+        $sections = array(
+            'Основные сведения',
+            'Структура и органы управления образовательной организацией',
+            'Документы',
+            'Образование',
+            'Образовательные стандарты',
+            'Руководство. Педагогический (научно-педагогический) состав',
+            'Материально-техническое обеспечение и оснащенность образовательного процесса',
+            'Стипендии и иные виды материальной поддержки',
+            'Платные образовательные услуги',
+            'Финансово-хозяйственная деятельность',
+            'Вакантные места для приема (перевода)'
+        );
 
-        
+        $selected_role = '';
+
+        if (isset($_POST['submit_role'])) {
+            $selected_role = sanitize_text_field($_POST['role']);            
+        }
+
+
+
+        // Обработка отправленной формы добавления роли
+        if (isset($_POST['submit_add_role'])) {
+            $new_role = sanitize_text_field($_POST['add_role']);
+            if (!empty($new_role)) {
+                // Добавляем новую роль в опцию my_plugin_roles
+                $roles = get_option('my_plugin_roles', array());
+                $roles[$new_role] = $new_role;
+                update_option('my_plugin_roles', $roles);
+
+                // Добавляем новую роль в систему WordPress
+                add_role($new_role, $new_role);
+
+                echo '<div class="updated"><p>Роль ' . $new_role . ' успешно добавлена.</p></div>';
+            }
+        }
+
+
+        // Обработка отправленной формы настройки доступа к подразделам
+        if (isset($_POST['submit_access_settings'])) {
+            $selected_role = sanitize_text_field($_POST['role']);
+            if (!empty($selected_role)) {
+                $access_settings = array();           
+                foreach ($sections as $section) {
+                    $access_settings[$section] = array(
+        'read' => isset($_POST[sanitize_title(str_replace(['(', ')'], '', $section)) . '_read']) ? 1 : 0,
+        'edit' => isset($_POST[sanitize_title(str_replace(['(', ')'], '', $section))  . '_edit']) ? 1 : 0,
+    );
+
+                    //var_dump(str_replace(' ', '_', str_replace(['(', ')'], '', $section)) .'_read'.$_POST[str_replace(' ', '_', str_replace(['(', ')'], '', $section))  . '_read']."<br>");
+                    //var_dump(str_replace(' ', '_', str_replace(['(', ')'], '', $section)) .'_edit'.$_POST[str_replace(' ', '_', str_replace(['(', ')'], '', $section))  . '_edit']."<br>");
+                }
+                
+
+                update_option('my_plugin_access_settings_' . $selected_role, $access_settings);
+                echo '<div class="updated"><p>Настройки доступа для роли ' . $selected_role . ' успешно сохранены.</p></div>';
+            }
+        }
+
+
+
+
+
+
+        // Обработка отправленной формы удаления роли
+        if (isset($_POST['submit_delete_role'])) {
+            $role_to_delete = sanitize_text_field($_POST['delete_role']);
+            if (!empty($role_to_delete)) {
+                remove_role($role_to_delete);
+                $roles = get_option('my_plugin_roles', array());
+                unset($roles[$role_to_delete]);
+                update_option('my_plugin_roles', $roles);
+                delete_option('my_plugin_access_settings_' . $role_to_delete);
+                echo '<div class="updated"><p>Роль ' . $roles[$role_to_delete] . ' успешно удалена.</p></div>';
+            }
+        }
+
+
+        // Обработка отправленной формы переименования роли
+        if (isset($_POST['submit_rename_role'])) {
+            $role_to_rename = sanitize_text_field($_POST['rename_role']);
+            $new_name = sanitize_text_field($_POST['new_name']);
+            if (!empty($role_to_rename) && !empty($new_name)) {
+                $result = add_role($new_name, $new_name, get_role($role_to_rename)->capabilities);
+                if ($result !== null) {
+                    remove_role($role_to_rename);
+                    $roles = get_option('my_plugin_roles', array());
+                    $roles[$new_name] = $new_name;
+                    unset($roles[$role_to_rename]);
+                    update_option('my_plugin_roles', $roles);
+                    delete_option('my_plugin_access_settings_' . $role_to_rename);
+                    echo '<div class="updated"><p>Роль ' . $role_to_rename . ' успешно переименована в ' . $new_name . '.</p></div>';
+                }
+            }
+        }
+
+
+        // Получаем настройки доступа для выбранной роли
+        $access_settings = get_option('my_plugin_access_settings_' . $selected_role, array());
+
+        // JavaScript для динамического изменения checkbox
 ?>
-        <div class="wrap">
-            <h1>Настройка ролей</h1>
-            <form method="post">
-                <table class="form-table">
-                    <tr>
-                        <th><label for="add-role">Добавить роль</label></th>
-                        <td>
-                            <input type="text" name="add_role" id="add-role" />
-                            <input type="submit" name="submit_add_role" class="button-secondary" value="Добавить" />
-                        </td>
-                    </tr>
-                    <tr>
-                        <th><label for="delete-role">Удалить роль</label></th>
-                        <td>
-                            <select name="delete_role" id="delete-role">
-                                <?php foreach ( $roles as $role => $name ) : ?>
-                                    <option value="<?php echo $role; ?>"><?php echo $name; ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                            <input type="submit" name="submit_delete_role" class="button-secondary" value="Удалить" />
-                        </td>
-                    </tr>
-                    <tr>
-                        <th><label for="rename-role">Переименовать роль</label></th>
-                        <td>
-                            <select name="rename_role" id="rename-role">
-                                <?php foreach ( $roles as $role => $name ) : ?>
-                                    <option value="<?php echo $role; ?>"><?php echo $name; ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                            <input type="text" name="new_name" />
-                            <input type="submit" name="submit_rename_role" class="button-secondary" value="Переименовать" />
-                        </td>
-                    </tr>
-                </table>
-            </form>
-        </div>
-        <?php
+
+<script>
+    jQuery(document).ready(function () {
+        jQuery('#role').change(function () {  
+            var selectedRole = jQuery(this).val();
+            jQuery('#submit_role').click();            
+            var access_settings = <?php echo json_encode(get_option('my_plugin_access_settings_' . $selected_role, array())); ?>;
+            console.log(selectedRole);
+            console.log(access_settings);
+            for (var section in access_settings) {
+                if (access_settings.hasOwnProperty(section)) {
+                    var read_checkbox = jQuery('input[name="' + section + '_read"]');
+                    var edit_checkbox = jQuery('input[name="' + section + '_edit"]');
+                    read_checkbox.prop('checked', access_settings[section]['read'] === 1);
+                    edit_checkbox.prop('checked', access_settings[section]['edit'] === 1);
+                }
+            }
+        });
+    });
+</script>
+
+<script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function() {
+        const selectAllButton = document.getElementById("select-all-button");
+        const checkboxes = document.querySelectorAll("input[type='checkbox']");
+
+        selectAllButton.addEventListener("click", function() {
+            checkboxes.forEach(function(checkbox) {
+                checkbox.checked = true;
+            });
+        });
+    });
+</script>
+
+
+
+
+
+
+
+
+    <div class="wrap">
+        <h1>Настройка ролей</h1>
+        <form method="post">
+            <input type="hidden" name="selected_role" value="<?php echo $selected_role; ?>">
+            <table class="form-table">
+                <tr>
+                    <th><label for="add-role">Добавить роль</label></th>
+                    <td>
+                        <input type="text" name="add_role" id="add-role" />
+                        <input type="submit" name="submit_add_role"  id="submit_add_role" class="button-secondary" value="Добавить" />                        
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="delete-role">Удалить роль</label></th>
+                    <td>
+                        <select name="delete_role" id="delete-role">
+                            <option value="">Выберите роль</option>
+                            <?php foreach ($roles as $role => $name) : ?>
+                                <option value="<?php echo $role; ?>"><?php echo $name; ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <input type="submit" name="submit_delete_role" class="button-secondary" value="Удалить" />
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="rename-role">Переименовать роль</label></th>
+                    <td>
+                        <select name="rename_role" id="rename-role">
+                            <option value="">Выберите роль</option>
+                            <?php foreach ($roles as $role => $name) : ?>
+                                <option value="<?php echo $role; ?>"><?php echo $name; ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <input type="text" name="new_name" />
+                        <input  type="submit" name="submit_rename_role" class="button-secondary" value="Переименовать" />
+                    </td>
+                </tr>
+            </table>
+
+            <h2>Настройка доступа к подразделам</h2>
+            
+
+            <select name="role" id="role">
+               <option value="">Выберите роль</option>
+               <?php foreach ($roles as $role => $name) : ?>
+                  <option value="<?php echo $role; ?>"<?php echo ($selected_role == $role) ? 'selected' : ''; ?>><?php echo $name; ?></option>
+               <?php endforeach; ?>
+            </select>
+
+            <table class="form-table">
+                <input type="submit" name="submit_role"  id="submit_role" class="button-secondary" value="Показать" />
+                <?php foreach ($sections as $section) : ?>
+                <?php
+                          $read_name = sanitize_title(str_replace(['(', ')'], '', $section)) . '_read';
+                          $edit_name = sanitize_title(str_replace(['(', ')'], '', $section))  . '_edit';
+
+                          $read_value = isset($access_settings[$section]['read']) ? $access_settings[$section]['read'] : 0;
+                          $edit_value = isset($access_settings[$section]['edit']) ? $access_settings[$section]['edit'] : 0;
+                          //var_dump($read_name.'<br>');
+                          //var_dump($edit_name.'<br>');
+                ?>
+                <tr>
+                    <th><?php echo $section; ?></th>
+                  <td>
+                    <label>Чтение</label>   
+                    <input type="checkbox" name="<?php echo $read_name; ?>" id="<?php echo $read_name; ?>" value="1" <?php echo ($read_value == 1) ? 'checked' : ''; ?>>
+                    <label>Запись</label>
+                    <input type="checkbox" name="<?php echo $edit_name; ?>" id="<?php echo $edit_name; ?>" value="1" <?php echo ($edit_value == 1) ? 'checked' : ''; ?>>
+                    </td>
+
+                </tr>
+                <?php endforeach; ?>
+            </table>
+            <button type="button" class="button" id="select-all-button">Выбрать все</button>
+            <input type="submit" name="submit_access_settings" class="button-primary" value="Сохранить" />
+        </form>
+    </div>
+<?php
     }
+
+
+
 
     function reginfoeduorg_submenu() 
     {
@@ -146,7 +328,7 @@ class RegInfoEduOrg
                             $file_contents .= "<b>График работы:</b> {$section_content->working_hours}<br>";
                             $file_contents .= "<b>Контактные телефоны:</b> {$section_content->contact_phones}<br>";
                             $file_contents .= "<b>Адреса электронной почты:</b> {$section_content->email_addresses}<br>";
-        ?>
+?>
                                 <script>
                                 jQuery(document).ready(function() {
                                     var new_content = <?php echo json_encode($file_contents); ?>;
@@ -581,7 +763,7 @@ class RegInfoEduOrg
         $sections = get_option('reginfoeduorg_subsections');
         // Выводим верстку
         echo '<div class="wrap">';
-        echo '<h1>Настройка содержания подразделов</h1>';
+        echo '<h1>Изменение содержания подразделов:</h1>';
         echo '<form method="post" action="" enctype="multipart/form-data">';
         echo '<table class="form-table">';
         if (is_array($sections)) {
@@ -644,11 +826,11 @@ class RegInfoEduOrg
 
                             ?>
         <div class="wrap">
-            <h1>Подразделы сайта:</h1>
+            <h1>Отображение подразделов сайта:</h1>
             <form method="post" action="">
                 <table class="form-table">
                     <tr valign="top">
-                        <th scope="row">Выберите подразделы:</th>
+                        <th scope="row">Выберите подразделы, которые будут отображаться на сайте:</th>
                         <td>
                             <?php foreach ($this->child_sections as $child_section) : ?>
                                 <label>
@@ -742,17 +924,6 @@ class RegInfoEduOrg
             $section_content = isset($_POST['reginfoeduorg_subsection_content'][$section_key]) ? $_POST['reginfoeduorg_subsection_content'][$section_key] : '';
             update_post_meta($child_page_id, 'reginfoeduorg_subsection_content_'.$section_key, $section_content);
         }
-    }
-
-    function reginfoeduorg_add_roles_and_capabilities() 
-    {
-        $manager_role = add_role('reginfoeduorg_manager', 'Менеджер RegInfoEduOrg', array(
-            'read' => false,
-            'reginfoeduorg_edit_subsections' => true,
-            'reginfoeduorg_edit_settings' => false,
-        ));
-        $user = get_user_by('login', 'alex');
-        $user->add_role('reginfoeduorg_manager');
     }
 
 
