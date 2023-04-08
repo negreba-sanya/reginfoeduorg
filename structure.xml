@@ -158,6 +158,30 @@
 					<experience>Опыт работы</experience>
 					<education_program>Наименование образовательной программы</education_program>
 				</pedagogical_worker>
+				<pedagogical_worker>
+					<full_name>ФИО педагогического работника</full_name>
+					<positions>Занимаемые должности</positions>
+					<subjects>Преподаваемые учебные предметы, курсы, дисциплины (модули)</subjects>
+					<education_levels>Уровни профессионального образования</education_levels>
+					<academic_degree>Ученая степень</academic_degree>
+					<academic_rank>Ученое звание</academic_rank>
+					<qualification_improvement>Сведения о повышении квалификации</qualification_improvement>
+					<professional_retraining>Сведения о профессиональной переподготовке</professional_retraining>
+					<experience>Опыт работы</experience>
+					<education_program>Наименование образовательной программы</education_program>
+				</pedagogical_worker>
+				<pedagogical_worker>
+					<full_name>ФИО педагогического работника</full_name>
+					<positions>Занимаемые должности</positions>
+					<subjects>Преподаваемые учебные предметы, курсы, дисциплины (модули)</subjects>
+					<education_levels>Уровни профессионального образования</education_levels>
+					<academic_degree>Ученая степень</academic_degree>
+					<academic_rank>Ученое звание</academic_rank>
+					<qualification_improvement>Сведения о повышении квалификации</qualification_improvement>
+					<professional_retraining>Сведения о профессиональной переподготовке</professional_retraining>
+					<experience>Опыт работы</experience>
+					<education_program>Наименование образовательной программы</education_program>
+				</pedagogical_worker>
 			</pedagogical_staff>
 		</section_content>
 	</section>

@@ -752,40 +752,49 @@ class RegInfoEduOrg
                                         if ($title == 'management') {
                                             $director = $inner_child->director;
                                             $file_contents .= "<h4>Руководитель:</h4><br>";
+                                            $file_contents .= "<div style='border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;'>";
                                             $file_contents .= "<b>ФИО:</b> {$director->full_name}<br>";
                                             $file_contents .= "<b>Должность:</b> {$director->position}<br>";
                                             $file_contents .= "<b>Контактные телефоны:</b> {$director->contact_phones}<br>";
                                             $file_contents .= "<b>Адреса электронной почты:</b> {$director->email_addresses}<br><br>";
+                                            $file_contents .= "</div>";
                                             $deputy_directors = $inner_child->deputy_directors;
                                             $file_contents .= "<h4>Заместители руководителя:</h4><br>";
                                             foreach ($deputy_directors->children() as $deputy_director) {
+                                                $file_contents .= "<div style='border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;'>";
                                                 $file_contents .= "<b>ФИО:</b> {$deputy_director->full_name}<br>";
                                                 $file_contents .= "<b>Должность:</b> {$deputy_director->position}<br>";
                                                 $file_contents .= "<b>Контактные телефоны:</b> {$deputy_director->contact_phones}<br>";
                                                 $file_contents .= "<b>Адреса электронной почты:</b> {$deputy_director->email_addresses}<br><br>";
+                                                $file_contents .= "</div>";
                                             }
                                             $branch_directors = $inner_child->branch_directors;
                                             $file_contents .= "<h4>Руководители филиалов:</h4><br>";
                                             foreach ($branch_directors->children() as $branch_director) {
+                                                $file_contents .= "<div style='border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;'>";
                                                 $file_contents .= "<b>ФИО:</b> {$branch_director->full_name}<br>";
                                                 $file_contents .= "<b>Должность:</b> {$branch_director->position}<br>";
                                                 $file_contents .= "<b>Контактные телефоны:</b> {$branch_director->contact_phones}<br>";
                                                 $file_contents .= "<b>Адреса электронной почты:</b> {$branch_director->email_addresses}<br><br>";
+                                                $file_contents .= "</div>";
                                             }
                                         } else if ($title == 'pedagogical_staff') {
-                                            $pedagogical_worker = $inner_child->pedagogical_worker;
-                                            $file_contents .= "<h4>Педагогический работник:</h4><br>";
-                                            $file_contents .= "<b>ФИО:</b> {$pedagogical_worker->full_name}<br>";
-                                            $file_contents .= "<b>Занимаемые должности:</b> {$pedagogical_worker->positions}<br>";
-                                            $file_contents .= "<b>Преподаваемые учебные предметы:</b> {$pedagogical_worker->subjects}<br>";
-                                            $file_contents .= "<b>Уровни профессионального образования:</b> {$pedagogical_worker->education_levels}<br>";
-                                            $file_contents .= "<b>Ученая степень:</b> {$pedagogical_worker->academic_degree}<br>";
-                                            $file_contents .= "<b>Ученое звание:</b> {$pedagogical_worker->academic_rank}<br>";
-                                            $file_contents .= "<b>Сведения о повышении квалификации:</b> {$pedagogical_worker->qualification_improvement}<br>";
-                                            $file_contents .= "<b>Сведения о профессиональной переподготовке:</b> {$pedagogical_worker->professional_retraining}<br>";
-                                            $file_contents .= "<b>Опыт работы:</b> {$pedagogical_worker->experience}<br>";
-                                            $file_contents .= "<b>Наименование образовательной программы:</b> {$pedagogical_worker->education_program}<br>";
-
+                                            $pedagogical_workers = $inner_child->pedagogical_worker;
+                                            $file_contents .= "<h4>Педагогические работники:</h4><br>";
+                                            foreach ($pedagogical_workers as $pedagogical_worker) {
+                                                $file_contents .= "<div style='border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;'>";
+                                                $file_contents .= "<b>ФИО:</b> {$pedagogical_worker->full_name}<br>";
+                                                $file_contents .= "<b>Занимаемые должности:</b> {$pedagogical_worker->positions}<br>";
+                                                $file_contents .= "<b>Преподаваемые учебные предметы:</b> {$pedagogical_worker->subjects}<br>";
+                                                $file_contents .= "<b>Уровни профессионального образования:</b> {$pedagogical_worker->education_levels}<br>";
+                                                $file_contents .= "<b>Ученая степень:</b> {$pedagogical_worker->academic_degree}<br>";
+                                                $file_contents .= "<b>Ученое звание:</b> {$pedagogical_worker->academic_rank}<br>";
+                                                $file_contents .= "<b>Сведения о повышении квалификации:</b> {$pedagogical_worker->qualification_improvement}<br>";
+                                                $file_contents .= "<b>Сведения о профессиональной переподготовке:</b> {$pedagogical_worker->professional_retraining}<br>";
+                                                $file_contents .= "<b>Опыт работы:</b> {$pedagogical_worker->experience}<br>";
+                                                $file_contents .= "<b>Наименование образовательной программы:</b> {$pedagogical_worker->education_program}<br><br>";
+                                                $file_contents .= "</div>";
+                                            }
                                         }
                                     }
                                     
