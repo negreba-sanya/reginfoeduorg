@@ -111,7 +111,7 @@ class RegInfoEduOrg
                     'Платные образовательные услуги',
                     'Финансово-хозяйственная деятельность',
                     'Вакантные места для приема (перевода)',
-                    'Меню настроек плагина', 
+                    'Начальная страница плагина', 
                     'Настройка присвоения ролей пользователям', 
                     'Настройка ролей', 
                     'Настройка отображения подразделов сайта', 
@@ -119,7 +119,7 @@ class RegInfoEduOrg
                 );
 
                 $menus = array(
-                    'Меню настроек плагина', 
+                    'Начальная страница плагина', 
                     'Настройка присвоения ролей пользователям', 
                     'Настройка ролей', 
                     'Настройка отображения подразделов сайта', 
@@ -231,7 +231,7 @@ class RegInfoEduOrg
                                    <th><h3>Подразделы сайта:</h3></th>
                                    </tr><?php
                           }
-                          if($section == "Меню настроек плагина")
+                          if($section == "Начальная страница плагина")
                           {?> 
                                <tr>  
                                    <th><h3>Подпункты меню:</h3></th>
@@ -271,7 +271,7 @@ class RegInfoEduOrg
                     'Платные образовательные услуги',
                     'Финансово-хозяйственная деятельность',
                     'Вакантные места для приема (перевода)',
-                    'Меню настроек плагина', 
+                    'Начальная страница плагина', 
                     'Настройка присвоения ролей пользователям', 
                     'Настройка ролей', 
                     'Настройка отображения подразделов сайта', 
@@ -279,7 +279,7 @@ class RegInfoEduOrg
                 );
 
                 $menus = array(
-                    'Меню настроек плагина', 
+                    'Начальная страница плагина', 
                     'Настройка присвоения ролей пользователям', 
                     'Настройка ролей', 
                     'Настройка отображения подразделов сайта', 
@@ -464,7 +464,7 @@ class RegInfoEduOrg
                                    <th><h3>Подразделы сайта:</h3></th>
                                    </tr><?php
                           }
-                          if($section == "Меню настроек плагина")
+                          if($section == "Начальная страница плагина")
                           {?> 
                                <tr>  
                                    <th><h3>Подпункты меню:</h3></th>
@@ -526,16 +526,28 @@ class RegInfoEduOrg
                 echo '<table class="form-table">';
                 if (is_array($sections)) {
                     foreach ($sections as $key => $section) {                
-                        echo '<tr><th><label for="section-'.$key.'">'.esc_attr($section).':</label></th><td>';
-                        $post = get_page_by_title($section);
-                        $content = $post ? $post->post_content : '';
-                        $editor_id = 'section-' . $key;
-                        $settings = array(
-                            'textarea_name' => 'reginfoeduorg_subsections['.$key.']',
-                            'editor_height' => 200,
-                            'media_buttons' => true,
-                        );
-                        wp_editor($content, $editor_id, $settings);   
+                        if ( $access_settings[$section]['read'] == 1) { 
+                            if( $access_settings[$section]['edit'] == 1){
+                                
+                                echo '<tr><th><label for="section-'.$key.'">'.esc_attr($section).':</label></th><td>';
+                                $post = get_page_by_title($section);
+                                $content = $post ? $post->post_content : '';
+                                $editor_id = 'section-' . $key;
+                                $settings = array(
+                                    'textarea_name' => 'reginfoeduorg_subsections['.$key.']',
+                                    'editor_height' => 200,
+                                    'media_buttons' => true,
+                                );
+                                wp_editor($content, $editor_id, $settings);
+                            } 
+                            else
+                            {
+                                echo '<tr><th><label for="section-'.$key.'">'.esc_attr($section).':</label></th><td>';
+                                $post = get_page_by_title($section);
+                                $content = $post ? $post->post_content : '';
+                                echo '<p>'.$content.'<p>';
+                            }
+                        }      
                     }
                 }
                 echo '</table>';                   
@@ -1004,7 +1016,10 @@ class RegInfoEduOrg
                 echo '<form method="post" action="" enctype="multipart/form-data">';
                 echo '<table class="form-table">';
                 if (is_array($sections)) {
-                    foreach ($sections as $key => $section) {                
+                    foreach ($sections as $key => $section) {    
+                        if ( $access_settings[$section]['read'] == 1) { 
+                            if( $access_settings[$section]['edit'] == 1){
+                        
                         echo '<tr><th><label for="section-'.$key.'">'.esc_attr($section).':</label></th><td>';
                         $post = get_page_by_title($section);
                         $content = $post ? $post->post_content : '';
@@ -1014,7 +1029,16 @@ class RegInfoEduOrg
                             'editor_height' => 200,
                             'media_buttons' => true,
                         );
-                        wp_editor($content, $editor_id, $settings);                
+                        wp_editor($content, $editor_id, $settings);
+                            } 
+                            else
+                            {
+                                 echo '<tr><th><label for="section-'.$key.'">'.esc_attr($section).':</label></th><td>';
+                        $post = get_page_by_title($section);
+                        $content = $post ? $post->post_content : '';
+                        echo '<p>'.$content.'<p>';
+                            }
+                        }        
                     }
                 }
                 echo '</table>';
@@ -1249,7 +1273,7 @@ class RegInfoEduOrg
         }
     }
 
-    //Меню настроек плагина
+    //Начальная страница плагина
     function my_plugin_settings_page() 
     {
         // получаем текущего пользователя
@@ -1267,16 +1291,34 @@ class RegInfoEduOrg
             $access_settings = get_option( 'my_plugin_access_settings_' . $user_role, array() );
 
             // проверяем, разрешен ли доступ к нужному подразделу меню
-            if ( $access_settings['Меню настроек плагина']['read'] == 0 ) {
+            if ( $access_settings['Начальная страница плагина']['read'] == 0 ) {
                 wp_die( 'У вас нет доступа' );
             }
-            elseif ( $access_settings['Меню настроек плагина']['edit'] == 0 ) 
+            elseif ( $access_settings['Начальная страница плагина']['edit'] == 0 ) 
             {
                 
             }
             else{                
-                               
-                echo '<h1>Плагин RegInfoEduOrg</h1>';
+                          
+        ?>
+<div style="display: flex; align-items: center; justify-content: center; height: 100vh;">
+  <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; max-width: 800px;">
+    <h2 style="font-size: 24px; margin-bottom: 10px;">RegInfoEduOrg</h2>
+    <p style="font-size: 18px; margin-bottom: 20px;">Данный плагин предоставляет следующие возможности:</p>
+    <ol style="font-size: 18px; margin-bottom: 20px;">
+      <li>Создание и управление разделами информации об образовательной организации</li>
+      <li>Настройка доступа к разделам для различных ролей пользователей</li>
+      <li>Возможность редактирования содержимого разделов с помощью встроенного редактора</li>
+      <li>Импорт данных из XML файла, с выгруженной информацией из сторонних информационных систем, таких как 1С. <a href="<?php echo plugins_url( 'structure.xml', __FILE__ ); ?>" target="_blank" style="text-decoration: none; color: #007bff;">Посмотреть структуру XML файла</a></li>
+      <li>Внешняя обработка для экспорта данных из информационной системы 1С. <a href="https://example.com/export_1c.php" target="_blank" style="text-decoration: none; color: #007bff;">Скачать пример внешней обработки</a></li>
+    </ol>
+    <p style="font-size: 18px;">Данный плагин очень полезен для любой образовательной организации, которая хочет эффективно управлять своей информацией, а также упрощает работу сотрудникам, которые занимаются администрированием сайта.</p>
+  </div>
+</div>
+
+
+
+<?php
             }
         }
     }
