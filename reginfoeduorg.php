@@ -854,7 +854,7 @@ class RegInfoEduOrg
                         </td>
                     </tr>
                 </table>
-                <?php submit_button( 'Сохранить настройки', 'primary', 'submit', false ); ?>
+                <?php submit_button( 'Сохранить', 'primary', 'submit', false ); ?>
             </form>
         </div>
         <script type="text/javascript">
@@ -953,8 +953,6 @@ class RegInfoEduOrg
         // получаем список пользователей
         $users = get_users();
 
-        // получаем опцию с разрешениями доступа
-        $user_access = get_option( 'my_plugin_user_access', array() );
         $users_roles = get_option('my_plugin_users_roles', array());
 
 
@@ -966,12 +964,21 @@ class RegInfoEduOrg
             // Получаем список пользователей и их ролей из опции my_plugin_users_roles
             $users_roles = get_option( 'my_plugin_users_roles', array() );
 
-            // Присваиваем новую роль пользователю
-            $users_roles[ $user_id ] = $new_role;
+            // Получаем пользователя по его ID
+            $user = get_user_by( 'id', $user_id );
 
-            // Сохраняем изменения в опцию my_plugin_users_roles
-            update_option( 'my_plugin_users_roles', $users_roles );
+            // Если пользователь найден
+            if ( $user ) {
+                $username = $user->user_login;
+
+                // Присваиваем новую роль пользователю
+                $users_roles[ $username ] = $new_role;
+
+                // Сохраняем изменения в опцию my_plugin_users_roles
+                update_option( 'my_plugin_users_roles', $users_roles );
+            }
         }
+
 
 
         // выводим таблицу с пользователями
@@ -987,8 +994,8 @@ class RegInfoEduOrg
                 $user_id = $user->ID;
                 $username = $user->user_login;
                 $email = $user->user_email;
-                $user_role = isset($users_roles[$user_id]) ? $users_roles[$user_id] : '';$role = implode( ', ', $user->roles );
-                $access = isset( $user_access[ $user_id ] ) ? $user_access[ $user_id ] : array();
+                $user_role = isset($users_roles[$username]) ? $users_roles[$username] : '';$role = implode( ', ', $user->roles );
+                $access = isset( $user_access[ $username ] ) ? $user_access[ $username ] : array();
 
                 echo '<tr>';
                 echo '<td>' . $user_id . '</td>';
@@ -1001,6 +1008,7 @@ class RegInfoEduOrg
                 echo '<td>';
                 echo '<form method="post">';
                 echo '<input type="hidden" name="my_plugin_user_id" value="' . $user_id . '">';
+                echo '<input type="hidden" name="my_plugin_user_username" value="' . $username . '">';
                 echo '<select name="my_plugin_user_role">';
 
                 // получаем список ролей из опции my_plugin_roles
