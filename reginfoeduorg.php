@@ -37,10 +37,11 @@ class RegInfoEduOrg
             'reginfoeduorg', 
             array( $this, 'my_plugin_settings_page' )
         );
+        
 
         add_submenu_page( 
             'reginfoeduorg',
-            'Настройка прав доступа пользователей', 
+            'Настройка присвоения ролей пользователям', 
             'Пользователи',
             'manage_options', 
             'my_plugin_users', 
@@ -58,7 +59,7 @@ class RegInfoEduOrg
         
         add_submenu_page(
             'reginfoeduorg',
-            'Подразделы сайта',
+            'Настройка отображения подразделов сайта',
             'Подразделы сайта',
             'manage_options',
             'reginfoeduorg-submenu',
@@ -67,8 +68,8 @@ class RegInfoEduOrg
 
         add_submenu_page(
             'reginfoeduorg',
-            'Содержание подразделов',
-            'Содержание подразделов',
+            'Настройка содержания подразделов сайта',
+            'Содержание подразделов сайта',
             'manage_options',
             'reginfoeduorg-content',
             array( $this, 'reginfoeduorg_submenu' )
@@ -88,7 +89,20 @@ class RegInfoEduOrg
             'Стипендии и иные виды материальной поддержки',
             'Платные образовательные услуги',
             'Финансово-хозяйственная деятельность',
-            'Вакантные места для приема (перевода)'
+            'Вакантные места для приема (перевода)',
+            'Меню настроек плагина', 
+            'Настройка присвоения ролей пользователям', 
+            'Настройка ролей', 
+            'Настройка отображения подразделов сайта', 
+            'Настройка содержания подразделов сайта'
+        );
+
+        $menus = array(
+            'Меню настроек плагина', 
+            'Настройка присвоения ролей пользователям', 
+            'Настройка ролей', 
+            'Настройка отображения подразделов сайта', 
+            'Настройка содержания подразделов сайта'
         );
 
         $selected_role = '';
@@ -96,9 +110,6 @@ class RegInfoEduOrg
         if (isset($_POST['submit_role'])) {
             $selected_role = sanitize_text_field($_POST['role']);            
         }
-
-
-
         // Обработка отправленной формы добавления роли
         if (isset($_POST['submit_add_role'])) {
             $new_role = sanitize_text_field($_POST['add_role']);
@@ -115,7 +126,6 @@ class RegInfoEduOrg
             }
         }
 
-
         // Обработка отправленной формы настройки доступа к подразделам
         if (isset($_POST['submit_access_settings'])) {
             $selected_role = sanitize_text_field($_POST['role']);
@@ -123,12 +133,9 @@ class RegInfoEduOrg
                 $access_settings = array();           
                 foreach ($sections as $section) {
                     $access_settings[$section] = array(
-        'read' => isset($_POST[sanitize_title(str_replace(['(', ')'], '', $section)) . '_read']) ? 1 : 0,
-        'edit' => isset($_POST[sanitize_title(str_replace(['(', ')'], '', $section))  . '_edit']) ? 1 : 0,
-    );
-
-                    //var_dump(str_replace(' ', '_', str_replace(['(', ')'], '', $section)) .'_read'.$_POST[str_replace(' ', '_', str_replace(['(', ')'], '', $section))  . '_read']."<br>");
-                    //var_dump(str_replace(' ', '_', str_replace(['(', ')'], '', $section)) .'_edit'.$_POST[str_replace(' ', '_', str_replace(['(', ')'], '', $section))  . '_edit']."<br>");
+                        'read' => isset($_POST[sanitize_title(str_replace(['(', ')'], '', $section)) . '_read']) ? 1 : 0,
+                        'edit' => isset($_POST[sanitize_title(str_replace(['(', ')'], '', $section))  . '_edit']) ? 1 : 0,
+                    );
                 }
                 
 
@@ -136,11 +143,6 @@ class RegInfoEduOrg
                 echo '<div class="updated"><p>Настройки доступа для роли ' . $selected_role . ' успешно сохранены.</p></div>';
             }
         }
-
-
-
-
-
 
         // Обработка отправленной формы удаления роли
         if (isset($_POST['submit_delete_role'])) {
@@ -154,7 +156,6 @@ class RegInfoEduOrg
                 echo '<div class="updated"><p>Роль ' . $roles[$role_to_delete] . ' успешно удалена.</p></div>';
             }
         }
-
 
         // Обработка отправленной формы переименования роли
         if (isset($_POST['submit_rename_role'])) {
@@ -214,15 +215,8 @@ class RegInfoEduOrg
     });
 </script>
 
-
-
-
-
-
-
-
     <div class="wrap">
-        <h1>Настройка ролей</h1>
+        <h1>Роли для пользователей:</h1>
         <form method="post">
             <input type="hidden" name="selected_role" value="<?php echo $selected_role; ?>">
             <table class="form-table">
@@ -260,7 +254,7 @@ class RegInfoEduOrg
                 </tr>
             </table>
 
-            <h2>Настройка доступа к подразделам</h2>
+            <h2>Настройка доступа роли: </h2>
             
 
             <select name="role" id="role">
@@ -274,6 +268,7 @@ class RegInfoEduOrg
                 <input type="submit" name="submit_role"  id="submit_role" class="button-secondary" value="Показать" />
                 <?php foreach ($sections as $section) : ?>
                 <?php
+                          
                           $read_name = sanitize_title(str_replace(['(', ')'], '', $section)) . '_read';
                           $edit_name = sanitize_title(str_replace(['(', ')'], '', $section))  . '_edit';
 
@@ -281,19 +276,34 @@ class RegInfoEduOrg
                           $edit_value = isset($access_settings[$section]['edit']) ? $access_settings[$section]['edit'] : 0;
                           //var_dump($read_name.'<br>');
                           //var_dump($edit_name.'<br>');
-                ?>
-                <tr>
+               
+                          if($section == "Основные сведения")
+                          {?> 
+                               <tr>  
+                                   <th><h3>Подразделы сайта:</h3></th>
+                                   </tr><?php
+                          }
+                          if($section == "Меню настроек плагина")
+                          {?> 
+                               <tr>  
+                                   <th><h3>Подпункты меню:</h3></th>
+                                   </tr><?php
+                          }
+                          ?> 
+                <tr>                     
                     <th><?php echo $section; ?></th>
                   <td>
                     <label>Чтение</label>   
                     <input type="checkbox" name="<?php echo $read_name; ?>" id="<?php echo $read_name; ?>" value="1" <?php echo ($read_value == 1) ? 'checked' : ''; ?>>
-                    <label>Запись</label>
+                    <label>Изменение</label>
                     <input type="checkbox" name="<?php echo $edit_name; ?>" id="<?php echo $edit_name; ?>" value="1" <?php echo ($edit_value == 1) ? 'checked' : ''; ?>>
-                    </td>
-
+                  </td>
+                   
                 </tr>
                 <?php endforeach; ?>
             </table>
+                      
+
             <button type="button" class="button" id="select-all-button">Выбрать все</button>
             <input type="submit" name="submit_access_settings" class="button-primary" value="Сохранить" />
         </form>
@@ -939,47 +949,89 @@ class RegInfoEduOrg
     }
     
 
-    function my_plugin_users_page() 
-    {
+    function my_plugin_users_page() {
+        // получаем список пользователей
+        $users = get_users();
+
+        // получаем опцию с разрешениями доступа
+        $user_access = get_option( 'my_plugin_user_access', array() );
+        $users_roles = get_option('my_plugin_users_roles', array());
+
+
+
+        if ( isset( $_POST['my_plugin_change_user_role'] ) ) {
+            $user_id = intval( $_POST['my_plugin_user_id'] );
+            $new_role = sanitize_text_field( $_POST['my_plugin_user_role'] );
+
+            // Получаем список пользователей и их ролей из опции my_plugin_users_roles
+            $users_roles = get_option( 'my_plugin_users_roles', array() );
+
+            // Присваиваем новую роль пользователю
+            $users_roles[ $user_id ] = $new_role;
+
+            // Сохраняем изменения в опцию my_plugin_users_roles
+            update_option( 'my_plugin_users_roles', $users_roles );
+        }
+
+
+        // выводим таблицу с пользователями
         echo '<div class="wrap">';
         echo '<h1>Настройка прав доступа пользователей</h1>';
-        $users = get_users();
+
         if ( ! empty( $users ) ) {
             echo '<table class="wp-list-table widefat striped">';
             echo '<thead><tr><th>ID</th><th>Логин</th><th>Email</th><th>Роль</th><th>Действия</th></tr></thead>';
             echo '<tbody>';
+
             foreach ( $users as $user ) {
                 $user_id = $user->ID;
                 $username = $user->user_login;
                 $email = $user->user_email;
-                $role = implode( ', ', $user->roles );
+                $user_role = isset($users_roles[$user_id]) ? $users_roles[$user_id] : '';$role = implode( ', ', $user->roles );
+                $access = isset( $user_access[ $user_id ] ) ? $user_access[ $user_id ] : array();
+
                 echo '<tr>';
                 echo '<td>' . $user_id . '</td>';
                 echo '<td>' . $username . '</td>';
                 echo '<td>' . $email . '</td>';
-                echo '<td>' . $role . '</td>';
+                echo '<td>' . $user_role . '</td>';
+
+                
+                echo '</td>';
                 echo '<td>';
-                echo '<form method="post" action="">';
+                echo '<form method="post">';
                 echo '<input type="hidden" name="my_plugin_user_id" value="' . $user_id . '">';
                 echo '<select name="my_plugin_user_role">';
-                foreach ( wp_roles()->get_names() as $role_name ) {
-                    $selected = selected( $role_name, $role, false );
-                    echo '<option value="' . $role_name . '" ' . $selected . '>' . $role_name . '</option>';
+
+                // получаем список ролей из опции my_plugin_roles
+                $roles = get_option( 'my_plugin_roles', array() );
+                foreach ( $roles as $role ) {
+                    $selected = selected( $role, $user->roles[0], false );
+                    echo '<option value="' . $role . '" ' . $selected . '>' . $role . '</option>';
                 }
+
                 echo '</select>';
                 echo '<input type="submit" name="my_plugin_change_user_role" class="button" value="Сохранить">';
                 echo '</form>';
                 echo '</td>';
                 echo '</tr>';
             }
+
             echo '</tbody>';
             echo '</table>';
-        } 
-        else 
-        {
+        } else {
             echo '<p>Нет зарегистрированных пользователей.</p>';
         }
+
+        echo '</div>';
     }
+
+
+
+
+
+
+
 }
 
 if(class_exists('RegInfoEduOrg'))
