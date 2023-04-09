@@ -4,10 +4,17 @@
 		<section_title>Основные сведения</section_title>
 		<section_content>
 			<general_information>
+				<full_name>Полное название образовательной организации</full_name>
+				<short_name>Краткое название образовательной организации</short_name>
 				<creation_date>Дата создания образовательной организации</creation_date>
 				<founder>Учредитель</founder>
-				<founders>Учредители образовательной организации</founders>
 				<location>Место нахождения образовательной организации</location>
+				<addresses_educational_activities>
+					<address_educational_activities>Адрес осуществления образовательной деятельности</address_educational_activities>
+				</addresses_educational_activities>
+				<addresses_structural_subdivisions>
+					<address_structural_subdivisions>Адрес расположения структурных подразделений</address_structural_subdivisions>
+				</addresses_structural_subdivisions>
 				<branches>Филиалы образовательной организации</branches>
 				<working_hours>График работы</working_hours>
 				<contact_phones>Контактные телефоны</contact_phones>

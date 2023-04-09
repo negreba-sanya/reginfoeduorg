@@ -568,13 +568,24 @@ class RegInfoEduOrg
                                 case 'Основные сведения':
                                     $editor_id = 'section-0';
                                     $section_content = $section->section_content->general_information;
+                                    $adress_one = $section_content->addresses_educational_activities;
+                                    $adress_two = $section_content->addresses_structural_subdivisions;
                                     $file_contents = '<h4>Основные сведения:</h4><br>';
+                                    $file_contents .= "<b>Полное название образовательной организации:</b> {$section_content->full_name}<br>";
+                                    $file_contents .= "<b>Краткое название образовательной организации:</b> {$section_content->short_name}<br>";
                                     $file_contents .= "<b>Дата создания образовательной организации:</b> {$section_content->creation_date}<br>";
                                     $file_contents .= "<b>Учредитель:</b> {$section_content->founder}<br>";
-                                    $file_contents .= "<b>Учредители образовательной организации:</b> {$section_content->founders}<br>";
-                                    $file_contents .= "<b>Место нахождения образовательной организации:</b> {$section_content->location}<br>";
+                                    $file_contents .= "<b>Адреса осуществления образовательной деятельности:</b><br><ul>";                                    
+                                    foreach ($adress_one->children() as $child) {
+                                        $file_contents .= "<li>{$child}</li>";
+                                    }
+                                    $file_contents .= "</ul><b>Адреса расположения структурных подразделений:</b><br><ul>";                                     
+                                    foreach ($adress_two->children() as $child) {
+                                        $file_contents .= "<li>{$child}</li>";
+                                    }
+                                    $file_contents .= "</ul><br><b>Место нахождения образовательной организации:</b> {$section_content->location}<br>";
                                     $file_contents .= "<b>Филиалы образовательной организации:</b> {$section_content->branches}<br>";
-                                    $file_contents .= "<b>График работы:</b> {$section_content->working_hours}<br>";
+                                    $file_contents .= "<b>График работы:</b> {$section_content->working_hours}<br>";                                    
                                     $file_contents .= "<b>Контактные телефоны:</b> {$section_content->contact_phones}<br>";
                                     $file_contents .= "<b>Адреса электронной почты:</b> {$section_content->email_addresses}<br>";
 ?>
