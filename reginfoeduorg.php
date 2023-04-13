@@ -76,6 +76,9 @@ class RegInfoEduOrg
         );
     }
 
+
+
+
     //Настройка ролей
     function my_plugin_roles_page() {
         // получаем текущего пользователя
@@ -762,48 +765,340 @@ class RegInfoEduOrg
                                         $title = $inner_child->getName();
                                         if ($title == 'management') {
                                             $director = $inner_child->director;
-                                            $file_contents .= "<h4>Руководитель:</h4><br>";
-                                            $file_contents .= "<div style='border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;'>";
-                                            $file_contents .= "<b>ФИО:</b> {$director->full_name}<br>";
-                                            $file_contents .= "<b>Должность:</b> {$director->position}<br>";
-                                            $file_contents .= "<b>Контактные телефоны:</b> {$director->contact_phones}<br>";
-                                            $file_contents .= "<b>Адреса электронной почты:</b> {$director->email_addresses}<br><br>";
+                                            $contents = "<b>Должность:</b> {$director->position}<br>";
+                                            $contents .= "<b>Контактный телефон:</b> {$director->phone}<br>";
+                                            $contents .= "<b>Адрес электронной почты:</b> {$director->email}<br>";
+                                            $contents .= "<b>Дисциплины:</b> {$director->disciplines}<br>";
+                                            $contents .= "<b>Образование:</b> {$director->education}<br>";
+                                            $contents .= "<b>Специализация:</b> {$director->specialization}<br>";
+                                            $contents .= "<b>Повышение квалификации:</b> {$director->qualification_improvement}<br>";
+                                            $contents .= "<b>Карьера:</b> {$director->career}<br>";
+                                            $contents .= "<b>Общий стаж:</b> {$director->overall_experience}<br>";
+                                            $contents .= "<b>Стаж по специализации:</b> {$director->specialization_experience}<br><br>";
+                                            $contents .= "</div>";
+
+                                            
+                                            $full_name = (string) $director->full_name;
+                                            $position = (string) $director->position;
+                                            $phone = (string) $director->phone;
+                                            $email = (string) $director->email;
+                                            $disciplines = (string) $director->disciplines;
+                                            $education = (string) $director->education;
+                                            $specialization = (string) $director->specialization;
+                                            $qualification_improvement = (string) $director->qualification_improvement;
+                                            $career = (string) $director->career;
+                                            $overall_experience = (string) $director->overall_experience;
+                                            $specialization_experience = (string) $director->specialization_experience;
+
+
+                                            $post_args = array(
+                                                    'post_title' => $full_name,
+                                                    'post_content' => $contents,
+                                                    'post_status' => 'private',
+                                                    'exclude_from_search' => true,
+                                                    'menu_order' => null,
+                                                    'post_parent' => -1,
+                                                    'post_type' => 'page'
+                                                );
+                                            $parent_page = get_page_by_title($full_name);
+                                            if (empty($parent_page)) {
+                                                // создание новой страницы
+                                                $post_id = wp_insert_post($post_args);
+
+                                                // добавление метаполей
+                                                update_post_meta($post_id, 'position', $position);
+                                                update_post_meta($post_id, 'phone', $phone);
+                                                update_post_meta($post_id, 'email', $email);
+                                                update_post_meta($post_id, 'disciplines', $disciplines);
+                                                update_post_meta($post_id, 'education', $education);
+                                                update_post_meta($post_id, 'specialization', $specialization);
+                                                update_post_meta($post_id, 'qualification_improvement', $qualification_improvement);
+                                                update_post_meta($post_id, 'career', $career);
+                                                update_post_meta($post_id, 'overall_experience', $overall_experience);
+                                                update_post_meta($post_id, 'specialization_experience', $specialization_experience);
+                                            } else {
+                                                // обновление существующей страницы
+                                                $post_id = $parent_page->ID;
+
+                                                // обновление содержимого страницы
+                                                $post_args['ID'] = $post_id;
+                                                $post_args['post_content'] = $contents;
+                                                wp_update_post($post_args);
+
+                                                // обновление метаполей
+                                                update_post_meta($post_id, 'position', $position);
+                                                update_post_meta($post_id, 'phone', $phone);
+                                                update_post_meta($post_id, 'email', $email);
+                                                update_post_meta($post_id, 'disciplines', $disciplines);
+                                                update_post_meta($post_id, 'education', $education);
+                                                update_post_meta($post_id, 'specialization', $specialization);
+                                                update_post_meta($post_id, 'qualification_improvement', $qualification_improvement);
+                                                update_post_meta($post_id, 'career', $career);
+                                                update_post_meta($post_id, 'overall_experience', $overall_experience);
+                                                update_post_meta($post_id, 'specialization_experience', $specialization_experience);
+                                            }
+
+                                            // создание ссылки на созданную страницу
+                                            $permalink = get_permalink($post_id);
+
+
+                                            $file_contents .= "<h4>Руководитель:</h4>";
+                                            $file_contents .= "<div style='width: 145px;text-align: center;display: inline-flex;'>";
+                                            $file_contents .= "<a href = '{$permalink}'>{$director->full_name}</a><br>";
                                             $file_contents .= "</div>";
+
+
                                             $deputy_directors = $inner_child->deputy_directors;
-                                            $file_contents .= "<h4>Заместители руководителя:</h4><br>";
+                                            $file_contents .= "<h4>Заместители руководителя:</h4>";
                                             foreach ($deputy_directors->children() as $deputy_director) {
-                                                $file_contents .= "<div style='border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;'>";
-                                                $file_contents .= "<b>ФИО:</b> {$deputy_director->full_name}<br>";
-                                                $file_contents .= "<b>Должность:</b> {$deputy_director->position}<br>";
-                                                $file_contents .= "<b>Контактные телефоны:</b> {$deputy_director->contact_phones}<br>";
-                                                $file_contents .= "<b>Адреса электронной почты:</b> {$deputy_director->email_addresses}<br><br>";
+
+                                                $contents = "<b>Должность:</b> {$deputy_director->position}<br>";
+                                                $contents .= "<b>Контактный телефон:</b> {$deputy_director->phone}<br>";
+                                                $contents .= "<b>Адрес электронной почты:</b> {$deputy_director->email}<br>";
+                                                $contents .= "<b>Дисциплины:</b> {$deputy_director->disciplines}<br>";
+                                                $contents .= "<b>Образование:</b> {$deputy_director->education}<br>";
+                                                $contents .= "<b>Специализация:</b> {$deputy_director->specialization}<br>";
+                                                $contents .= "<b>Повышение квалификации:</b> {$deputy_director->qualification_improvement}<br>";
+                                                $contents .= "<b>Карьера:</b> {$deputy_director->career}<br>";
+                                                $contents .= "<b>Общий стаж:</b> {$deputy_director->overall_experience}<br>";
+                                                $contents .= "<b>Стаж по специализации:</b> {$deputy_director->specialization_experience}<br><br>";
+                                                $contents .= "</div>";
+
+                                                $full_name = (string) $deputy_director->full_name;
+                                                $position = (string) $deputy_director->position;
+                                                $phone = (string) $deputy_director->phone;
+                                                $email = (string) $deputy_director->email;
+                                                $disciplines = (string) $deputy_director->disciplines;
+                                                $education = (string) $deputy_director->education;
+                                                $specialization = (string) $deputy_director->specialization;
+                                                $qualification_improvement = (string) $deputy_director->qualification_improvement;
+                                                $career = (string) $deputy_director->career;
+                                                $overall_experience = (string) $deputy_director->overall_experience;
+                                                $specialization_experience = (string) $deputy_director->specialization_experience;
+
+                                                $post_args = array(
+                                                        'post_title' => $full_name,
+                                                        'post_content' => $contents,
+                                                        'post_status' => 'private',
+                                                        'exclude_from_search' => true,
+                                                        'menu_order' => null,
+                                                        'post_parent' => -1,
+                                                        'post_type' => 'page'
+                                                    );
+                                                $parent_page = get_page_by_title($full_name);
+                                                if (empty($parent_page)) {
+                                                    // создание новой страницы
+                                                    $post_id = wp_insert_post($post_args);
+
+                                                    // добавление метаполей
+                                                    update_post_meta($post_id, 'position', $position);
+                                                    update_post_meta($post_id, 'phone', $phone);
+                                                    update_post_meta($post_id, 'email', $email);
+                                                    update_post_meta($post_id, 'disciplines', $disciplines);
+                                                    update_post_meta($post_id, 'education', $education);
+                                                    update_post_meta($post_id, 'specialization', $specialization);
+                                                    update_post_meta($post_id, 'qualification_improvement', $qualification_improvement);
+                                                    update_post_meta($post_id, 'career', $career);
+                                                    update_post_meta($post_id, 'overall_experience', $overall_experience);
+                                                    update_post_meta($post_id, 'specialization_experience', $specialization_experience);
+                                                } else {
+                                                    // обновление существующей страницы
+                                                    $post_id = $parent_page->ID;
+
+                                                    // обновление содержимого страницы
+                                                    $post_args['ID'] = $post_id;
+                                                    $post_args['post_content'] = $contents;
+                                                    wp_update_post($post_args);
+
+                                                    // обновление метаполей
+                                                    update_post_meta($post_id, 'position', $position);
+                                                    update_post_meta($post_id, 'phone', $phone);
+                                                    update_post_meta($post_id, 'email', $email);
+                                                    update_post_meta($post_id, 'disciplines', $disciplines);
+                                                    update_post_meta($post_id, 'education', $education);
+                                                    update_post_meta($post_id, 'specialization', $specialization);
+                                                    update_post_meta($post_id, 'qualification_improvement', $qualification_improvement);
+                                                    update_post_meta($post_id, 'career', $career);
+                                                    update_post_meta($post_id, 'overall_experience', $overall_experience);
+                                                    update_post_meta($post_id, 'specialization_experience', $specialization_experience);
+                                                }
+
+                                                // создание ссылки на созданную страницу
+                                                $permalink = get_permalink($post_id);
+
+
+                                                
+                                                $file_contents .= "<div style='width: 145px;text-align: center;display: inline-flex;'>";
+                                                $file_contents .= "<a href = '{$permalink}'> {$deputy_director->full_name}<br>";
                                                 $file_contents .= "</div>";
                                             }
                                             $branch_directors = $inner_child->branch_directors;
-                                            $file_contents .= "<h4>Руководители филиалов:</h4><br>";
+                                            $file_contents .= "<h4>Руководители филиалов:</h4>";
                                             foreach ($branch_directors->children() as $branch_director) {
-                                                $file_contents .= "<div style='border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;'>";
-                                                $file_contents .= "<b>ФИО:</b> {$branch_director->full_name}<br>";
-                                                $file_contents .= "<b>Должность:</b> {$branch_director->position}<br>";
-                                                $file_contents .= "<b>Контактные телефоны:</b> {$branch_director->contact_phones}<br>";
-                                                $file_contents .= "<b>Адреса электронной почты:</b> {$branch_director->email_addresses}<br><br>";
+                                                $contents = "<b>Должность:</b> {$branch_director->position}<br>";
+                                                $contents .= "<b>Контактный телефон:</b> {$branch_director->phone}<br>";
+                                                $contents .= "<b>Адрес электронной почты:</b> {$branch_director->email}<br>";
+                                                $contents .= "<b>Дисциплины:</b> {$branch_director->disciplines}<br>";
+                                                $contents .= "<b>Образование:</b> {$branch_director->education}<br>";
+                                                $contents .= "<b>Специализация:</b> {$branch_director->specialization}<br>";
+                                                $contents .= "<b>Повышение квалификации:</b> {$branch_director->qualification_improvement}<br>";
+                                                $contents .= "<b>Карьера:</b> {$branch_director->career}<br>";
+                                                $contents .= "<b>Общий стаж:</b> {$branch_director->overall_experience}<br>";
+                                                $contents .= "<b>Стаж по специализации:</b> {$branch_director->specialization_experience}<br><br>";
+                                                $contents .= "</div>";
+
+                                                $full_name = (string) $branch_director->full_name;
+                                                $position = (string) $branch_director->position;
+                                                $phone = (string) $branch_director->phone;
+                                                $email = (string) $branch_director->email;
+                                                $disciplines = (string) $branch_director->disciplines;
+                                                $education = (string) $branch_director->education;
+                                                $specialization = (string) $branch_director->specialization;
+                                                $qualification_improvement = (string) $branch_director->qualification_improvement;
+                                                $career = (string) $branch_director->career;
+                                                $overall_experience = (string) $branch_director->overall_experience;
+                                                $specialization_experience = (string) $branch_director->specialization_experience;
+
+                                                $post_args = array(
+                                                        'post_title' => $full_name,
+                                                        'post_content' => $contents,
+                                                        'post_status' => 'private',
+                                                        'exclude_from_search' => true,
+                                                        'menu_order' => null,
+                                                        'post_parent' => -1,
+                                                        'post_type' => 'page'
+                                                    );
+                                                $parent_page = get_page_by_title($full_name);
+                                                if (empty($parent_page)) {
+                                                    // создание новой страницы
+                                                    $post_id = wp_insert_post($post_args);
+
+                                                    // добавление метаполей
+                                                    update_post_meta($post_id, 'position', $position);
+                                                    update_post_meta($post_id, 'phone', $phone);
+                                                    update_post_meta($post_id, 'email', $email);
+                                                    update_post_meta($post_id, 'disciplines', $disciplines);
+                                                    update_post_meta($post_id, 'education', $education);
+                                                    update_post_meta($post_id, 'specialization', $specialization);
+                                                    update_post_meta($post_id, 'qualification_improvement', $qualification_improvement);
+                                                    update_post_meta($post_id, 'career', $career);
+                                                    update_post_meta($post_id, 'overall_experience', $overall_experience);
+                                                    update_post_meta($post_id, 'specialization_experience', $specialization_experience);
+                                                } else {
+                                                    // обновление существующей страницы
+                                                    $post_id = $parent_page->ID;
+
+                                                    // обновление содержимого страницы
+                                                    $post_args['ID'] = $post_id;
+                                                    $post_args['post_content'] = $contents;
+                                                    wp_update_post($post_args);
+
+                                                    // обновление метаполей
+                                                    update_post_meta($post_id, 'position', $position);
+                                                    update_post_meta($post_id, 'phone', $phone);
+                                                    update_post_meta($post_id, 'email', $email);
+                                                    update_post_meta($post_id, 'disciplines', $disciplines);
+                                                    update_post_meta($post_id, 'education', $education);
+                                                    update_post_meta($post_id, 'specialization', $specialization);
+                                                    update_post_meta($post_id, 'qualification_improvement', $qualification_improvement);
+                                                    update_post_meta($post_id, 'career', $career);
+                                                    update_post_meta($post_id, 'overall_experience', $overall_experience);
+                                                    update_post_meta($post_id, 'specialization_experience', $specialization_experience);
+                                                }
+
+                                                // создание ссылки на созданную страницу
+                                                $permalink = get_permalink($post_id);
+
+
+                                                $file_contents .= "<div style='width: 145px;text-align: center;display: inline-flex;'>";
+                                                $file_contents .= "<a href = '{$permalink}'> {$branch_director->full_name}</a><br>";
                                                 $file_contents .= "</div>";
                                             }
                                         } else if ($title == 'pedagogical_staff') {
                                             $pedagogical_workers = $inner_child->pedagogical_worker;
-                                            $file_contents .= "<h4>Педагогические работники:</h4><br>";
+                                            $file_contents .= "<h4>Педагогические работники:</h4>";
                                             foreach ($pedagogical_workers as $pedagogical_worker) {
-                                                $file_contents .= "<div style='border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;'>";
-                                                $file_contents .= "<b>ФИО:</b> {$pedagogical_worker->full_name}<br>";
-                                                $file_contents .= "<b>Занимаемые должности:</b> {$pedagogical_worker->positions}<br>";
-                                                $file_contents .= "<b>Преподаваемые учебные предметы:</b> {$pedagogical_worker->subjects}<br>";
-                                                $file_contents .= "<b>Уровни профессионального образования:</b> {$pedagogical_worker->education_levels}<br>";
-                                                $file_contents .= "<b>Ученая степень:</b> {$pedagogical_worker->academic_degree}<br>";
-                                                $file_contents .= "<b>Ученое звание:</b> {$pedagogical_worker->academic_rank}<br>";
-                                                $file_contents .= "<b>Сведения о повышении квалификации:</b> {$pedagogical_worker->qualification_improvement}<br>";
-                                                $file_contents .= "<b>Сведения о профессиональной переподготовке:</b> {$pedagogical_worker->professional_retraining}<br>";
-                                                $file_contents .= "<b>Опыт работы:</b> {$pedagogical_worker->experience}<br>";
-                                                $file_contents .= "<b>Наименование образовательной программы:</b> {$pedagogical_worker->education_program}<br><br>";
+                                                
+                                                
+                                                $contents = "<b>Должность:</b> {$pedagogical_worker->position}<br>";
+                                                $contents .= "<b>Контактный телефон:</b> {$pedagogical_worker->phone}<br>";
+                                                $contents .= "<b>Адрес электронной почты:</b> {$pedagogical_worker->email}<br>";
+                                                $contents .= "<b>Дисциплины:</b> {$pedagogical_worker->disciplines}<br>";
+                                                $contents .= "<b>Образование:</b> {$pedagogical_worker->education}<br>";
+                                                $contents .= "<b>Специализация:</b> {$pedagogical_worker->specialization}<br>";
+                                                $contents .= "<b>Повышение квалификации:</b> {$pedagogical_worker->qualification_improvement}<br>";
+                                                $contents .= "<b>Карьера:</b> {$pedagogical_worker->career}<br>";
+                                                $contents .= "<b>Общий стаж:</b> {$pedagogical_worker->overall_experience}<br>";
+                                                $contents .= "<b>Стаж по специализации:</b> {$pedagogical_worker->specialization_experience}<br><br>";
+                                                $contents .= "</div>";
+
+                                                $full_name = (string) $pedagogical_worker->full_name;
+                                                $position = (string) $pedagogical_worker->position;
+                                                $phone = (string) $pedagogical_worker->phone;
+                                                $email = (string) $pedagogical_worker->email;
+                                                $disciplines = (string) $pedagogical_worker->disciplines;
+                                                $education = (string) $pedagogical_worker->education;
+                                                $specialization = (string) $pedagogical_worker->specialization;
+                                                $qualification_improvement = (string) $pedagogical_worker->qualification_improvement;
+                                                $career = (string) $pedagogical_worker->career;
+                                                $overall_experience = (string) $pedagogical_worker->overall_experience;
+                                                $specialization_experience = (string) $pedagogical_worker->specialization_experience;
+
+                                                $post_args = array(
+                                                    'post_title' => $full_name,
+                                                    'post_content' => $contents,
+                                                    'post_status' => 'private',
+                                                    'exclude_from_search' => true,
+                                                    'menu_order' => null,
+                                                    'post_parent' => -1,
+                                                    'post_type' => 'page'
+                                                );
+                                                $parent_page = get_page_by_title($full_name);
+                                                if (empty($parent_page)) {
+                                                    // создание новой страницы
+                                                    $post_id = wp_insert_post($post_args);
+
+                                                    // добавление метаполей
+                                                    update_post_meta($post_id, 'position', $position);
+                                                    update_post_meta($post_id, 'phone', $phone);
+                                                    update_post_meta($post_id, 'email', $email);
+                                                    update_post_meta($post_id, 'disciplines', $disciplines);
+                                                    update_post_meta($post_id, 'education', $education);
+                                                    update_post_meta($post_id, 'specialization', $specialization);
+                                                    update_post_meta($post_id, 'qualification_improvement', $qualification_improvement);
+                                                    update_post_meta($post_id, 'career', $career);
+                                                    update_post_meta($post_id, 'overall_experience', $overall_experience);
+                                                    update_post_meta($post_id, 'specialization_experience', $specialization_experience);
+                                                } else {
+                                                    // обновление существующей страницы
+                                                    $post_id = $parent_page->ID;
+
+                                                    // обновление содержимого страницы
+                                                    $post_args['ID'] = $post_id;
+                                                    $post_args['post_content'] = $contents;
+                                                    wp_update_post($post_args);
+
+                                                    // обновление метаполей
+                                                    update_post_meta($post_id, 'position', $position);
+                                                    update_post_meta($post_id, 'phone', $phone);
+                                                    update_post_meta($post_id, 'email', $email);
+                                                    update_post_meta($post_id, 'disciplines', $disciplines);
+                                                    update_post_meta($post_id, 'education', $education);
+                                                    update_post_meta($post_id, 'specialization', $specialization);
+                                                    update_post_meta($post_id, 'qualification_improvement', $qualification_improvement);
+                                                    update_post_meta($post_id, 'career', $career);
+                                                    update_post_meta($post_id, 'overall_experience', $overall_experience);
+                                                    update_post_meta($post_id, 'specialization_experience', $specialization_experience);
+                                                }
+
+                                                // создание ссылки на созданную страницу
+                                                $permalink = get_permalink($post_id);
+
+
+
+
+                                                $file_contents .= "<div style='width: 145px;text-align: center;display: inline-flex;'>";
+                                                $file_contents .= "<a href='{$permalink}'>{$pedagogical_worker->full_name}</a><br>";
                                                 $file_contents .= "</div>";
                                             }
                                         }
@@ -1238,11 +1533,11 @@ class RegInfoEduOrg
 
         // Check if the parent page exists, if not create one
         if (empty($parent_page)) {
-            $page_args = array(
-                'post_title' => $page_title,
+            $page_args = array('post_title' => $page_title,
                 'post_content' => $page_content,
                 'post_status' => 'publish',
-                'post_type' => 'page',
+                'post_type' => 'page'
+                ,
                 'post_parent' => $parent_id
             );
 

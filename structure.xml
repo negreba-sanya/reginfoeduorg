@@ -129,65 +129,63 @@
 		<section_content>
 			<management>
 				<director>
-					<full_name>ФИО руководителя</full_name>
-					<position>Должность руководителя</position>
-					<contact_phones>Контактные телефоны руководителя</contact_phones>
-					<email_addresses>Адреса электронной почты руководителя</email_addresses>
+					<full_name>Питенина Оксана Николаевна</full_name>
+					<position>Директор</position>
+					<email></email>
+					<phone></phone>
+					<disciplines>Организация учебной деятельности, экономика организации</disciplines>
+					<education>2004, ФГБОУ ВПО Сибирский государственный технологический университет, по специальности "Экономика и управление на предприятиях химико-лесного комплекса", экономист - менеджер</education>
+					<specialization>экономика и управление на предприятии</specialization>
+					<qualification_improvement>КГБОУ ДПО ПКС «Центр современных технологий профессионального образования» «организация и содержание методической работы в образовательном учреждении профессионального образования» удостоверение (72 часа) № 46-ОМР, 2013 2018, ЦРПО, по программе «Учебно-методический комплекс как условие обеспечения качества внедрения образовательных программ ТОП-50», 72 часа</qualification_improvement>
+					<career></career>
+					<overall_experience>16</overall_experience>
+					<specialization_experience>12</specialization_experience>
 				</director>
 				<deputy_directors>
 					<deputy_director>
-						<full_name>ФИО заместителя руководителя</full_name>
-						<position>Должность заместителя руководителя</position>
-						<contact_phones>Контактные телефоны заместителя руководителя</contact_phones>
-						<email_addresses>Адреса электронной почты заместителя руководителя</email_addresses>
+						<full_name>Константинова Наталья Андреевна</full_name>
+						<email></email>
+						<phone></phone>
+						<position>Заместитель директора по учебно-производственной работе</position>
+						<disciplines>Математика</disciplines>
+						<education>1994, Карагандинский государственный университет им. Е.А. Букетова, специальность «Математика», квалификация математик-преподаватель</education>
+						<specialization>математик-преподаватель</specialization>
+						<qualification_improvement>2018, ФГБОУ ДПО "Гос. Академия пром. менеджмента им. Н.П. Пастухова" по программе Применение моделей и механизмов непрерывного образования пед. работников СПО для подготовки высококвалифицированных рабочих кадров по перспективным и востребованным профессиям и специальностям, 48 часов</qualification_improvement>
+						<career></career>
+						<overall_experience>21</overall_experience>
+						<specialization_experience>21</specialization_experience>
 					</deputy_director>
 				</deputy_directors>
 				<branch_directors>
 					<branch_director>
-						<full_name>ФИО руководителя филиала</full_name>
-						<position>Должность руководителя филиала</position>
-						<contact_phones>Контактные телефоны руководителя филиала</contact_phones>
-						<email_addresses>Адреса электронной почты руководителя филиала</email_addresses>
+						<full_name>Мурзина Маргарита Геннадьевна</full_name>
+						<email></email>
+						<phone></phone>
+						<position>Руководитель Многофункционального центра прикладных квалификаций</position>
+						<disciplines>Основы алгоритмизации и программирования, МДК.02.01. Информационные технологии и платформы разработки информационных систем, МДК.01.02.Методы и средства проектирования информационных систем, МДК 01.01Эксплуатация иформационных систем, МДК 03.01 Сопровождение и продвижение программного обеспечения отраслевой направленности</disciplines>
+						<education>2009, Красноярский государственный педагогический университет им. В.П. Астафьева, специальность – информатика, квалификация – учитель информатики</education>
+						<specialization>информатика</specialization>
+						<qualification_improvement>2018, ОГБПОУ "Томский техникум информационных технологий" по программе «Практика и методика подготовки кадров по профессии "Разработчик Web и мультимедийных приложений" с учетом стандарта Ворлдскиллс Россия по компетенции "Веб дизайн и разработка", 78 часов</qualification_improvement>
+						<career></career>
+						<overall_experience>13</overall_experience>
+						<specialization_experience>6</specialization_experience>
 					</branch_director>
 				</branch_directors>
 			</management>
 
 			<pedagogical_staff>
 				<pedagogical_worker>
-					<full_name>ФИО педагогического работника</full_name>
-					<positions>Занимаемые должности</positions>
-					<subjects>Преподаваемые учебные предметы, курсы, дисциплины (модули)</subjects>
-					<education_levels>Уровни профессионального образования</education_levels>
-					<academic_degree>Ученая степень</academic_degree>
-					<academic_rank>Ученое звание</academic_rank>
-					<qualification_improvement>Сведения о повышении квалификации</qualification_improvement>
-					<professional_retraining>Сведения о профессиональной переподготовке</professional_retraining>
-					<experience>Опыт работы</experience>
-					<education_program>Наименование образовательной программы</education_program>
-				</pedagogical_worker>
-				<pedagogical_worker>
-					<full_name>ФИО педагогического работника</full_name>
-					<positions>Занимаемые должности</positions>
-					<subjects>Преподаваемые учебные предметы, курсы, дисциплины (модули)</subjects>
-					<education_levels>Уровни профессионального образования</education_levels>
-					<academic_degree>Ученая степень</academic_degree>
-					<academic_rank>Ученое звание</academic_rank>
-					<qualification_improvement>Сведения о повышении квалификации</qualification_improvement>
-					<professional_retraining>Сведения о профессиональной переподготовке</professional_retraining>
-					<experience>Опыт работы</experience>
-					<education_program>Наименование образовательной программы</education_program>
-				</pedagogical_worker>
-				<pedagogical_worker>
-					<full_name>ФИО педагогического работника</full_name>
-					<positions>Занимаемые должности</positions>
-					<subjects>Преподаваемые учебные предметы, курсы, дисциплины (модули)</subjects>
-					<education_levels>Уровни профессионального образования</education_levels>
-					<academic_degree>Ученая степень</academic_degree>
-					<academic_rank>Ученое звание</academic_rank>
-					<qualification_improvement>Сведения о повышении квалификации</qualification_improvement>
-					<professional_retraining>Сведения о профессиональной переподготовке</professional_retraining>
-					<experience>Опыт работы</experience>
-					<education_program>Наименование образовательной программы</education_program>
+					<full_name>Степанова Ольга Викторовна</full_name>
+					<email></email>
+					<phone></phone>
+					<position>и.о. зам.директора по УМР, заведующая практикой, преподаватель</position>
+					<disciplines>Основы алгоритмизации и программирования, МДК.02.01. Информационные технологии и платформы разработки информационных систем, МДК.01.02.Методы и средства проектирования информационных систем, МДК 01.01Эксплуатация иформационных систем, МДК 03.01 Сопровождение и продвижение программного обеспечения отраслевой направленности</disciplines>
+					<education>2009, Красноярский государственный педагогический университет им. В.П. Астафьева, специальность – информатика, квалификация – учитель информатики</education>
+					<specialization>информатика</specialization>
+					<qualification_improvement>2018, ОГБПОУ "Томский техникум информационных технологий" по программе «Практика и методика подготовки кадров по профессии "Разработчик Web и мультимедийных приложений" с учетом стандарта Ворлдскиллс Россия по компетенции "Веб дизайн и разработка", 78 часов</qualification_improvement>
+					<career></career>
+					<overall_experience>13</overall_experience>
+					<specialization_experience>6</specialization_experience>
 				</pedagogical_worker>
 			</pedagogical_staff>
 		</section_content>
