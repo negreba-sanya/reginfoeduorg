@@ -58,14 +58,61 @@ class RegInfoEduOrg
                 email_addresses TEXT NOT NULL,
                 PRIMARY KEY (id)
             ) $charset_collate;
+
+            CREATE TABLE {$wpdb->prefix}staff (
+                id INT(11) NOT NULL AUTO_INCREMENT,
+                full_name VARCHAR(255) NOT NULL,
+                position VARCHAR(255) NOT NULL,
+                email VARCHAR(255) DEFAULT '',
+                phone VARCHAR(255) DEFAULT '',
+                overall_experience INT NOT NULL,
+                specialization_experience INT NOT NULL,
+                PRIMARY KEY (id)
+            ) $charset_collate;
+
+            CREATE TABLE {$wpdb->prefix}disciplines (
+                id INT(11) NOT NULL AUTO_INCREMENT,
+                staff_id INT(11) NOT NULL,
+                discipline TEXT NOT NULL,
+                PRIMARY KEY (id),
+                FOREIGN KEY (staff_id) REFERENCES {$wpdb->prefix}staff(id) ON DELETE CASCADE ON UPDATE CASCADE
+            ) $charset_collate;
+
+            CREATE TABLE {$wpdb->prefix}education (
+                id INT(11) NOT NULL AUTO_INCREMENT,
+                staff_id INT(11) NOT NULL,
+                education_info TEXT NOT NULL,
+                specialization VARCHAR(255) NOT NULL,
+                PRIMARY KEY (id),
+                FOREIGN KEY (staff_id) REFERENCES {$wpdb->prefix}staff(id) ON DELETE CASCADE ON UPDATE CASCADE
+            ) $charset_collate;
+
+            CREATE TABLE {$wpdb->prefix}qualification_improvement (
+                id INT(11) NOT NULL AUTO_INCREMENT,
+                staff_id INT(11) NOT NULL,
+                improvement_info TEXT NOT NULL,
+                PRIMARY KEY (id),
+                FOREIGN KEY (staff_id) REFERENCES {$wpdb->prefix}staff(id) ON DELETE CASCADE ON UPDATE CASCADE
+            ) $charset_collate;
             
+            CREATE TABLE {$wpdb->prefix}career (
+                id INT(11) NOT NULL AUTO_INCREMENT,
+                staff_id INT(11) NOT NULL,
+                career_info TEXT NOT NULL,
+                PRIMARY KEY (id),
+                FOREIGN KEY (staff_id) REFERENCES {$wpdb->prefix}staff(id) ON DELETE CASCADE ON UPDATE CASCADE
+            ) $charset_collate;
+
             CREATE TABLE $table_site_subsections (
                 id INT(11) NOT NULL AUTO_INCREMENT,
                 name TEXT NOT NULL,
                 content LONGTEXT NOT NULL,
+                xslt LONGTEXT NOT NULL,
+                xml LONGTEXT NOT NULL,
                 visible BOOLEAN NOT NULL,
                 PRIMARY KEY (id)
             ) $charset_collate;
+
 
             CREATE TABLE $table_menu_items (
                 id INT(11) NOT NULL AUTO_INCREMENT,
@@ -118,9 +165,13 @@ class RegInfoEduOrg
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
-        $wpdb->insert($table_roles,array(
-            'role_name' => 'Администратор'
-            ));
+
+        $existing_admin_role = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_roles WHERE role_name = %s", 'Администратор'));
+
+        if ($existing_admin_role == 0) {
+            $wpdb->insert($table_roles, array('role_name' => 'Администратор'));
+        }
+
         $current_user = wp_get_current_user();
         $user_id = $current_user->ID;
         $wpdb->insert($table_users_roles, array(
@@ -128,17 +179,330 @@ class RegInfoEduOrg
             'role_id' => 1
             ));
         $site_subsections_data = [
-             'Основные сведения',
-             'Структура и органы управления образовательной организацией',
-             'Документы',
-             'Образование',
-             'Образовательные стандарты',
-             'Руководство. Педагогический (научно-педагогический) состав',
-             'Материально-техническое обеспечение и оснащенность образовательного процесса',
-             'Стипендии и иные виды материальной поддержки',
-             'Платные образовательные услуги',
-             'Финансово-хозяйственная деятельность',
-             'Вакантные места для приема (перевода)'
+            [ 
+            'name' =>'Основные сведения',
+            'xml' => '	<section>
+    <section_title>Основные сведения</section_title>
+    <section_content>
+        <general_information>
+            <full_name></full_name>
+            <short_name></short_name>
+            <creation_date></creation_date>
+            <founder></founder>
+            <location></location>
+            <address_educational_activities></address_educational_activities>
+            <address_structural_subdivisions></address_structural_subdivisions>
+            <branches></branches>
+            <working_hours></working_hours>
+            <contact_phones></contact_phones>
+            <email_addresses></email_addresses>
+        </general_information>
+    </section_content>
+</section>
+'
+            ],
+            [ 
+            'name' =>'Структура и органы управления образовательной организацией',
+            'xml' => '<section>
+		<section_title>Структура и органы управления образовательной организацией</section_title>
+		<section_content>
+			<management_structure>
+				<structural_units>
+					<structural_unit>
+						<name>Наименование структурного подразделения</name>
+						<leader>ФИО руководителя структурного подразделения</leader>
+						<position>Должность руководителя структурного подразделения</position>
+						<location>Местонахождение структурного подразделения</location>
+						<official_website>Адрес официального сайта структурного подразделения</official_website>
+						<email>Адрес электронной почты структурного подразделения</email>
+						<regulations>Сведения о положении о структурном подразделении (об органе управления) с приложением копии указанного положения</regulations>
+					</structural_unit>
+				</structural_units>
+				<management_bodies>
+					<management_body>
+						<name>Наименование органа управления</name>
+						<leader>ФИО руководителя органа управления</leader>
+						<position>Должность руководителя органа управления</position>
+						<location>Местонахождение органа управления</location>
+						<official_website>Адрес официального сайта органа управления</official_website>
+						<email>Адрес электронной почты органа управления</email>
+						<regulations>Сведения о положении об органе управления с приложением копии указанного положения</regulations>
+					</management_body>
+				</management_bodies>
+			</management_structure>
+		</section_content>
+	</section>'
+            ],
+            [ 
+            'name' =>'Документы',
+            'xml' => '<section>
+		<section_title>Документы</section_title>
+		<section_content>
+			<documents>
+				<charter>ссылка на файл устава образовательной организации</charter>
+				<license>ссылка на файл лицензии на осуществление образовательной деятельности</license>
+				<accreditation>ссылка на файл свидетельства о государственной аккредитации</accreditation>
+				<finance_plan>ссылка на файл плана финансово-хозяйственной деятельности образовательной организации</finance_plan>
+				<normative_acts>
+					<local_normative_acts>ссылка на файл локальных нормативных актов, предусмотренных законодательством</local_normative_acts>
+					<student_internal_rules>ссылка на файл правил внутреннего распорядка обучающихся</student_internal_rules>
+					<employee_internal_rules>ссылка на файл правил внутреннего трудового распорядка</employee_internal_rules>
+					<collective_agreement>ссылка на файл коллективного договора</collective_agreement>
+				</normative_acts>
+				<self_evaluation_report>ссылка на файл отчета о результатах самообследования</self_evaluation_report>
+				<paid_services>
+					<paid_services_document>ссылка на документ о порядке оказания платных образовательных услуг</paid_services_document>
+					<contract_example>ссылка на образец договора об оказании платных образовательных услуг</contract_example>
+					<tuition_fee>ссылка на документ об утверждении стоимости обучения по каждой образовательной программе</tuition_fee>
+					<maintenance_fee>ссылка на документ об установлении размера платы за присмотр и уход за детьми в образовательной организации</maintenance_fee>
+				</paid_services>
+				<supervision_reports>
+					<supervision_report>ссылка на отчеты об исполнении предписаний органов, осуществляющих государственный контроль (надзор) в сфере образования</supervision_report>
+				</supervision_reports>
+			</documents>
+		</section_content>
+	</section>'
+            ],
+            [ 
+            'name' =>'Образование',
+            'xml' => '<section>
+		<section_title>Образование</section_title>
+		<section_content>
+			<education_levels>
+				<level_title>Уровни образования</level_title>
+				<level_info>Информация о реализуемых уровнях образования (начальное, основное, среднее), нормативных сроках обучения и формах обучения</level_info>
+			</education_levels>
+			<educational_programs>
+				<program_title>Образовательные программы</program_title>
+				<program_info>Информация о реализуемых образовательных программах, в том числе адаптированных, с указанием учебных предметов, курсов, дисциплин, практики, предусмотренных образовательной программой, а также о языках, на которых осуществляется обучение</program_info>
+				<program_attachment>Приложение с копией образовательной программы</program_attachment>
+			</educational_programs>
+			<educational_plan>
+				<plan_title>Учебный план</plan_title>
+				<plan_info>Информация об учебном плане, его копия</plan_info>
+			</educational_plan>
+			<educational_schedule>
+				<schedule_title>Календарный учебный график</schedule_title>
+				<schedule_info>Информация о календарном учебном графике, его копия</schedule_info>
+			</educational_schedule>
+			<educational_documents>
+				<documents_title>Документы для обеспечения образовательного процесса</documents_title>
+				<documents_info>Информация о методических и иных документах, разработанных образовательной организацией для обеспечения образовательного процесса</documents_info>
+			</educational_documents>
+		</section_content>
+	</section>'
+            ],
+            [ 
+            'name' =>'Образовательные стандарты',
+            'xml' => '<section>
+		<section_title>Образовательные стандарты</section_title>
+		<section_content>
+			<federal_standards>
+				<standard_title>Федеральные государственные образовательные стандарты</standard_title>
+				<standard_info>Информация о ФГОС</standard_info>
+				<standard_copy>Копия ФГОС</standard_copy>
+			</federal_standards>
+			<educational_standards>
+				<standard_title>Образовательные стандарты</standard_title>
+				<standard_info>Информация об образовательных стандартах</standard_info>
+				<standard_copy>Копия образовательных стандартов</standard_copy>
+			</educational_standards>
+		</section_content>
+	</section>'
+            ],
+            [ 
+            'name' =>'Руководство. Педагогический (научно-педагогический) состав',
+            'xml' => '<section>
+		<section_title>Руководство. Педагогический (научно-педагогический) состав</section_title>
+		<section_content>
+			<management>
+				<director>
+					<full_name>Питенина Оксана Николаевна</full_name>
+					<position>Директор</position>
+					<email></email>
+					<phone></phone>
+					<disciplines>Организация учебной деятельности, экономика организации</disciplines>
+					<education>2004, ФГБОУ ВПО Сибирский государственный технологический университет, по специальности "Экономика и управление на предприятиях химико-лесного комплекса", экономист - менеджер</education>
+					<specialization>экономика и управление на предприятии</specialization>
+					<qualification_improvement>КГБОУ ДПО ПКС «Центр современных технологий профессионального образования» «организация и содержание методической работы в образовательном учреждении профессионального образования» удостоверение (72 часа) № 46-ОМР, 2013 2018, ЦРПО, по программе «Учебно-методический комплекс как условие обеспечения качества внедрения образовательных программ ТОП-50», 72 часа</qualification_improvement>
+					<career></career>
+					<overall_experience>16</overall_experience>
+					<specialization_experience>12</specialization_experience>
+				</director>
+				<deputy_directors>
+					<deputy_director>
+						<full_name>Константинова Наталья Андреевна</full_name>
+						<email></email>
+						<phone></phone>
+						<position>Заместитель директора по учебно-производственной работе</position>
+						<disciplines>Математика</disciplines>
+						<education>1994, Карагандинский государственный университет им. Е.А. Букетова, специальность «Математика», квалификация математик-преподаватель</education>
+						<specialization>математик-преподаватель</specialization>
+						<qualification_improvement>2018, ФГБОУ ДПО "Гос. Академия пром. менеджмента им. Н.П. Пастухова" по программе Применение моделей и механизмов непрерывного образования пед. работников СПО для подготовки высококвалифицированных рабочих кадров по перспективным и востребованным профессиям и специальностям, 48 часов</qualification_improvement>
+						<career></career>
+						<overall_experience>21</overall_experience>
+						<specialization_experience>21</specialization_experience>
+					</deputy_director>
+				</deputy_directors>
+				<branch_directors>
+					<branch_director>
+						<full_name>Мурзина Маргарита Геннадьевна</full_name>
+						<email></email>
+						<phone></phone>
+						<position>Руководитель Многофункционального центра прикладных квалификаций</position>
+						<disciplines>Основы алгоритмизации и программирования, МДК.02.01. Информационные технологии и платформы разработки информационных систем, МДК.01.02.Методы и средства проектирования информационных систем, МДК 01.01Эксплуатация иформационных систем, МДК 03.01 Сопровождение и продвижение программного обеспечения отраслевой направленности</disciplines>
+						<education>2009, Красноярский государственный педагогический университет им. В.П. Астафьева, специальность – информатика, квалификация – учитель информатики</education>
+						<specialization>информатика</specialization>
+						<qualification_improvement>2018, ОГБПОУ "Томский техникум информационных технологий" по программе «Практика и методика подготовки кадров по профессии "Разработчик Web и мультимедийных приложений" с учетом стандарта Ворлдскиллс Россия по компетенции "Веб дизайн и разработка", 78 часов</qualification_improvement>
+						<career></career>
+						<overall_experience>13</overall_experience>
+						<specialization_experience>6</specialization_experience>
+					</branch_director>
+				</branch_directors>
+			</management>
+
+			<pedagogical_staff>
+				<pedagogical_worker>
+					<full_name>Степанова Ольга Викторовна</full_name>
+					<email></email>
+					<phone></phone>
+					<position>и.о. зам.директора по УМР, заведующая практикой, преподаватель</position>
+					<disciplines>Основы алгоритмизации и программирования, МДК.02.01. Информационные технологии и платформы разработки информационных систем, МДК.01.02.Методы и средства проектирования информационных систем, МДК 01.01Эксплуатация иформационных систем, МДК 03.01 Сопровождение и продвижение программного обеспечения отраслевой направленности</disciplines>
+					<education>2009, Красноярский государственный педагогический университет им. В.П. Астафьева, специальность – информатика, квалификация – учитель информатики</education>
+					<specialization>информатика</specialization>
+					<qualification_improvement>2018, ОГБПОУ "Томский техникум информационных технологий" по программе «Практика и методика подготовки кадров по профессии "Разработчик Web и мультимедийных приложений" с учетом стандарта Ворлдскиллс Россия по компетенции "Веб дизайн и разработка", 78 часов</qualification_improvement>
+					<career></career>
+					<overall_experience>13</overall_experience>
+					<specialization_experience>6</specialization_experience>
+				</pedagogical_worker>
+			</pedagogical_staff>
+		</section_content>
+	</section>'
+            ],
+            [ 
+            'name' =>'Материально-техническое обеспечение и оснащенность образовательного процесса',
+            'xml' => '<section>
+		<section_title>Материально-техническое обеспечение и оснащенность образовательного процесса</section_title>
+		<section_content>
+			<technical_equipment>
+				<classrooms>
+					<classroom>
+						<name>Наименование учебного кабинета</name>
+						<type>Тип учебного кабинета</type>
+						<equipment>Список оборудования в кабинете</equipment>
+						<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
+					</classroom>
+				</classrooms>
+				<training_objects>
+					<training_object>
+						<name>Наименование объекта для практических занятий</name>
+						<type>Тип объекта</type>
+						<equipment>Список оборудования на объекте</equipment>
+						<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
+					</training_object>
+				</training_objects>
+				<library>
+					<name>Название библиотеки</name>
+					<collection>Описание коллекции книг и других материалов в библиотеке</collection>
+					<services>Описание услуг, предоставляемых библиотекой</services>
+					<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
+				</library>
+				<sports_facilities>
+					<sports_facility>
+						<name>Наименование объекта спорта</name>
+						<type>Тип объекта</type>
+						<equipment>Список оборудования на объекте</equipment>
+						<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
+					</sports_facility>
+				</sports_facilities>
+				<learning_resources>
+					<resource>
+						<name>Наименование средства обучения и воспитания</name>
+						<type>Тип средства</type>
+						<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
+					</resource>
+				</learning_resources>
+				<facilities_for_disabled>
+					<facility>
+						<name>Наименование объекта, оборудованного для использования инвалидами и лицами с ограниченными возможностями здоровья</name>
+						<type>Тип объекта</type>
+						<equipment>Список оборудования на объекте</equipment>
+					</facility>
+				</facilities_for_disabled>
+			</technical_equipment>
+		</section_content>
+	</section>'
+            ],
+            [ 
+            'name' =>'Стипендии и иные виды материальной поддержки',
+            'xml' => '<section>
+		<section_title>Стипендии и иные виды материальной поддержки</section_title>
+		<section_content>
+			<scholarships>
+				<scholarship_title>Студенческие стипендии</scholarship_title>
+				<scholarship_info>Условия предоставления стипендий для обучающихся</scholarship_info>
+			</scholarships>
+			<social_support>
+				<support_title>Меры социальной поддержки</support_title>
+				<support_info>Условия и порядок предоставления мер социальной поддержки</support_info>
+			</social_support>
+			<dormitories>
+				<dormitory_title>Общежития и интернаты</dormitory_title>
+				<dormitory_info>Информация о наличии общежитий и интернатов для иногородних обучающихся, в том числе приспособленных для использования инвалидами и лицами с ограниченными возможностями здоровья, количестве жилых помещений в общежитии, формировании платы за проживание</dormitory_info>
+			</dormitories>
+			<employment>
+				<employment_title>Трудоустройство выпускников</employment_title>
+				<employment_info>Информация о трудоустройстве выпускников</employment_info>
+			</employment>
+		</section_content>
+	</section>'
+            ],
+            [ 
+            'name' =>'Платные образовательные услуги',
+            'xml' => '<section>
+		<section_title>Платные образовательные услуги</section_title>
+		<section_content>
+			<paid_services_info>Информация о порядке оказания платных образовательных услуг, включая перечень услуг, цены, порядок оплаты и возврата средств, информацию о скидках и льготах и другие существенные условия оказания услуг</paid_services_info>
+		</section_content>
+	</section>'
+            ],
+            [ 
+            'name' =>'Финансово-хозяйственная деятельность',
+            'xml' => '<section>
+		<section_title>Финансово-хозяйственная деятельность</section_title>
+		<section_content>
+			<funding_sources>
+				<funding_title>Источники финансирования</funding_title>
+				<funding_info>Информация об объеме образовательной деятельности, финансовое обеспечение которой осуществляется за счет бюджетных ассигнований федерального бюджета, бюджетов субъектов Российской Федерации, местных бюджетов, по договорам об образовании за счет средств физических и (или) юридических лиц</funding_info>
+			</funding_sources>
+			<financial_report>
+				<report_title>Финансовый отчет</report_title>
+				<report_info>Информация о поступлении финансовых и материальных средств и об их расходовании по итогам финансового года</report_info>
+			</financial_report>
+		</section_content>
+	</section>'
+            ],
+            [ 
+            'name' =>'Вакантные места для приема (перевода)',
+            'xml' => '<section>
+		<section_title>Вакантные места для приема (перевода)</section_title>
+		<section_content>
+			<vacancies_info>
+				<vacancies_title>Информация о вакантных местах</vacancies_title>
+				<vacancies_list>
+					<program>
+						<program_name>Название образовательной программы</program_name>
+						<profession>Профессия</profession>
+						<specialization>Специальность</specialization>
+						<study_direction>Направление подготовки</study_direction>
+						<budget_vacancies>Количество вакантных мест за счет бюджетных ассигнований</budget_vacancies>
+						<contract_vacancies>Количество вакантных мест по договорам об образовании</contract_vacancies>
+					</program>
+				</vacancies_list>
+			</vacancies_info>
+		</section_content>
+	</section>'
+            ]             
         ];
 
         $menu_items_data = [
@@ -157,11 +521,12 @@ class RegInfoEduOrg
             $existing_subsection = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_site_subsections WHERE name = %s", $subsection));
             if ($existing_subsection == 0) {
                 $wpdb->insert($table_site_subsections, array(
-                    'name' => $subsection,
+                    'name' => $subsection['name'],
+                    'xml' => $subsection['xml'],
                     'visible' => true
                     ));
             }
-           
+            
         }
         $i = 1;
         foreach ($menu_items_data as $menu_item) {
@@ -1192,7 +1557,7 @@ class RegInfoEduOrg
 
         
     }
-        
+    
     //Настройка отображения подразделов сайта
     function submenu_page() 
     {
@@ -1537,7 +1902,7 @@ class RegInfoEduOrg
                 $access_settings = array_merge($subsections, $subitems);
 
                 // JavaScript для динамического изменения checkbox
-        ?>
+?>
 <?php
                 // Получаем информацию о настройках доступа
                 $access_settings = array();
@@ -2153,64 +2518,266 @@ class RegInfoEduOrg
 
 
     function reginfoeduorg_display_section_data() {
+        if ( isset( $_POST['import_file_submit'] ) && isset( $_FILES['import_file'] ) ) {
+            if ($_FILES['import_file']['error'] === UPLOAD_ERR_OK) {
+                $xml = simplexml_load_file($_FILES['import_file']['tmp_name']);
+
+                // Находим секцию "Основные сведения"
+                $section_content = $xml->xpath('//section[section_title="Основные сведения"]/section_content/general_information')[0];
+
+                // Преобразуем дату создания в формат 'Y-m-d', игнорируя время
+                $creation_date = DateTime::createFromFormat('d.m.Y H:i:s', (string)$section_content->creation_date);
+                $creation_date_formatted = $creation_date ? $creation_date->format('Y-m-d') : '';
+
+
+                // Создаем массив с данными для таблицы reginfoeduorg_general_information
+                $data = array(
+                    'full_name' => (string)$section_content->full_name,
+                    'short_name' => (string)$section_content->short_name,
+                    'creation_date' => $creation_date_formatted,
+                    'founder' => (string)$section_content->founder,
+                    'location' => (string)$section_content->location,
+                    'branches' => (string)$section_content->branches,
+                    'working_hours' => (string)$section_content->working_hours,
+                    'contact_phones' => (string)$section_content->contact_phones,
+                    'email_addresses' => (string)$section_content->email_addresses,
+                );
+
+                // Вставляем или обновляем данные в таблице reginfoeduorg_general_information
+                global $wpdb;
+                $table_name = "{$wpdb->prefix}reginfoeduorg_general_information";
+                $row_exists = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
+                if ($row_exists) {
+                    $wpdb->update($table_name, $data, ['id' => 1]);
+                } else {
+                    $wpdb->insert($table_name, $data);
+                }
+
+                // Выводим сообщение об успешном импорте данных
+                echo "<div class='notice notice-success is-dismissible'><p>Данные успешно импортированы из файла.</p></div>";
+            } else {
+                // Выводим сообщение об ошибке при загрузке файла
+                echo "<div class='notice notice-error is-dismissible'><p>Ошибка при загрузке файла: " . $_FILES['import_file']['error'] . "</p></div>";
+            }
+        }
+
+        
+
         global $wpdb;
         $url = $_SERVER['REQUEST_URI'];
         $matches = array();
         preg_match('/reginfoeduorg_subsection_(\d+)/', $url, $matches);
         $subsection_id = isset($matches[1]) ? intval($matches[1]) : 0;
         $subsection_name = $wpdb->get_var($wpdb->prepare("SELECT name FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = %d", $subsection_id));
+        // Проверяем, была ли кнопка "Сохранить изменения" нажата
+        if (isset($_POST['save_changes'])) {
+            $post_id = get_page_by_title($subsection_name)->ID;
+            $content = $_POST['reginfoeduorg_content'];
 
-         echo '<div class="wrap">';
-         echo '<h1>'.$subsection_name.'</h1>';
-            echo '<table class="wp-list-table widefat fixed striped">';
-            echo '<thead><tr>';
-            echo '<th scope="col" class="manage-column column-name">Название поля</th>';
-            echo '<th scope="col" class="manage-column column-value">Значение</th>';
-            echo '</tr></thead>';
-            echo '<tbody>';
-            foreach ( $data as $key => $value ) {
-                echo '<tr>';
-                echo '<td class="column-name">' . $key . '</td>';
-                echo '<td class="column-value">' . $value . '</td>';
-                echo '</tr>';
-            }
-            echo '</tbody>';
-            echo '</table>';
-            echo '<br>';
-            echo '<h2>Настройка отображения таблицы</h2>';
-            echo '<table class="form-table">';
-            echo '<tr>';
-            echo '<th><label for="xslt-styles">XSLT стили:</label></th>';
-            echo '<td>';
-            $editor_id = 'reginfoeduorg_xslt_editor';
-            $settings = array(
-                'textarea_name' => 'reginfoeduorg_xslt_code',
-                'editor_height' => 200,
-                'media_buttons' => true,
+            // Обновляем контент в таблице reginfoeduorg_site_subsections
+            $wpdb->update(
+                "{$wpdb->prefix}reginfoeduorg_site_subsections",
+                array('content' => $content),
+                array('id' => $subsection_id),
+                array('%s'),
+                array('%d')
             );
-            wp_editor( '', $editor_id, $settings );
 
-            echo '</td>';
-            echo '</tr>';
-            echo '</table>';
-            echo '</div>';
+            if ($post_id && $content) {
+                $post = array(
+                    'ID' => $post_id,
+                    'post_content' => $content,
+                );
+                wp_update_post($post);
+            }
+
+            // Выводим сообщение об успешном сохранении изменений
+            echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Изменения сохранены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
+        }
+
+        if (isset($_POST['save_table_changes'])) {
+            $data_to_update = $_POST['data'];
+            $data_keys = array_keys($data_to_update);
+            $data_values = array_values($data_to_update);
+
+            for ($i = 0; $i < count($data_to_update); $i++) {
+                $wpdb->update(
+                    "{$wpdb->prefix}reginfoeduorg_general_information",
+                    array($data_keys[$i] => $data_values[$i]),
+                    array('id' => 1),
+                    array('%s'),
+                    array('%d')
+                );
+            }
+
+            echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Данные таблицы обновлены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
+        }
+
+        echo '<div class="wrap">';
+        echo '<form method="post" action="" enctype="multipart/form-data">';
+        echo '<h1>' . $subsection_name . '</h1>';
+        echo '<h3>Контент на странице</h3>';
+        $content = $wpdb->get_var($wpdb->prepare("SELECT content FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = %d", $subsection_id));
+        $editor_id = 'reginfoeduorg_content_editor';
+        $settings = array(
+            'textarea_name' => 'reginfoeduorg_content',
+            'editor_height' => 200,
+            'media_buttons' => true,
+        );
+        wp_editor($content, $editor_id, $settings);
+        echo '<p>';
+        echo '<input type="submit" name="save_changes" value="Сохранить изменения на сайте" class="button-primary">';
+        echo '</p>';
+        echo '<h3>Таблица данных подраздела</h3>';
+        switch ($subsection_id) {
+            case 1:
+                $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_general_information", ARRAY_A);
+                if ($data) {
+                    if (isset($_POST['apply_styles'])) {
+                        $xslt_code = isset($_POST['reginfoeduorg_xslt_code']) ? stripslashes($_POST['reginfoeduorg_xslt_code']) : '';
+
+                        // Сохраняем XSLT стиль в базу данных
+                        $wpdb->update(
+                            "{$wpdb->prefix}reginfoeduorg_site_subsections",
+                            array('xslt' => $xslt_code),
+                            array('id' => $subsection_id),
+                            array('%s'),
+                            array('%d')
+                        );
+                        $xml = new DOMDocument();
+                        $xml = $this->generate_xml();
+                        // Применяем XSLT-код к данным подраздела
+                        $transformed_data = $this->apply_xslt($xml, $xslt_code);
+
+                        // Обновляем поле для ввода контента на странице
+                        $content = $transformed_data;
+                        echo '<script>
+                        jQuery(document).ready(function() {
+                            var new_content = ' . json_encode($content) . ';
+                            var editor = tinyMCE.get("' . $editor_id . '");
+                            editor.setContent(new_content);
+                        });
+                        </script>';
+
+                    }
+
+                    echo '<table class="wp-list-table widefat fixed striped">';
+                    echo '<thead><tr>';
+                    echo '<th scope="col" class="manage-column column-name">Название поля</th>';
+                    echo '<th scope="col" class="manage-column column-value">Значение</th>';
+                    echo '</tr></thead>';
+                    echo '<tbody>';
+                    $fields = array(
+                        'Полное название образовательной организации' => 'full_name',
+                        'Краткое название образовательной организации' => 'short_name',
+                        'Дата создания образовательной организации' => 'creation_date',
+                        'Учредитель' => 'founder',
+                        'Место нахождения образовательной организации' => 'location',
+                        'Филиалы образовательной организации' => 'branches',
+                        'График работы' => 'working_hours',
+                        'Контактные телефоны' => 'contact_phones',
+                        'Адреса электронной почты' => 'email_addresses',
+                    );
+
+                    foreach ($data as $row) {
+                        foreach ($fields as $field_name => $field_key) {
+                            echo '<tr>';
+                            echo '<td class="column-name">' . $field_name . '</td>';
+                            echo '<td class="column-value"><input type="text" name="data[' . $field_key . ']" value="' . $row[$field_key] . '"></td>';
+                            echo '</tr>';
+                        }
+                    }
+
+
+                    echo '</tbody>';
+                    echo '</table>';
+                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
+                } else {
+                    echo '<p>Данные отсутствуют.</p>';
+                }
+
+                break;
+            default:
+                echo '<p>Страница находится в разработке.</p>';
+                break;
+        }
+        echo '<br>';
+        echo  '<input type="file" name="import_file" accept=".xml">';
+        echo '<input type="submit" name="import_file_submit" value="Импортировать" class="button-primary">';
+        
+        echo '<br>';
+        echo '<h2>Настройка отображения таблицы</h2>';
+        echo '<table class="form-table">';
+        echo '<tr>';
+        echo '<th><label for="xslt-styles">XSLT стили:</label></th>';
+        echo '<td>';
+        $subsection_data = $wpdb->get_row("SELECT * FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = {$subsection_id}", ARRAY_A);
+        $saved_xslt_code = isset($subsection_data['xslt']) ? $subsection_data['xslt'] : '';
+        echo '<textarea name="reginfoeduorg_xslt_code" id="reginfoeduorg_xslt_code" rows="10" style="width: 100%;">' . esc_textarea($saved_xslt_code) . '</textarea>';
+        echo '</td>';
+        echo '</tr>';
+        echo '</table>';
+        echo '<p>';
+        echo '<input type="submit" name="apply_styles" value="Применить стиль" class="button">';
+        echo '</p>';
+        echo '</form>';
+        echo '</div>';
     }
 
 
+    function apply_xslt($data, $xslt_code) {
+        // Создаем экземпляр XSLTProcessor
+        $xslt_processor = new XSLTProcessor();
+
+        // Создаем экземпляр DOMDocument для XSLT-кода и загружаем его
+        $xslt = new DOMDocument();
+        $xslt->loadXML($xslt_code);
+
+        // Импортируем XSLT-стили в XSLTProcessor
+        $xslt_processor->importStylesheet($xslt);
+        
+        // Применяем XSLT-код к XML-данным
+        $transformed_data = $xslt_processor->transformToXml($data);
 
 
+        return $transformed_data;
+    }
 
 
+    function generate_xml() {
+        global $wpdb;
 
+        // Выбираем данные из таблицы reginfoeduorg_general_information
+        $general_information = $wpdb->get_row("SELECT * FROM {$wpdb->prefix}reginfoeduorg_general_information", ARRAY_A);
 
+        // Выбираем пустую структуру XML для подраздела "Основные сведения" из базы данных
+        $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Основные сведения'");
 
+        // Загружаем пустую структуру XML и дополняем ее данными
+        $xml = new DOMDocument('1.0', 'UTF-8');
+        $xml->formatOutput = true;
+        $xml->loadXML($subsection_xml);
+        // Находим элемент section_content для подраздела "Основные сведения"
+        $section_content = $xml->getElementsByTagName('section_content')->item(0);
 
-    
+        // Удаляем имеющиеся элементы с данными
+        while ($section_content->hasChildNodes()) {
+            $section_content->removeChild($section_content->firstChild);
+        }
 
+        // Создаем элемент general_information
+        $general_information_node = $xml->createElement('general_information');
+        $section_content->appendChild($general_information_node);
 
+        // Создаем элементы для каждого поля из таблицы и добавляем их в general_information
+        foreach ($general_information as $key => $value) {
+            $element = $xml->createElement($key, htmlspecialchars($value));
+            $general_information_node->appendChild($element);
+        }
 
-
-
+        // Возвращаем готовый XML документ
+        return $xml;
+    }
 
 
 
