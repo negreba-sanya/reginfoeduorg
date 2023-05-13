@@ -44,6 +44,11 @@ class RegInfoEduOrg
         $table_users_roles = $wpdb->prefix . 'reginfoeduorg_users_roles';
         $table_site_subsections = $wpdb->prefix . 'reginfoeduorg_site_subsections';
         $table_menu_items = $wpdb->prefix . 'reginfoeduorg_menu_items';
+        $table_staff = $wpdb->prefix.'reginfoeduorg_staff';
+        $table_disciplines = $wpdb->prefix.'reginfoeduorg_disciplines';
+        $table_education = $wpdb->prefix.'reginfoeduorg_education';
+        $table_qualification_improvement = $wpdb->prefix.'reginfoeduorg_qualification_improvement';
+        $table_career = $wpdb->prefix.'reginfoeduorg_career';
 
         $sql = "CREATE TABLE $table_general_information (
                 id INT(11) NOT NULL AUTO_INCREMENT,
@@ -59,7 +64,7 @@ class RegInfoEduOrg
                 PRIMARY KEY (id)
             ) $charset_collate;
 
-            CREATE TABLE {$wpdb->prefix}staff (
+            CREATE TABLE $table_staff (
                 id INT(11) NOT NULL AUTO_INCREMENT,
                 full_name VARCHAR(255) NOT NULL,
                 position VARCHAR(255) NOT NULL,
@@ -70,37 +75,37 @@ class RegInfoEduOrg
                 PRIMARY KEY (id)
             ) $charset_collate;
 
-            CREATE TABLE {$wpdb->prefix}disciplines (
+            CREATE TABLE $table_disciplines (
                 id INT(11) NOT NULL AUTO_INCREMENT,
                 staff_id INT(11) NOT NULL,
                 discipline TEXT NOT NULL,
                 PRIMARY KEY (id),
-                FOREIGN KEY (staff_id) REFERENCES {$wpdb->prefix}staff(id) ON DELETE CASCADE ON UPDATE CASCADE
+                FOREIGN KEY (staff_id) REFERENCES $table_staff(id) ON DELETE CASCADE ON UPDATE CASCADE
             ) $charset_collate;
 
-            CREATE TABLE {$wpdb->prefix}education (
+            CREATE TABLE $table_education (
                 id INT(11) NOT NULL AUTO_INCREMENT,
                 staff_id INT(11) NOT NULL,
                 education_info TEXT NOT NULL,
                 specialization VARCHAR(255) NOT NULL,
                 PRIMARY KEY (id),
-                FOREIGN KEY (staff_id) REFERENCES {$wpdb->prefix}staff(id) ON DELETE CASCADE ON UPDATE CASCADE
+                FOREIGN KEY (staff_id) REFERENCES $table_staff(id) ON DELETE CASCADE ON UPDATE CASCADE
             ) $charset_collate;
 
-            CREATE TABLE {$wpdb->prefix}qualification_improvement (
+            CREATE TABLE $table_qualification_improvement (
                 id INT(11) NOT NULL AUTO_INCREMENT,
                 staff_id INT(11) NOT NULL,
                 improvement_info TEXT NOT NULL,
                 PRIMARY KEY (id),
-                FOREIGN KEY (staff_id) REFERENCES {$wpdb->prefix}staff(id) ON DELETE CASCADE ON UPDATE CASCADE
+                FOREIGN KEY (staff_id) REFERENCES $table_staff(id) ON DELETE CASCADE ON UPDATE CASCADE
             ) $charset_collate;
             
-            CREATE TABLE {$wpdb->prefix}career (
+            CREATE TABLE $table_career (
                 id INT(11) NOT NULL AUTO_INCREMENT,
                 staff_id INT(11) NOT NULL,
                 career_info TEXT NOT NULL,
                 PRIMARY KEY (id),
-                FOREIGN KEY (staff_id) REFERENCES {$wpdb->prefix}staff(id) ON DELETE CASCADE ON UPDATE CASCADE
+                FOREIGN KEY (staff_id) REFERENCES $table_staff(id) ON DELETE CASCADE ON UPDATE CASCADE
             ) $charset_collate;
 
             CREATE TABLE $table_site_subsections (
@@ -317,63 +322,62 @@ class RegInfoEduOrg
 		<section_content>
 			<management>
 				<director>
-					<full_name>Питенина Оксана Николаевна</full_name>
-					<position>Директор</position>
+					<full_name></full_name>
+					<position></position>
 					<email></email>
 					<phone></phone>
-					<disciplines>Организация учебной деятельности, экономика организации</disciplines>
-					<education>2004, ФГБОУ ВПО Сибирский государственный технологический университет, по специальности "Экономика и управление на предприятиях химико-лесного комплекса", экономист - менеджер</education>
-					<specialization>экономика и управление на предприятии</specialization>
-					<qualification_improvement>КГБОУ ДПО ПКС «Центр современных технологий профессионального образования» «организация и содержание методической работы в образовательном учреждении профессионального образования» удостоверение (72 часа) № 46-ОМР, 2013 2018, ЦРПО, по программе «Учебно-методический комплекс как условие обеспечения качества внедрения образовательных программ ТОП-50», 72 часа</qualification_improvement>
+					<disciplines></disciplines>
+					<education></education>
+					<specialization></specialization>
+					<qualification_improvement></qualification_improvement>
 					<career></career>
-					<overall_experience>16</overall_experience>
-					<specialization_experience>12</specialization_experience>
+					<overall_experience></overall_experience>
+					<specialization_experience></specialization_experience>
 				</director>
 				<deputy_directors>
 					<deputy_director>
-						<full_name>Константинова Наталья Андреевна</full_name>
+						<full_name></full_name>
 						<email></email>
 						<phone></phone>
-						<position>Заместитель директора по учебно-производственной работе</position>
-						<disciplines>Математика</disciplines>
-						<education>1994, Карагандинский государственный университет им. Е.А. Букетова, специальность «Математика», квалификация математик-преподаватель</education>
-						<specialization>математик-преподаватель</specialization>
-						<qualification_improvement>2018, ФГБОУ ДПО "Гос. Академия пром. менеджмента им. Н.П. Пастухова" по программе Применение моделей и механизмов непрерывного образования пед. работников СПО для подготовки высококвалифицированных рабочих кадров по перспективным и востребованным профессиям и специальностям, 48 часов</qualification_improvement>
+						<position></position>
+						<disciplines></disciplines>
+						<education></education>
+						<specialization></specialization>
+						<qualification_improvement></qualification_improvement>
 						<career></career>
-						<overall_experience>21</overall_experience>
-						<specialization_experience>21</specialization_experience>
+						<overall_experience></overall_experience>
+						<specialization_experience></specialization_experience>
 					</deputy_director>
 				</deputy_directors>
 				<branch_directors>
 					<branch_director>
-						<full_name>Мурзина Маргарита Геннадьевна</full_name>
+						<full_name></full_name>
 						<email></email>
 						<phone></phone>
-						<position>Руководитель Многофункционального центра прикладных квалификаций</position>
-						<disciplines>Основы алгоритмизации и программирования, МДК.02.01. Информационные технологии и платформы разработки информационных систем, МДК.01.02.Методы и средства проектирования информационных систем, МДК 01.01Эксплуатация иформационных систем, МДК 03.01 Сопровождение и продвижение программного обеспечения отраслевой направленности</disciplines>
-						<education>2009, Красноярский государственный педагогический университет им. В.П. Астафьева, специальность – информатика, квалификация – учитель информатики</education>
-						<specialization>информатика</specialization>
-						<qualification_improvement>2018, ОГБПОУ "Томский техникум информационных технологий" по программе «Практика и методика подготовки кадров по профессии "Разработчик Web и мультимедийных приложений" с учетом стандарта Ворлдскиллс Россия по компетенции "Веб дизайн и разработка", 78 часов</qualification_improvement>
+						<position></position>
+						<disciplines></disciplines>
+						<education></education>
+						<specialization></specialization>
+						<qualification_improvement></qualification_improvement>
 						<career></career>
-						<overall_experience>13</overall_experience>
-						<specialization_experience>6</specialization_experience>
+						<overall_experience></overall_experience>
+						<specialization_experience></specialization_experience>
 					</branch_director>
 				</branch_directors>
 			</management>
-
 			<pedagogical_staff>
 				<pedagogical_worker>
-					<full_name>Степанова Ольга Викторовна</full_name>
+					<full_name></full_name>
 					<email></email>
 					<phone></phone>
-					<position>и.о. зам.директора по УМР, заведующая практикой, преподаватель</position>
-					<disciplines>Основы алгоритмизации и программирования, МДК.02.01. Информационные технологии и платформы разработки информационных систем, МДК.01.02.Методы и средства проектирования информационных систем, МДК 01.01Эксплуатация иформационных систем, МДК 03.01 Сопровождение и продвижение программного обеспечения отраслевой направленности</disciplines>
-					<education>2009, Красноярский государственный педагогический университет им. В.П. Астафьева, специальность – информатика, квалификация – учитель информатики</education>
-					<specialization>информатика</specialization>
-					<qualification_improvement>2018, ОГБПОУ "Томский техникум информационных технологий" по программе «Практика и методика подготовки кадров по профессии "Разработчик Web и мультимедийных приложений" с учетом стандарта Ворлдскиллс Россия по компетенции "Веб дизайн и разработка", 78 часов</qualification_improvement>
+					<position></position>
+					<disciplines></disciplines>
+					<education></education>
+					<specialization></specialization>
+					<qualification_improvement></qualification_improvement>
 					<career></career>
-					<overall_experience>13</overall_experience>
-					<specialization_experience>6</specialization_experience>
+					<overall_experience></overall_experience>
+					<specialization_experience></specialization_experience>
 				</pedagogical_worker>
 			</pedagogical_staff>
 		</section_content>
@@ -518,7 +522,7 @@ class RegInfoEduOrg
 
         foreach ($site_subsections_data as $subsection) {
             
-            $existing_subsection = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_site_subsections WHERE name = %s", $subsection));
+            $existing_subsection = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_site_subsections WHERE name = %s", $subsection['name']));
             if ($existing_subsection == 0) {
                 $wpdb->insert($table_site_subsections, array(
                     'name' => $subsection['name'],
@@ -2518,48 +2522,173 @@ class RegInfoEduOrg
 
 
     function reginfoeduorg_display_section_data() {
-        if ( isset( $_POST['import_file_submit'] ) && isset( $_FILES['import_file'] ) ) {
-            if ($_FILES['import_file']['error'] === UPLOAD_ERR_OK) {
-                $xml = simplexml_load_file($_FILES['import_file']['tmp_name']);
+        global $wpdb;
+        $url = $_SERVER['REQUEST_URI'];
+        $matches = array();
+        preg_match('/reginfoeduorg_subsection_(\d+)/', $url, $matches);
+        $subsection_id = isset($matches[1]) ? intval($matches[1]) : 0;
+        $subsection_name = $wpdb->get_var($wpdb->prepare("SELECT name FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = %d", $subsection_id));
+        switch ($subsection_id)
+        {
+            case 1:
+                if ( isset( $_POST['import_file_submit'] ) && isset( $_FILES['import_file'] ) ) {
+                    if ($_FILES['import_file']['error'] === UPLOAD_ERR_OK) {
+                        $xml = simplexml_load_file($_FILES['import_file']['tmp_name']);
 
-                // Находим секцию "Основные сведения"
-                $section_content = $xml->xpath('//section[section_title="Основные сведения"]/section_content/general_information')[0];
+                        // Находим секцию "Основные сведения"
+                        $section_content = $xml->xpath('//section[section_title="Основные сведения"]/section_content/general_information')[0];
 
-                // Преобразуем дату создания в формат 'Y-m-d', игнорируя время
-                $creation_date = DateTime::createFromFormat('d.m.Y H:i:s', (string)$section_content->creation_date);
-                $creation_date_formatted = $creation_date ? $creation_date->format('Y-m-d') : '';
+                        // Преобразуем дату создания в формат 'Y-m-d', игнорируя время
+                        $creation_date = DateTime::createFromFormat('d.m.Y H:i:s', (string)$section_content->creation_date);
+                        $creation_date_formatted = $creation_date ? $creation_date->format('Y-m-d') : '';
 
 
-                // Создаем массив с данными для таблицы reginfoeduorg_general_information
-                $data = array(
-                    'full_name' => (string)$section_content->full_name,
-                    'short_name' => (string)$section_content->short_name,
-                    'creation_date' => $creation_date_formatted,
-                    'founder' => (string)$section_content->founder,
-                    'location' => (string)$section_content->location,
-                    'branches' => (string)$section_content->branches,
-                    'working_hours' => (string)$section_content->working_hours,
-                    'contact_phones' => (string)$section_content->contact_phones,
-                    'email_addresses' => (string)$section_content->email_addresses,
-                );
+                        // Создаем массив с данными для таблицы reginfoeduorg_general_information
+                        $data = array(
+                            'full_name' => (string)$section_content->full_name,
+                            'short_name' => (string)$section_content->short_name,
+                            'creation_date' => $creation_date_formatted,
+                            'founder' => (string)$section_content->founder,
+                            'location' => (string)$section_content->location,
+                            'branches' => (string)$section_content->branches,
+                            'working_hours' => (string)$section_content->working_hours,
+                            'contact_phones' => (string)$section_content->contact_phones,
+                            'email_addresses' => (string)$section_content->email_addresses,
+                        );
 
-                // Вставляем или обновляем данные в таблице reginfoeduorg_general_information
-                global $wpdb;
-                $table_name = "{$wpdb->prefix}reginfoeduorg_general_information";
-                $row_exists = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
-                if ($row_exists) {
-                    $wpdb->update($table_name, $data, ['id' => 1]);
-                } else {
-                    $wpdb->insert($table_name, $data);
+                        // Вставляем или обновляем данные в таблице reginfoeduorg_general_information
+                        global $wpdb;
+                        $table_name = "{$wpdb->prefix}reginfoeduorg_general_information";
+                        $row_exists = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
+                        if ($row_exists) {
+                            $wpdb->update($table_name, $data, ['id' => 1]);
+                        } else {
+                            $wpdb->insert($table_name, $data);
+                        }
+
+                        // Выводим сообщение об успешном импорте данных
+                        echo "<div class='notice notice-success is-dismissible'><p>Данные успешно импортированы из файла.</p></div>";
+                    } else {
+                        // Выводим сообщение об ошибке при загрузке файла
+                        echo "<div class='notice notice-error is-dismissible'><p>Ошибка при загрузке файла: " . $_FILES['import_file']['error'] . "</p></div>";
+                    }
                 }
+                break;
+            case 6:                
+                if (isset($_POST['import_file_submit']) && isset($_FILES['import_file'])) {
+                    if ($_FILES['import_file']['error'] === UPLOAD_ERR_OK) {
+                        $xml = simplexml_load_file($_FILES['import_file']['tmp_name']);
+                        // Находим секцию "Руководство. Педагогический (научно-педагогический) состав"
+                        $section_content = $xml->xpath('//section[section_title="Руководство. Педагогический (научно-педагогический) состав"]/section_content')[0];
+                        // Объединяем всех сотрудников в одном массиве
+                        // Объединяем всех сотрудников в одном массиве
+                        $staff_data = array();
 
-                // Выводим сообщение об успешном импорте данных
-                echo "<div class='notice notice-success is-dismissible'><p>Данные успешно импортированы из файла.</p></div>";
-            } else {
-                // Выводим сообщение об ошибке при загрузке файла
-                echo "<div class='notice notice-error is-dismissible'><p>Ошибка при загрузке файла: " . $_FILES['import_file']['error'] . "</p></div>";
-            }
+                        if ($section_content->management->director) {
+                            $staff_data[] = $section_content->management->director;
+                        }
+
+                        if ($section_content->management->deputy_directors) {
+                            foreach ($section_content->management->deputy_directors->deputy_director as $deputy_director) {
+                                $staff_data[] = $deputy_director;
+                            }
+                        }
+
+                        if ($section_content->management->branch_directors) {
+                            foreach ($section_content->management->branch_directors->branch_director as $branch_director) {
+                                $staff_data[] = $branch_director;
+                            }
+                        }
+
+                        if ($section_content->pedagogical_staff) {
+                            foreach ($section_content->pedagogical_staff->pedagogical_worker as $pedagogical_worker) {
+                                $staff_data[] = $pedagogical_worker;
+                            }
+                        }
+
+
+                        // Очистить таблицу staff перед добавлением новых данных
+                        global $wpdb;
+                        $table_staff = $wpdb->prefix . 'reginfoeduorg_staff';
+                        $table_disciplines = $wpdb->prefix . 'reginfoeduorg_disciplines';
+                        $table_education = $wpdb->prefix . 'reginfoeduorg_education';
+                        $table_qualification_improvement = $wpdb->prefix . 'reginfoeduorg_qualification_improvement';
+                        $table_career = $wpdb->prefix . 'reginfoeduorg_career';
+                        $wpdb->query("DELETE FROM $table_staff");
+                        // Вставляем данные о сотрудниках
+                        foreach ($staff_data as $staff_member) {
+                            $staff_member_data = array(
+                                'full_name' => (string)$staff_member->full_name,
+                                'position' => (string)$staff_member->position,
+                                'email' => (string)$staff_member->email,
+                                'phone' => (string)$staff_member->phone,
+                                );
+                            // Вставляем основные данные сотрудника и получаем ID вставленного сотрудника
+                            $wpdb->insert($table_staff, $staff_member_data);
+                            $staff_member_id = $wpdb->insert_id;
+
+                            // Вставляем дисциплины
+                            if (isset($staff_member->disciplines)) {
+                                foreach ($staff_member->disciplines as $discipline) {
+                                    $wpdb->insert($table_disciplines, array(
+                                        'staff_id' => $staff_member_id,
+                                        'discipline' => (string)$discipline,
+                                    ));
+                                }
+                            }
+
+                            // Вставляем данные об образовании
+                            if (isset($staff_member->education)) {
+                                foreach ($staff_member->education as $education) {
+                                    $wpdb->insert($table_education, array(
+                                        'staff_id' => $staff_member_id,
+                                        'education_info' => (string)$education,
+                                    ));
+                                }
+                            }
+
+                            // Вставляем данные о повышении квалификации
+                            if (isset($staff_member->qualification_improvement)) {
+                                foreach ($staff_member->qualification_improvement as $improvement) {
+                                    $wpdb->insert($table_qualification_improvement, array(
+                                        'staff_id' => $staff_member_id,
+                                        'improvement_info' => (string)$improvement,
+                                    ));
+                                }
+                            }
+
+
+                            // Вставляем данные о карьере
+                            if (isset($staff_member->career)) {
+                                foreach ($staff_member->career as $career) {
+                                    $career_info = (string)$career;
+                                    $wpdb->insert($table_career, array(
+                                        'staff_id' => $staff_member_id,
+                                        'career_info' => $career_info,
+                                    ));
+                                }
+                            }
+
+                            // Вставляем данные об опыте работы
+                            $wpdb->update($table_staff, array(
+                                'overall_experience' => (string)$staff_member->overall_experience,
+                                'specialization_experience' => (string)$staff_member->specialization_experience,
+                        ), array('id' => $staff_member_id));
+                        }
+                        // Выводим сообщение об успешном импорте данных
+                        echo "<div class='notice notice-success is-dismissible'><p>Данные успешно импортированы из файла.</p></div>";
+                    }
+                    else 
+                    {
+                        // Выводим сообщение об ошибке при загрузке файла
+                        echo "<div class='notice notice-error is-dismissible'><p>Ошибка при загрузке файла: " . $_FILES['import_file']['error'] . "</p></div>";
+                    }
+                }
+                break;
         }
+        
+
+        
 
         
 
@@ -2632,8 +2761,10 @@ class RegInfoEduOrg
         switch ($subsection_id) {
             case 1:
                 $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_general_information", ARRAY_A);
-                if ($data) {
-                    if (isset($_POST['apply_styles'])) {
+                if ($data) 
+                {
+                    if (isset($_POST['apply_styles'])) 
+                    {
                         $xslt_code = isset($_POST['reginfoeduorg_xslt_code']) ? stripslashes($_POST['reginfoeduorg_xslt_code']) : '';
 
                         // Сохраняем XSLT стиль в базу данных
@@ -2679,24 +2810,145 @@ class RegInfoEduOrg
                         'Адреса электронной почты' => 'email_addresses',
                     );
 
-                    foreach ($data as $row) {
-                        foreach ($fields as $field_name => $field_key) {
+                    foreach ($data as $row) 
+                    {
+                        foreach ($fields as $field_name => $field_key) 
+                        {
                             echo '<tr>';
                             echo '<td class="column-name">' . $field_name . '</td>';
                             echo '<td class="column-value"><input type="text" name="data[' . $field_key . ']" value="' . $row[$field_key] . '"></td>';
                             echo '</tr>';
                         }
                     }
-
-
                     echo '</tbody>';
                     echo '</table>';
                     echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
-                } else {
+                } 
+                else 
+                {
                     echo '<p>Данные отсутствуют.</p>';
                 }
-
                 break;
+            case 6:
+                $staff_data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_staff", ARRAY_A);
+                if ($staff_data) {
+                    if (isset($_POST['save_table_changes'])) {
+                        // Обработка данных таблицы reginfoeduorg_staff
+                        foreach ($_POST['data'] as $id => $row_data) {
+                            $wpdb->update(
+                                "{$wpdb->prefix}reginfoeduorg_staff",
+                                $row_data,
+                                array('id' => $id),
+                                array('%s', '%s', '%s', '%s', '%d', '%d'),
+                                array('%d')
+                            );
+                        }
+
+                        // Обработка связанных данных
+                        foreach ($_POST['related_data'] as $id => $related_data) {
+                            // Удаление существующих записей для сотрудника
+                            $wpdb->delete("{$wpdb->prefix}reginfoeduorg_disciplines", array('staff_id' => $id), array('%d'));
+                            $wpdb->delete("{$wpdb->prefix}reginfoeduorg_education", array('staff_id' => $id), array('%d'));
+                            $wpdb->delete("{$wpdb->prefix}reginfoeduorg_qualification_improvement", array('staff_id' => $id), array('%d'));
+                            $wpdb->delete("{$wpdb->prefix}reginfoeduorg_career", array('staff_id' => $id), array('%d'));
+
+                            // Добавление новых записей с обновленными данными
+                            $disciplines = explode(', ', $related_data['disciplines']);
+                            foreach ($disciplines as $discipline) {
+                                $wpdb->insert("{$wpdb->prefix}reginfoeduorg_disciplines", array('staff_id' => $id, 'discipline' => $discipline), array('%d', '%s'));
+                            }
+
+                            foreach ($related_data['education'] as $edu) {
+                                $wpdb->insert("{$wpdb->prefix}reginfoeduorg_education", array('staff_id' => $id, 'education_info' => $edu['info'], 'specialization' => $edu['specialization']), array('%d', '%s', '%s'));
+                            }
+
+                            $qualification_improvements = explode(', ', $related_data['qualification_improvement']);
+                            foreach ($qualification_improvements as $improvement_info) {
+                                $wpdb->insert("{$wpdb->prefix}reginfoeduorg_qualification_improvement", array('staff_id' => $id, 'improvement_info' => $improvement_info), array('%d', '%s'));
+                            }
+
+                            $careers = explode(', ', $related_data['career']);
+                            foreach ($careers as $career_info) {
+                                $wpdb->insert("{$wpdb->prefix}reginfoeduorg_career", array('staff_id' => $id, 'career_info' => $career_info), array('%d', '%s'));
+                            }
+                        }
+                    }
+
+                    foreach ($staff_data as $row) {
+                        $id = $row['id'];
+                        $disciplines = $wpdb->get_results($wpdb->prepare("SELECT discipline FROM {$wpdb->prefix}reginfoeduorg_disciplines WHERE staff_id = %d", $id), ARRAY_A);
+                        $education = $wpdb->get_results($wpdb->prepare("SELECT education_info, specialization FROM {$wpdb->prefix}reginfoeduorg_education WHERE staff_id = %d", $id), ARRAY_A);
+                        $qualification_improvement = $wpdb->get_results($wpdb->prepare("SELECT improvement_info FROM {$wpdb->prefix}reginfoeduorg_qualification_improvement WHERE staff_id = %d", $id), ARRAY_A);
+                        $career = $wpdb->get_results($wpdb->prepare("SELECT career_info FROM {$wpdb->prefix}reginfoeduorg_career WHERE staff_id = %d", $id), ARRAY_A);
+
+                        echo '<h3>Сотрудник: ' . $row['full_name'] . '</h3>';
+
+                        echo '<table class="wp-list-table widefat fixed striped">';
+                        echo '<thead><tr><th>ФИО</th><th>Должность</th><th>Email</th><th>Телефон</th><th>Общий стаж</th><th>Стаж по специализации</th></tr></thead>';
+                        echo '<tbody>';
+                        echo '<tr>';
+                        echo '<td>' . $row['full_name'] . '</td>';
+                        echo '<td>' . $row['position'] . '</td>';
+                        echo '<td>' . $row['email'] . '</td>';
+                        echo '<td>' . $row['phone'] . '</td>';
+                        echo '<td>' . $row['overall_experience'] . '</td>';
+                        echo '<td>' . $row['specialization_experience'] . '</td>';
+                        echo '</tr>';
+                        echo '</tbody>';
+                        echo '</table>';
+                        echo '<br>';
+                        
+
+                        echo '<table class="wp-list-table widefat fixed striped">';
+                        echo '<thead><tr><th>Дисциплины</th></tr></thead>';
+                        echo '<tbody>';
+                        foreach ($disciplines as $discipline) {
+                            echo '<tr><td>' . $discipline['discipline'] . '</td></tr>';
+                        }
+                        echo '</tbody>';
+                        echo '</table>';
+                        echo '<br>';
+
+                        echo '<table class="wp-list-table widefat fixed striped">';
+                        echo '<thead><tr><th>Образование</th><th>Специализация</th></tr></thead>';
+                        echo '<tbody>';
+                        foreach ($education as $edu) {
+                            echo '<tr><td>' . $edu['education_info'] . '</td><td>' . $edu['specialization'] . '</td></tr>';
+                        }
+                        echo '</tbody>';
+                        echo '</table>';
+                        echo '<br>';
+
+                        echo '<table class="wp-list-table widefat fixed striped">';
+                        echo '<thead><tr><th>Повышение квалификации</th></tr></thead>';
+                        echo '<tbody>';
+                        foreach ($qualification_improvement as $improvement) {
+                            echo '<tr><td>' . $improvement['improvement_info'] . '</td></tr>';
+                        }
+                        echo '</tbody>';
+                        echo '</table>';
+                        echo '<br>';
+
+                        echo '<table class="wp-list-table widefat fixed striped">';
+                        echo '<thead><tr><th>Карьера</th></tr></thead>';
+                        echo '<tbody>';
+                        foreach ($career as $career_info) {
+                            echo '<tr><td>' . $career_info['career_info'] . '</td></tr>';
+                        }
+                        echo '</tbody>';
+                        echo '</table>';
+
+
+                        echo '<input type="submit" name="save_table_changes" value="Сохранить изменения" class="button-primary">';
+                        
+                    }
+                } 
+                else {
+                    echo '<p>Данные отсутствуют.</p>';
+                }
+                break;
+
+
             default:
                 echo '<p>Страница находится в разработке.</p>';
                 break;
