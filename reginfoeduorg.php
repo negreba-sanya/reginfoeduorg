@@ -87,7 +87,6 @@ class RegInfoEduOrg
                 id INT(11) NOT NULL AUTO_INCREMENT,
                 staff_id INT(11) NOT NULL,
                 education_info TEXT NOT NULL,
-                specialization VARCHAR(255) NOT NULL,
                 PRIMARY KEY (id),
                 FOREIGN KEY (staff_id) REFERENCES $table_staff(id) ON DELETE CASCADE ON UPDATE CASCADE
             ) $charset_collate;
@@ -2642,7 +2641,7 @@ class RegInfoEduOrg
                                 foreach ($staff_member->education as $education) {
                                     $wpdb->insert($table_education, array(
                                         'staff_id' => $staff_member_id,
-                                        'education_info' => (string)$education,
+                                        'education_info' => (string)$education
                                     ));
                                 }
                             }
@@ -2686,11 +2685,6 @@ class RegInfoEduOrg
                 }
                 break;
         }
-        
-
-        
-
-        
 
         global $wpdb;
         $url = $_SERVER['REQUEST_URI'];
@@ -2701,28 +2695,40 @@ class RegInfoEduOrg
         // Проверяем, была ли кнопка "Сохранить изменения" нажата
         if (isset($_POST['save_changes'])) {
             $post_id = get_page_by_title($subsection_name)->ID;
-            $content = $_POST['reginfoeduorg_content'];
+            $content = htmlspecialchars_decode($_POST['reginfoeduorg_content']);
+            $css_styles = $_POST['css_styles'];
+            $css_styles = str_replace(' ', '', $css_styles);
+            $css_styles = preg_replace("/\r|\n/", "", $css_styles);
+            
+            // Объедините стили с HTML кодом
+            $content_with_styles = '<style>' . $css_styles . '</style>'.$content;
 
             // Обновляем контент в таблице reginfoeduorg_site_subsections
             $wpdb->update(
                 "{$wpdb->prefix}reginfoeduorg_site_subsections",
-                array('content' => $content),
+                array('content' => $content_with_styles),
                 array('id' => $subsection_id),
                 array('%s'),
                 array('%d')
             );
 
-            if ($post_id && $content) {
+            if ($post_id && $content_with_styles) {
+
                 $post = array(
                     'ID' => $post_id,
-                    'post_content' => $content,
+                    'post_content' => $content_with_styles,
                 );
                 wp_update_post($post);
+
             }
+
 
             // Выводим сообщение об успешном сохранении изменений
             echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Изменения сохранены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
         }
+
+
+
 
         if (isset($_POST['save_table_changes'])) {
             $data_to_update = $_POST['data'];
@@ -2743,54 +2749,76 @@ class RegInfoEduOrg
         }
 
         echo '<div class="wrap">';
+
+        // Извлекаем содержимое и стили из БД
+        $subsection_content = stripslashes($wpdb->get_var($wpdb->prepare("SELECT content FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = %d", $subsection_id)));
+        $css_styles = '';
+
+        // Ищем стили в содержимом и удаляем их
+        if (preg_match('/<style>(.*?)<\/style>/s', $subsection_content, $matches)) {
+            $css_styles = $matches[1];
+            $subsection_content = str_replace($matches[0], '', $subsection_content);
+        }
+
         echo '<form method="post" action="" enctype="multipart/form-data">';
         echo '<h1>' . $subsection_name . '</h1>';
-        echo '<h3>Контент на странице</h3>';
-        $content = $wpdb->get_var($wpdb->prepare("SELECT content FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = %d", $subsection_id));
+          echo '<h3>Контент на странице</h3>';
         $editor_id = 'reginfoeduorg_content_editor';
         $settings = array(
             'textarea_name' => 'reginfoeduorg_content',
             'editor_height' => 200,
             'media_buttons' => true,
+            'wpautop' => false, 
+            'tadv_noautop' => true 
         );
-        wp_editor($content, $editor_id, $settings);
+        wp_editor($subsection_content, $editor_id, $settings);
         echo '<p>';
+        echo '<label for="css_styles">CSS стили:</label>';
+        echo '<textarea id="css_styles" name="css_styles" style="width: 100%; height: 150px;">' . esc_textarea($css_styles) . '</textarea>';
+        
         echo '<input type="submit" name="save_changes" value="Сохранить изменения на сайте" class="button-primary">';
         echo '</p>';
         echo '<h3>Таблица данных подраздела</h3>';
+        if (isset($_POST['apply_styles'])) {
+            $xslt_code = isset($_POST['reginfoeduorg_xslt_code']) ? stripslashes($_POST['reginfoeduorg_xslt_code']) : '';
+
+            // Сохраняем XSLT стиль в базу данных
+            $wpdb->update(
+                "{$wpdb->prefix}reginfoeduorg_site_subsections",
+                array('xslt' => $xslt_code),
+                array('id' => $subsection_id),
+                array('%s'),
+                array('%d')
+            );
+            $xml = new DOMDocument();
+            $xml = $this->generate_xml($subsection_id);
+            // Применяем XSLT-код к данным подраздела
+            $content = $this->apply_xslt($xml, $xslt_code);
+
+            // Извлекаем CSS стили и удаляем их из содержимого
+            $css_styles = '';
+            if (preg_match('/<style>(.*?)<\/style>/s', $content, $matches)) {
+                $css_styles = $matches[1];
+                $content = str_replace($matches[0], '', $content);
+            }
+
+            echo '<script>
+            jQuery(document).ready(function() {
+                var new_content = ' . json_encode($content) . ';
+                var new_css_styles = ' . json_encode($css_styles) . ';
+                var editor = tinyMCE.get("' . $editor_id . '");
+                editor.setContent(new_content);
+                jQuery("#css_styles").val(new_css_styles);
+            });
+            </script>';
+        }
+
         switch ($subsection_id) {
             case 1:
                 $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_general_information", ARRAY_A);
                 if ($data) 
                 {
-                    if (isset($_POST['apply_styles'])) 
-                    {
-                        $xslt_code = isset($_POST['reginfoeduorg_xslt_code']) ? stripslashes($_POST['reginfoeduorg_xslt_code']) : '';
-
-                        // Сохраняем XSLT стиль в базу данных
-                        $wpdb->update(
-                            "{$wpdb->prefix}reginfoeduorg_site_subsections",
-                            array('xslt' => $xslt_code),
-                            array('id' => $subsection_id),
-                            array('%s'),
-                            array('%d')
-                        );
-                        $xml = new DOMDocument();
-                        $xml = $this->generate_xml();
-                        // Применяем XSLT-код к данным подраздела
-                        $transformed_data = $this->apply_xslt($xml, $xslt_code);
-
-                        // Обновляем поле для ввода контента на странице
-                        $content = $transformed_data;
-                        echo '<script>
-                        jQuery(document).ready(function() {
-                            var new_content = ' . json_encode($content) . ';
-                            var editor = tinyMCE.get("' . $editor_id . '");
-                            editor.setContent(new_content);
-                        });
-                        </script>';
-
-                    }
+                    
 
                     echo '<table class="wp-list-table widefat fixed striped">';
                     echo '<thead><tr>';
@@ -2832,6 +2860,17 @@ class RegInfoEduOrg
             case 6:
                 $staff_data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_staff", ARRAY_A);
                 if ($staff_data) {
+                    echo "<style>
+                      .custom-textarea {
+                          max-width: 100%;
+                          overflow-wrap: break-word;
+                          white-space: normal;
+                          resize: vertical;
+                          max-height: none;
+                          height: auto;
+                          box-sizing: border-box;
+                        }
+                    </style>";
                     if (isset($_POST['save_table_changes'])) {
                         // Обработка данных таблицы reginfoeduorg_staff
                         foreach ($_POST['data'] as $id => $row_data) {
@@ -2853,23 +2892,32 @@ class RegInfoEduOrg
                             $wpdb->delete("{$wpdb->prefix}reginfoeduorg_career", array('staff_id' => $id), array('%d'));
 
                             // Добавление новых записей с обновленными данными
-                            $disciplines = explode(', ', $related_data['disciplines']);
-                            foreach ($disciplines as $discipline) {
-                                $wpdb->insert("{$wpdb->prefix}reginfoeduorg_disciplines", array('staff_id' => $id, 'discipline' => $discipline), array('%d', '%s'));
+                            $disciplines = explode(',', $related_data['disciplines']);
+                            if (is_array($disciplines)) {
+                                foreach ($disciplines as $discipline) {
+                                    $wpdb->insert("{$wpdb->prefix}reginfoeduorg_disciplines", array('staff_id' => $id, 'discipline' => $discipline), array('%d', '%s'));
+                                }
                             }
 
-                            foreach ($related_data['education'] as $edu) {
-                                $wpdb->insert("{$wpdb->prefix}reginfoeduorg_education", array('staff_id' => $id, 'education_info' => $edu['info'], 'specialization' => $edu['specialization']), array('%d', '%s', '%s'));
+                            $education = explode(',', $related_data['education']);
+                            if (is_array($education)) {
+                                foreach ($education as $edu) {
+                                    $wpdb->insert("{$wpdb->prefix}reginfoeduorg_education", array('staff_id' => $id, 'education_info' => $edu), array('%d', '%s'));
+                                }
                             }
 
-                            $qualification_improvements = explode(', ', $related_data['qualification_improvement']);
-                            foreach ($qualification_improvements as $improvement_info) {
-                                $wpdb->insert("{$wpdb->prefix}reginfoeduorg_qualification_improvement", array('staff_id' => $id, 'improvement_info' => $improvement_info), array('%d', '%s'));
+                            $qualification_improvements = explode(',', $related_data['qualification_improvement']);
+                            if (is_array($qualification_improvements)) {
+                                foreach ($qualification_improvements as $improvement_info) {
+                                    $wpdb->insert("{$wpdb->prefix}reginfoeduorg_qualification_improvement", array('staff_id' => $id, 'improvement_info' => $improvement_info), array('%d', '%s'));
+                                }
                             }
 
-                            $careers = explode(', ', $related_data['career']);
-                            foreach ($careers as $career_info) {
-                                $wpdb->insert("{$wpdb->prefix}reginfoeduorg_career", array('staff_id' => $id, 'career_info' => $career_info), array('%d', '%s'));
+                            $careers = explode(',', $related_data['career']);
+                            if (is_array($careers)) {
+                                foreach ($careers as $career_info) {
+                                    $wpdb->insert("{$wpdb->prefix}reginfoeduorg_career", array('staff_id' => $id, 'career_info' => $career_info), array('%d', '%s'));
+                                }
                             }
                         }
                     }
@@ -2877,44 +2925,39 @@ class RegInfoEduOrg
                     foreach ($staff_data as $row) {
                         $id = $row['id'];
                         $disciplines = $wpdb->get_results($wpdb->prepare("SELECT discipline FROM {$wpdb->prefix}reginfoeduorg_disciplines WHERE staff_id = %d", $id), ARRAY_A);
-                        $education = $wpdb->get_results($wpdb->prepare("SELECT education_info, specialization FROM {$wpdb->prefix}reginfoeduorg_education WHERE staff_id = %d", $id), ARRAY_A);
+                        $education = $wpdb->get_results($wpdb->prepare("SELECT education_info FROM {$wpdb->prefix}reginfoeduorg_education WHERE staff_id = %d", $id), ARRAY_A);
                         $qualification_improvement = $wpdb->get_results($wpdb->prepare("SELECT improvement_info FROM {$wpdb->prefix}reginfoeduorg_qualification_improvement WHERE staff_id = %d", $id), ARRAY_A);
                         $career = $wpdb->get_results($wpdb->prepare("SELECT career_info FROM {$wpdb->prefix}reginfoeduorg_career WHERE staff_id = %d", $id), ARRAY_A);
-
+                        
                         echo '<h3>Сотрудник: ' . $row['full_name'] . '</h3>';
 
                         echo '<table class="wp-list-table widefat fixed striped">';
                         echo '<thead><tr><th>ФИО</th><th>Должность</th><th>Email</th><th>Телефон</th><th>Общий стаж</th><th>Стаж по специализации</th></tr></thead>';
                         echo '<tbody>';
                         echo '<tr>';
-                        echo '<td>' . $row['full_name'] . '</td>';
-                        echo '<td>' . $row['position'] . '</td>';
-                        echo '<td>' . $row['email'] . '</td>';
-                        echo '<td>' . $row['phone'] . '</td>';
-                        echo '<td>' . $row['overall_experience'] . '</td>';
-                        echo '<td>' . $row['specialization_experience'] . '</td>';
+                        echo '<td><textarea class="custom-textarea" name="data[' . $id . '][full_name]">' . $row['full_name'] . '</textarea></td>';
+                        echo '<td><textarea class="custom-textarea" name="data[' . $id . '][position]">' . $row['position'] . '</textarea></td>';
+                        echo '<td><textarea class="custom-textarea" name="data[' . $id . '][email]">' . $row['email'] . '</textarea></td>';
+                        echo '<td><textarea class="custom-textarea" name="data[' . $id . '][phone]">' . $row['phone'] . '</textarea></td>';
+                        echo '<td><textarea class="custom-textarea" name="data[' . $id . '][overall_experience]">' . $row['overall_experience'] . '</textarea></td>';
+                        echo '<td><textarea class="custom-textarea" name="data[' . $id . '][specialization_experience]">' . $row['specialization_experience'] . '</textarea></td>';
                         echo '</tr>';
                         echo '</tbody>';
                         echo '</table>';
                         echo '<br>';
                         
-
                         echo '<table class="wp-list-table widefat fixed striped">';
                         echo '<thead><tr><th>Дисциплины</th></tr></thead>';
                         echo '<tbody>';
-                        foreach ($disciplines as $discipline) {
-                            echo '<tr><td>' . $discipline['discipline'] . '</td></tr>';
-                        }
+                        echo '<td><textarea class="custom-textarea" name="related_data[' . $id . '][disciplines]">' . implode(', ', array_column($disciplines, 'discipline')) . '</textarea></td>';
                         echo '</tbody>';
                         echo '</table>';
                         echo '<br>';
 
                         echo '<table class="wp-list-table widefat fixed striped">';
-                        echo '<thead><tr><th>Образование</th><th>Специализация</th></tr></thead>';
+                        echo '<thead><tr><th>Образование</th></tr></thead>';
                         echo '<tbody>';
-                        foreach ($education as $edu) {
-                            echo '<tr><td>' . $edu['education_info'] . '</td><td>' . $edu['specialization'] . '</td></tr>';
-                        }
+                        echo '<td><textarea class="custom-textarea" name="related_data[' . $id . '][education]">' . implode(', ', array_column($education, 'education_info')) . '</textarea></td>';
                         echo '</tbody>';
                         echo '</table>';
                         echo '<br>';
@@ -2922,9 +2965,7 @@ class RegInfoEduOrg
                         echo '<table class="wp-list-table widefat fixed striped">';
                         echo '<thead><tr><th>Повышение квалификации</th></tr></thead>';
                         echo '<tbody>';
-                        foreach ($qualification_improvement as $improvement) {
-                            echo '<tr><td>' . $improvement['improvement_info'] . '</td></tr>';
-                        }
+                        echo '<td><textarea class="custom-textarea" name="related_data[' . $id . '][qualification_improvement]">' . implode(', ', array_column($qualification_improvement, 'improvement_info')) . '</textarea></td>';
                         echo '</tbody>';
                         echo '</table>';
                         echo '<br>';
@@ -2932,16 +2973,16 @@ class RegInfoEduOrg
                         echo '<table class="wp-list-table widefat fixed striped">';
                         echo '<thead><tr><th>Карьера</th></tr></thead>';
                         echo '<tbody>';
-                        foreach ($career as $career_info) {
-                            echo '<tr><td>' . $career_info['career_info'] . '</td></tr>';
-                        }
+                        echo '<td><textarea class="custom-textarea" name="related_data[' . $id . '][career]">' . implode(', ', array_column($career, 'career_info')) . '</textarea></td>';
                         echo '</tbody>';
                         echo '</table>';
-
-
-                        echo '<input type="submit" name="save_table_changes" value="Сохранить изменения" class="button-primary">';
-                        
+                        echo '<br>';
+                        echo '<hr>'; 
                     }
+                    
+                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения" class="button-primary">';
+                    echo '<br>';
+                    
                 } 
                 else {
                     echo '<p>Данные отсутствуют.</p>';
@@ -2953,10 +2994,9 @@ class RegInfoEduOrg
                 echo '<p>Страница находится в разработке.</p>';
                 break;
         }
-        echo '<br>';
+        echo '<h2>Импорт данных</h2>';
         echo  '<input type="file" name="import_file" accept=".xml">';
         echo '<input type="submit" name="import_file_submit" value="Импортировать" class="button-primary">';
-        
         echo '<br>';
         echo '<h2>Настройка отображения таблицы</h2>';
         echo '<table class="form-table">';
@@ -2996,36 +3036,106 @@ class RegInfoEduOrg
     }
 
 
-    function generate_xml() {
+    function generate_xml($subsection_id) {
         global $wpdb;
+        switch ($subsection_id)
+        {
+            case 1:
+                // Выбираем данные из таблицы reginfoeduorg_general_information
+                $general_information = $wpdb->get_row("SELECT * FROM {$wpdb->prefix}reginfoeduorg_general_information", ARRAY_A);
 
-        // Выбираем данные из таблицы reginfoeduorg_general_information
-        $general_information = $wpdb->get_row("SELECT * FROM {$wpdb->prefix}reginfoeduorg_general_information", ARRAY_A);
+                // Выбираем пустую структуру XML для подраздела "Основные сведения" из базы данных
+                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Основные сведения'");
 
-        // Выбираем пустую структуру XML для подраздела "Основные сведения" из базы данных
-        $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Основные сведения'");
+                // Загружаем пустую структуру XML и дополняем ее данными
+                $xml = new DOMDocument('1.0', 'UTF-8');
+                $xml->formatOutput = true;
+                $xml->loadXML($subsection_xml);
+                // Находим элемент section_content для подраздела "Основные сведения"
+                $section_content = $xml->getElementsByTagName('section_content')->item(0);
 
-        // Загружаем пустую структуру XML и дополняем ее данными
-        $xml = new DOMDocument('1.0', 'UTF-8');
-        $xml->formatOutput = true;
-        $xml->loadXML($subsection_xml);
-        // Находим элемент section_content для подраздела "Основные сведения"
-        $section_content = $xml->getElementsByTagName('section_content')->item(0);
+                // Удаляем имеющиеся элементы с данными
+                while ($section_content->hasChildNodes()) {
+                    $section_content->removeChild($section_content->firstChild);
+                }
 
-        // Удаляем имеющиеся элементы с данными
-        while ($section_content->hasChildNodes()) {
-            $section_content->removeChild($section_content->firstChild);
+                // Создаем элемент general_information
+                $general_information_node = $xml->createElement('general_information');
+                $section_content->appendChild($general_information_node);
+
+                // Создаем элементы для каждого поля из таблицы и добавляем их в general_information
+                foreach ($general_information as $key => $value) {
+                    $element = $xml->createElement($key, htmlspecialchars($value));
+                    $general_information_node->appendChild($element);
+                }
+                break;
+            case 6:
+                // Выбираем данные о сотрудниках
+                $staff_members = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_staff", ARRAY_A);
+
+                // Выбираем пустую структуру XML для подраздела "Сотрудники" из базы данных
+                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id=$subsection_id");
+
+                // Загружаем пустую структуру XML и дополняем ее данными
+                $xml = new DOMDocument('1.0', 'UTF-8');
+                $xml->formatOutput = true;
+                $xml->loadXML($subsection_xml);
+                // Находим элемент section_content для подраздела "Сотрудники"
+                $section_content = $xml->getElementsByTagName('section_content')->item(0);
+
+                // Удаляем имеющиеся элементы с данными
+                while ($section_content->hasChildNodes()) {
+                    $section_content->removeChild($section_content->firstChild);
+                }
+
+                // Создаем элемент staff_members
+                $staff_members_node = $xml->createElement('staff_members');
+                $section_content->appendChild($staff_members_node);
+
+                // Для каждого сотрудника создаем элемент staff и добавляем его в staff_members
+                foreach ($staff_members as $staff) {
+                    $staff_node = $xml->createElement('staff');
+                    $staff_members_node->appendChild($staff_node);
+
+                    // Создаем элементы для каждого поля из таблицы сотрудников и добавляем их в staff
+                    foreach ($staff as $key => $value) {
+                        $element = $xml->createElement($key, htmlspecialchars($value));
+                        $staff_node->appendChild($element);
+                    }
+                    
+                    // Добавляем данные из связанных таблиц
+                    $staff_id = $staff['id'];
+                    $related_tables = [
+                        'reginfoeduorg_disciplines',
+                        'reginfoeduorg_education',
+                        'reginfoeduorg_qualification_improvement',
+                        'reginfoeduorg_career'
+                    ];
+
+                    foreach ($related_tables as $table) {
+                        $related_data = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}{$table} WHERE staff_id = %d", $staff_id), ARRAY_A);
+                        
+                        // Создаем элемент для связанных данных
+                        $related_data_node = $xml->createElement($table);
+                        $staff_node->appendChild($related_data_node);
+
+                        // Добавляем элементы для каждого поля из связанных таблиц
+                        foreach ($related_data as $related_item) {
+                            $item_node = $xml->createElement('item');
+                            $related_data_node->appendChild($item_node);
+                            
+                            foreach ($related_item as $key => $value) {
+                                $element = $xml->createElement($key, htmlspecialchars($value));
+                                $item_node->appendChild($element);
+                            }
+                        }
+                    }
+                }
+                break;
+        	default:
         }
-
-        // Создаем элемент general_information
-        $general_information_node = $xml->createElement('general_information');
-        $section_content->appendChild($general_information_node);
-
-        // Создаем элементы для каждого поля из таблицы и добавляем их в general_information
-        foreach ($general_information as $key => $value) {
-            $element = $xml->createElement($key, htmlspecialchars($value));
-            $general_information_node->appendChild($element);
-        }
+        
+        
 
         // Возвращаем готовый XML документ
         return $xml;
