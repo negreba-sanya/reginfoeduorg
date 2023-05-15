@@ -2827,8 +2827,8 @@ class RegInfoEduOrg
             // Создайте массив данных сотрудников на основе обработанных XML данных
             $staff_data = array();
             $xml = simplexml_import_dom($xml);
-            var_dump($xml->staff);
-            foreach ($xml->staff as $staff) {
+            foreach ($xml->section_content->staff_members->staff as $staff) {
+                
                 $staff_data[] = array(
                     'full_name' => (string) $staff->full_name,
                     'position' => (string) $staff->position,
@@ -2836,7 +2836,6 @@ class RegInfoEduOrg
                     // Добавьте здесь больше полей, если они вам нужны
                 );
             }
-
             // Создайте страницы сотрудников
             create_staff_pages($staff_data);
         }
@@ -3170,6 +3169,7 @@ class RegInfoEduOrg
     }
 
     function create_staff_pages($staff_data) {
+        echo 'привет';
         foreach ($staff_data as $staff) {
             $staff_page_content = generate_staff_page_content($staff);
 
