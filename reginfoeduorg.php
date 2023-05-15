@@ -28,6 +28,7 @@ class RegInfoEduOrg
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_menu', array($this, 'add_menu_pages'));
         add_action( 'init', array($this,'reginfoeduorg_create_post_type'));
+        add_action('init', array($this,'reginfoeduorg_rewrite_rules'));
     }
 
     //Создание таблиц для базы данных
@@ -3154,8 +3155,9 @@ class RegInfoEduOrg
         return $xml;
     }
 
-
-
+    function reginfoeduorg_rewrite_rules() {
+        add_rewrite_rule('^staff/([0-9]+)/?', 'index.php?pagename=staff-page&staff_id=$matches[1]', 'top');
+    }
 
 
 }
