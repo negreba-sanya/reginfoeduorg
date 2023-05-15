@@ -27,6 +27,7 @@ class RegInfoEduOrg
         add_action('init', array($this, 'my_plugin_add_sections'));
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_menu', array($this, 'add_menu_pages'));
+        add_action( 'init', array($this,'reginfoeduorg_create_post_type'));
     }
 
     //Создание таблиц для базы данных
@@ -2517,8 +2518,20 @@ class RegInfoEduOrg
         } 
     }
     
-
-
+    function reginfoeduorg_create_post_type() {
+        $args = array(
+            'labels' => array(
+                'name' => __( 'Сотрудники' ),
+                'singular_name' => __( 'Сотрудник' )
+            ),
+            'public' => true,
+            'has_archive' => true,
+            'rewrite' => array('slug' => 'сотрудники'),
+            'show_in_rest' => true,
+     
+        );
+        register_post_type( 'сотрудник', $args );
+    }
 
     function reginfoeduorg_display_section_data() {
         global $wpdb;
@@ -2762,7 +2775,7 @@ class RegInfoEduOrg
 
         echo '<form method="post" action="" enctype="multipart/form-data">';
         echo '<h1>' . $subsection_name . '</h1>';
-          echo '<h3>Контент на странице</h3>';
+        echo '<h3>Контент на странице</h3>';
         $editor_id = 'reginfoeduorg_content_editor';
         $settings = array(
             'textarea_name' => 'reginfoeduorg_content',
