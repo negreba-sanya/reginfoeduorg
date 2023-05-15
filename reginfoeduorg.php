@@ -28,7 +28,6 @@ class RegInfoEduOrg
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_menu', array($this, 'add_menu_pages'));
         add_action( 'init', array($this,'reginfoeduorg_create_post_type'));
-        add_action('init', array($this,'reginfoeduorg_rewrite_rules'));
     }
 
     //Создание таблиц для базы данных
@@ -2825,6 +2824,21 @@ class RegInfoEduOrg
                 jQuery("#css_styles").val(new_css_styles);
             });
             </script>';
+            // Создайте массив данных сотрудников на основе обработанных XML данных
+            $staff_data = array();
+            $xml = simplexml_import_dom($xml);
+            var_dump($xml->staff);
+            foreach ($xml->staff as $staff) {
+                $staff_data[] = array(
+                    'full_name' => (string) $staff->full_name,
+                    'position' => (string) $staff->position,
+                    'photo_url' => (string) $staff->photo_url,
+                    // Добавьте здесь больше полей, если они вам нужны
+                );
+            }
+
+            // Создайте страницы сотрудников
+            create_staff_pages($staff_data);
         }
 
         switch ($subsection_id) {
@@ -3155,9 +3169,27 @@ class RegInfoEduOrg
         return $xml;
     }
 
-    function reginfoeduorg_rewrite_rules() {
-        add_rewrite_rule('^staff/([0-9]+)/?', 'index.php?pagename=staff-page&staff_id=$matches[1]', 'top');
+    function create_staff_pages($staff_data) {
+        foreach ($staff_data as $staff) {
+            $staff_page_content = generate_staff_page_content($staff);
+
+            $post_args = array(
+                'post_title' => $staff['full_name'],
+                'post_content' => $staff_page_content,
+                'post_status' => 'publish',
+                'post_type' => 'staff',
+            );
+
+            $post_id = wp_insert_post($post_args);
+        }
     }
+
+    function generate_staff_page_content($staff) {
+        // Здесь вы можете использовать XSLT для форматирования данных сотрудника и создания HTML для страницы сотрудника
+        // Верните сгенерированный HTML как строку
+        // Этот код будет зависеть от того, как вы хотите форматировать страницу сотрудника
+    }
+
 
 
 }
