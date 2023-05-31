@@ -28,6 +28,7 @@ class RegInfoEduOrg
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_menu', array($this, 'add_menu_pages'));
         add_action( 'init', array($this,'reginfoeduorg_create_post_type'));
+        add_action('init', array($this,'create_staff_post_type'));
     }
 
     //Создание таблиц для базы данных
@@ -50,6 +51,24 @@ class RegInfoEduOrg
         $table_education = $wpdb->prefix.'reginfoeduorg_education';
         $table_qualification_improvement = $wpdb->prefix.'reginfoeduorg_qualification_improvement';
         $table_career = $wpdb->prefix.'reginfoeduorg_career';
+        $table_management_structure = $wpdb->prefix . 'reginfoeduorg_management_structure';
+        $table_management = $wpdb->prefix . 'reginfoeduorg_management';
+        $table_founders = $wpdb->prefix . 'reginfoeduorg_founders';
+        $table_meetings = $wpdb->prefix . 'reginfoeduorg_meetings';
+        $table_documents = $wpdb->prefix . 'reginfoeduorg_documents';
+        $table_education_programs = $wpdb->prefix . 'reginfoeduorg_education_programs';
+        $table_free_education = $wpdb->prefix . 'reginfoeduorg_free_education';
+        $table_property = $wpdb->prefix . 'reginfoeduorg_property';
+        $table_scholarships = $wpdb->prefix . 'reginfoeduorg_scholarships';
+        $table_social_support = $wpdb->prefix . 'reginfoeduorg_social_support';
+        $table_dormitories = $wpdb->prefix . 'reginfoeduorg_dormitories';
+        $table_employment = $wpdb->prefix . 'reginfoeduorg_employment';
+        $table_paid_services = $wpdb->prefix . 'reginfoeduorg_paid_services';
+        $table_funding_sources = $wpdb->prefix . 'reginfoeduorg_funding_sources';
+        $table_financial_report = $wpdb->prefix . 'reginfoeduorg_financial_report';
+        $table_vacancies = $wpdb->prefix . 'reginfoeduorg_vacancies';
+        $table_educational_standards = $wpdb->prefix . 'reginfoeduorg_educational_standards';
+
 
         $sql = "CREATE TABLE $table_general_information (
                 id INT(11) NOT NULL AUTO_INCREMENT,
@@ -161,12 +180,115 @@ class RegInfoEduOrg
             ) $charset_collate;
 
             CREATE TABLE $table_users_roles (
-                id INT(11) NOT NULL AUTO_INCREMENT,
+                id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id BIGINT(20) UNSIGNED NOT NULL,
                 role_id INT(11) NOT NULL,
-                PRIMARY KEY (id),
                 FOREIGN KEY (role_id) REFERENCES $table_roles(id) ON DELETE CASCADE
-            ) $charset_collate;";
+            ) $charset_collate;
+
+            CREATE TABLE $table_management_structure (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              management_title VARCHAR(255),
+              management_info TEXT
+            )$charset_collate;
+
+            CREATE TABLE $table_management (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              management_post VARCHAR(255),
+              management_fullname VARCHAR(255),
+              management_reassignment VARCHAR(255),
+              management_biography TEXT
+            )$charset_collate;
+
+            CREATE TABLE $table_founders (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              founders_title VARCHAR(255),
+              founders_info TEXT
+            )$charset_collate;
+
+            CREATE TABLE $table_meetings (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              meeting_title VARCHAR(255),
+              meeting_info TEXT
+            )$charset_collate;
+
+            CREATE TABLE $table_documents (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              document_type VARCHAR(255),
+              document_link VARCHAR(255)
+            )$charset_collate;
+
+            CREATE TABLE $table_education_programs (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              program_title VARCHAR(255),
+              program_info TEXT
+            )$charset_collate;
+
+            CREATE TABLE $table_free_education (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              free_education_title VARCHAR(255),
+              free_education_info TEXT
+            )$charset_collate;
+
+            CREATE TABLE $table_property (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              property_title VARCHAR(255),
+              property_info TEXT
+            )$charset_collate;
+
+            CREATE TABLE $table_scholarships (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              scholarship_title VARCHAR(255),
+              scholarship_info TEXT
+            )$charset_collate;
+
+            CREATE TABLE $table_social_support (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              support_title VARCHAR(255),
+              support_info TEXT
+            )$charset_collate;
+
+            CREATE TABLE $table_dormitories (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              dormitory_title VARCHAR(255),
+              dormitory_info TEXT
+            )$charset_collate;
+
+            CREATE TABLE $table_employment (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              employment_title VARCHAR(255),
+              employment_info TEXT
+            )$charset_collate;
+
+            CREATE TABLE $table_paid_services (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              document_type VARCHAR(255),
+              document_link VARCHAR(255)
+            )$charset_collate;
+
+            CREATE TABLE $table_funding_sources (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              funding_title VARCHAR(255),
+              funding_info TEXT
+            )$charset_collate;
+
+            CREATE TABLE $table_financial_report (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              report_title VARCHAR(255),
+              report_info TEXT
+            )$charset_collate;
+
+            CREATE TABLE $table_vacancies (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              vacancies_info TEXT
+            )$charset_collate;
+
+            CREATE TABLE $table_educational_standards (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              standard_title VARCHAR(255),
+              standard_info TEXT,
+              standard_file VARCHAR(255)
+            )$charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
@@ -204,6 +326,30 @@ class RegInfoEduOrg
         </general_information>
     </section_content>
 </section>
+',
+            'xslt' => '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:output method="html" encoding="UTF-8" indent="yes" />
+  <xsl:template match="/">
+    <html>
+      <body>
+        <xsl:apply-templates select="//general_information" />
+      </body>
+    </html>
+  </xsl:template>
+  <xsl:template match="general_information">
+    <p><strong>Полное название образовательной организации:</strong> <xsl:value-of select="full_name" /></p>
+    <p><strong>Краткое название образовательной организации:</strong> <xsl:value-of select="short_name" /></p>
+    <p><strong>Дата создания образовательной организации:</strong> <xsl:value-of select="creation_date" /></p>
+    <p><strong>Учредитель:</strong> <xsl:value-of select="founder" /></p>
+    <p><strong>Место нахождения образовательной организации:</strong> <xsl:value-of select="location" /></p>
+    <p><strong>Адрес осуществления образовательной деятельности:</strong> <xsl:value-of select="addresses_educational_activities/address_educational_activities" /></p>
+    <p><strong>Адрес расположения структурных подразделений:</strong> <xsl:value-of select="addresses_structural_subdivisions/address_structural_subdivisions" /></p>
+    <p><strong>Филиалы образовательной организации:</strong> <xsl:value-of select="branches" /></p>
+    <p><strong>График работы:</strong> <xsl:value-of select="working_hours" /></p>
+    <p><strong>Контактные телефоны:</strong> <xsl:value-of select="contact_phones" /></p>
+    <p><strong>Адреса электронной почты:</strong> <xsl:value-of select="email_addresses" /></p>
+  </xsl:template>
+</xsl:stylesheet>
 '
             ],
             [ 
@@ -236,7 +382,8 @@ class RegInfoEduOrg
 				</management_bodies>
 			</management_structure>
 		</section_content>
-	</section>'
+	</section>',
+            'xslt' => ''
             ],
             [ 
             'name' =>'Документы',
@@ -244,29 +391,29 @@ class RegInfoEduOrg
 		<section_title>Документы</section_title>
 		<section_content>
 			<documents>
-				<charter>ссылка на файл устава образовательной организации</charter>
-				<license>ссылка на файл лицензии на осуществление образовательной деятельности</license>
-				<accreditation>ссылка на файл свидетельства о государственной аккредитации</accreditation>
-				<finance_plan>ссылка на файл плана финансово-хозяйственной деятельности образовательной организации</finance_plan>
-				<normative_acts>
-					<local_normative_acts>ссылка на файл локальных нормативных актов, предусмотренных законодательством</local_normative_acts>
-					<student_internal_rules>ссылка на файл правил внутреннего распорядка обучающихся</student_internal_rules>
-					<employee_internal_rules>ссылка на файл правил внутреннего трудового распорядка</employee_internal_rules>
-					<collective_agreement>ссылка на файл коллективного договора</collective_agreement>
-				</normative_acts>
-				<self_evaluation_report>ссылка на файл отчета о результатах самообследования</self_evaluation_report>
-				<paid_services>
-					<paid_services_document>ссылка на документ о порядке оказания платных образовательных услуг</paid_services_document>
-					<contract_example>ссылка на образец договора об оказании платных образовательных услуг</contract_example>
-					<tuition_fee>ссылка на документ об утверждении стоимости обучения по каждой образовательной программе</tuition_fee>
-					<maintenance_fee>ссылка на документ об установлении размера платы за присмотр и уход за детьми в образовательной организации</maintenance_fee>
-				</paid_services>
-				<supervision_reports>
-					<supervision_report>ссылка на отчеты об исполнении предписаний органов, осуществляющих государственный контроль (надзор) в сфере образования</supervision_report>
-				</supervision_reports>
+				<document>
+					<name></name>
+					<link></link>
+				</document>
 			</documents>
 		</section_content>
-	</section>'
+	</section>',
+            'xslt' => '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:output method="html" encoding="UTF-8" indent="yes" />
+  <xsl:template match="/">
+    <html>
+      <body>
+        <xsl:apply-templates select="//documents/document" />
+      </body>
+    </html>
+  </xsl:template>
+  <xsl:template match="document">
+    <p>
+      <a href="{link}"><xsl:value-of select="name" /></a>
+    </p>
+  </xsl:template>
+</xsl:stylesheet>
+'
             ],
             [ 
             'name' =>'Образование',
@@ -295,7 +442,8 @@ class RegInfoEduOrg
 				<documents_info>Информация о методических и иных документах, разработанных образовательной организацией для обеспечения образовательного процесса</documents_info>
 			</educational_documents>
 		</section_content>
-	</section>'
+	</section>',
+            'xslt' => ''
             ],
             [ 
             'name' =>'Образовательные стандарты',
@@ -313,7 +461,8 @@ class RegInfoEduOrg
 				<standard_copy>Копия образовательных стандартов</standard_copy>
 			</educational_standards>
 		</section_content>
-	</section>'
+	</section>',
+            'xslt' => ''
             ],
             [ 
             'name' =>'Руководство. Педагогический (научно-педагогический) состав',
@@ -381,7 +530,8 @@ class RegInfoEduOrg
 				</pedagogical_worker>
 			</pedagogical_staff>
 		</section_content>
-	</section>'
+	</section>',
+            'xslt' => ''
             ],
             [ 
             'name' =>'Материально-техническое обеспечение и оснащенность образовательного процесса',
@@ -435,7 +585,8 @@ class RegInfoEduOrg
 				</facilities_for_disabled>
 			</technical_equipment>
 		</section_content>
-	</section>'
+	</section>',
+            'xslt' => ''
             ],
             [ 
             'name' =>'Стипендии и иные виды материальной поддержки',
@@ -459,16 +610,38 @@ class RegInfoEduOrg
 				<employment_info>Информация о трудоустройстве выпускников</employment_info>
 			</employment>
 		</section_content>
-	</section>'
+	</section>',
+            'xslt' => ''
             ],
             [ 
             'name' =>'Платные образовательные услуги',
-            'xml' => '<section>
+            'xml' => '	<section>
 		<section_title>Платные образовательные услуги</section_title>
 		<section_content>
-			<paid_services_info>Информация о порядке оказания платных образовательных услуг, включая перечень услуг, цены, порядок оплаты и возврата средств, информацию о скидках и льготах и другие существенные условия оказания услуг</paid_services_info>
+			<paid_services_info>
+				<document>
+					<name></name>
+					<link></link>
+				</document>				
+			</paid_services_info>
 		</section_content>
-	</section>'
+	</section>',
+            'xslt' => '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:output method="html" encoding="UTF-8" indent="yes" />
+  <xsl:template match="/">
+    <html>
+      <body>
+        <xsl:apply-templates select="//paid_services_info/document" />
+      </body>
+    </html>
+  </xsl:template>
+  <xsl:template match="document">
+    <p>
+      <a href="{link}"><xsl:value-of select="name" /></a>
+    </p>
+  </xsl:template>
+</xsl:stylesheet>
+'
             ],
             [ 
             'name' =>'Финансово-хозяйственная деятельность',
@@ -484,7 +657,8 @@ class RegInfoEduOrg
 				<report_info>Информация о поступлении финансовых и материальных средств и об их расходовании по итогам финансового года</report_info>
 			</financial_report>
 		</section_content>
-	</section>'
+	</section>',
+            'xslt' => ''
             ],
             [ 
             'name' =>'Вакантные места для приема (перевода)',
@@ -505,7 +679,8 @@ class RegInfoEduOrg
 				</vacancies_list>
 			</vacancies_info>
 		</section_content>
-	</section>'
+	</section>',
+            'xslt' => ''
             ]             
         ];
 
@@ -527,6 +702,7 @@ class RegInfoEduOrg
                 $wpdb->insert($table_site_subsections, array(
                     'name' => $subsection['name'],
                     'xml' => $subsection['xml'],
+                    'xslt' => $subsection['xslt'],
                     'visible' => true
                     ));
             }
@@ -2586,6 +2762,94 @@ class RegInfoEduOrg
                     }
                 }
                 break;
+            case 3:
+                if ( isset( $_POST['import_file_submit'] ) && isset( $_FILES['import_file'] ) ) {
+                    if ($_FILES['import_file']['error'] === UPLOAD_ERR_OK) {
+                        $xml = simplexml_load_file($_FILES['import_file']['tmp_name']);
+
+                        // Находим секцию "Документы"
+                        $documents = $xml->xpath('//reginfoeduorg/section[section_title="Документы"]/section_content/documents')[0];
+
+                        // Очищаем таблицу перед импортом
+                        global $wpdb;
+                        $table_name = "{$wpdb->prefix}reginfoeduorg_documents";
+                        $wpdb->query("TRUNCATE TABLE $table_name");
+
+                        // Проходимся по всем документам
+                        foreach ($documents->document as $document) {
+                            // Получаем название документа и ссылку
+                            $document_name = (string)$document->name;
+                            $document_link = (string)$document->link;
+
+                            if (!empty($document_link)) {
+                                // Создаем массив с данными для таблицы reginfoeduorg_documents
+                                $data = array(
+                                    'document_type' => $document_name,
+                                    'document_link' => $document_link,
+                                );
+
+                                // Вставляем данные в таблицу reginfoeduorg_documents
+                                if ($wpdb->insert($table_name, $data) === false) {
+                                    // Выводим сообщение об ошибке при вставке данных
+                                    echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке данных в таблицу: " . $wpdb->last_error . "</p></div>";
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Выводим сообщение об успешном импорте данных
+                        echo "<div class='notice notice-success is-dismissible'><p>Данные успешно импортированы из файла.</p></div>";
+                    } else {
+                        // Выводим сообщение об ошибке при загрузке файла
+                        echo "<div class='notice notice-error is-dismissible'><p>Ошибка при загрузке файла: " . $_FILES['import_file']['error'] . "</p></div>";
+                    }
+                }
+                break;
+            case 9:
+                if ( isset( $_POST['import_file_submit'] ) && isset( $_FILES['import_file'] ) ) {
+                    if ($_FILES['import_file']['error'] === UPLOAD_ERR_OK) {
+                        $xml = simplexml_load_file($_FILES['import_file']['tmp_name']);
+
+                        // Находим секцию "Документы"
+                        $documents = $xml->xpath('//reginfoeduorg/section[section_title="Платные образовательные услуги"]/section_content/paid_services_info')[0];
+
+                        // Очищаем таблицу перед импортом
+                        global $wpdb;
+                        $table_name = "{$wpdb->prefix}reginfoeduorg_paid_services";
+                        $wpdb->query("TRUNCATE TABLE $table_name");
+
+                        // Проходимся по всем документам
+                        foreach ($documents->document as $document) {
+                            // Получаем название документа и ссылку
+                            $document_name = (string)$document->name;
+                            $document_link = (string)$document->link;
+
+                            if (!empty($document_link)) {
+                                // Создаем массив с данными для таблицы reginfoeduorg_documents
+                                $data = array(
+                                    'document_type' => $document_name,
+                                    'document_link' => $document_link,
+                                );
+
+                                // Вставляем данные в таблицу reginfoeduorg_documents
+                                if ($wpdb->insert($table_name, $data) === false) {
+                                    // Выводим сообщение об ошибке при вставке данных
+                                    echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке данных в таблицу: " . $wpdb->last_error . "</p></div>";
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Выводим сообщение об успешном импорте данных
+                        echo "<div class='notice notice-success is-dismissible'><p>Данные успешно импортированы из файла.</p></div>";
+                    } else {
+                        // Выводим сообщение об ошибке при загрузке файла
+                        echo "<div class='notice notice-error is-dismissible'><p>Ошибка при загрузке файла: " . $_FILES['import_file']['error'] . "</p></div>";
+                    }
+                }
+                break;
+
+
             case 6:                
                 if (isset($_POST['import_file_submit']) && isset($_FILES['import_file'])) {
                     if ($_FILES['import_file']['error'] === UPLOAD_ERR_OK) {
@@ -2792,6 +3056,7 @@ class RegInfoEduOrg
         echo '<input type="submit" name="save_changes" value="Сохранить изменения на сайте" class="button-primary">';
         echo '</p>';
         echo '<h3>Таблица данных подраздела</h3>';
+
         if (isset($_POST['apply_styles'])) {
             $xslt_code = isset($_POST['reginfoeduorg_xslt_code']) ? stripslashes($_POST['reginfoeduorg_xslt_code']) : '';
 
@@ -2824,20 +3089,68 @@ class RegInfoEduOrg
                 jQuery("#css_styles").val(new_css_styles);
             });
             </script>';
-            // Создайте массив данных сотрудников на основе обработанных XML данных
-            $staff_data = array();
-            $xml = simplexml_import_dom($xml);
-            foreach ($xml->section_content->staff_members->staff as $staff) {
-                
-                $staff_data[] = array(
-                    'full_name' => (string) $staff->full_name,
-                    'position' => (string) $staff->position,
-                    'photo_url' => (string) $staff->photo_url,
-                    // Добавьте здесь больше полей, если они вам нужны
-                );
+
+            switch ($subsection_id) {
+                case 6:
+                    // Создайте массив данных сотрудников на основе обработанных XML данных
+                    $staff_data = array();
+                    $xml = simplexml_import_dom($xml);
+                    foreach ($xml->section_content->staff_members->staff as $staff) {                
+                        $staff_data[] = array(
+                            //'id' => (string) $wpdb->get_var($wpdb->prepare("SELECT id FROM {$wpdb->prefix}reginfoeduorg_staff WHERE full_name = %s", (string) $staff->full_name)),
+                            'full_name' => (string) $staff->full_name,
+                            //'position' => (string) $staff->position,
+                            //'email' => (string) $staff->email,
+                            //'phone' => (string) $staff->phone,
+                            //'overall_experience' => (string) $staff->overall_experience,
+                            //'specialization_experience' => (string) $staff->specialization_experience,
+                        );
+                    }
+
+
+                    // Создайте страницы сотрудников
+                    foreach ($staff_data as $staff) {
+                        // Проверяем, существует ли уже страница с этим заголовком
+                        $existing_page = get_page_by_path($staff['id'], OBJECT, 'staff');
+                        $staff_page_slug = $staff['id'];
+                        
+                        if ($existing_page == null) {
+                            // Страница не существует, создаем новую
+                            $staff_page_content = '';
+                            foreach ($staff as $st) {
+                                $staff_page_content .= $st;
+                            }
+                            
+                            
+                            $post_args = array(
+                                'post_title' => $staff['full_name'],
+                                'post_content' => $staff_page_content,
+                                'post_status' => 'publish',
+                                'post_type' => 'staff',
+                                'post_name' => $staff_page_slug,
+                            );
+
+                            
+                            if (post_type_exists('staff')) {
+                                $post_id = wp_insert_post($post_args);
+                            }
+                        } else {
+                            // Страница существует, обновляем ее данные
+                            $staff_page_content = '';
+                            foreach ($staff as $key => $value) {
+                                $staff_page_content .= $value . '<br/>';
+                            }
+
+                            $post_args = array(
+                                'ID' => $existing_page->ID,
+                                'post_content' => $staff_page_content,
+                                'post_name' => $staff_page_slug,
+                            );
+                            
+                            wp_update_post($post_args);
+                        }
+                    }
             }
-            // Создайте страницы сотрудников
-            create_staff_pages($staff_data);
         }
 
         switch ($subsection_id) {
@@ -2883,6 +3196,54 @@ class RegInfoEduOrg
                 {
                     echo '<p>Данные отсутствуют.</p>';
                 }
+                break;
+            case 3:
+                $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_documents", ARRAY_A);
+                if ($data) {
+                    echo '<table class="wp-list-table widefat fixed striped">';
+                    echo '<thead><tr>';
+                    echo '<th scope="col" class="manage-column column-name">Тип документа</th>';
+                    echo '<th scope="col" class="manage-column column-value">Ссылка на документ</th>';
+                    echo '</tr></thead>';
+                    echo '<tbody>';
+
+                    foreach ($data as $row) {
+                        echo '<tr>';
+                        echo '<td class="column-name">' . $row['document_type'] . '</td>';
+                        echo '<td class="column-value">' . $row['document_link'] . '</td>';
+                        echo '</tr>';
+                    }
+
+                    echo '</tbody>';
+                    echo '</table>';
+                } else {
+                    echo '<p>Данные отсутствуют.</p>';
+                }
+
+                break;
+            case 9:
+                $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_paid_services", ARRAY_A);
+                if ($data) {
+                    echo '<table class="wp-list-table widefat fixed striped">';
+                    echo '<thead><tr>';
+                    echo '<th scope="col" class="manage-column column-name">Тип документа</th>';
+                    echo '<th scope="col" class="manage-column column-value">Ссылка на документ</th>';
+                    echo '</tr></thead>';
+                    echo '<tbody>';
+
+                    foreach ($data as $row) {
+                        echo '<tr>';
+                        echo '<td class="column-name">' . $row['document_type'] . '</td>';
+                        echo '<td class="column-value">' . $row['document_link'] . '</td>';
+                        echo '</tr>';
+                    }
+
+                    echo '</tbody>';
+                    echo '</table>';
+                } else {
+                    echo '<p>Данные отсутствуют.</p>';
+                }
+
                 break;
             case 6:
                 $staff_data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_staff", ARRAY_A);
@@ -3096,6 +3457,78 @@ class RegInfoEduOrg
                     $general_information_node->appendChild($element);
                 }
                 break;
+            case 3:
+                // Выбираем данные из таблицы reginfoeduorg_documents
+                $documents_data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_documents", ARRAY_A);
+
+                // Выбираем пустую структуру XML для подраздела "Документы" из базы данных
+                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Документы'");
+
+                // Загружаем пустую структуру XML и дополняем ее данными
+                $xml = new DOMDocument('1.0', 'UTF-8');
+                $xml->formatOutput = true;
+                $xml->loadXML($subsection_xml);
+                // Находим элемент section_content для подраздела "Документы"
+                $section_content = $xml->getElementsByTagName('section_content')->item(0);
+
+                // Удаляем имеющиеся элементы с данными
+                while ($section_content->hasChildNodes()) {
+                    $section_content->removeChild($section_content->firstChild);
+                }
+
+                // Создаем элемент documents
+                $documents_node = $xml->createElement('documents');
+                $section_content->appendChild($documents_node);
+
+                // Проходимся по всем документам из таблицы и добавляем их в documents
+                foreach ($documents_data as $document) {
+                    // Создаем элемент document
+                    $document_node = $xml->createElement('document');
+                    $documents_node->appendChild($document_node);
+
+                    // Создаем элементы name и link для каждого документа
+                    $name = $xml->createElement('name', htmlspecialchars($document['document_type']));
+                    $link = $xml->createElement('link', htmlspecialchars($document['document_link']));
+                    $document_node->appendChild($name);
+                    $document_node->appendChild($link);
+                }
+                break;
+            case 9:
+                // Выбираем данные из таблицы reginfoeduorg_paid_services
+                $documents_data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_paid_services", ARRAY_A);
+
+                // Выбираем пустую структуру XML для подраздела "Платные образовательные услуги" из базы данных
+                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Платные образовательные услуги'");
+
+                // Загружаем пустую структуру XML и дополняем ее данными
+                $xml = new DOMDocument('1.0', 'UTF-8');
+                $xml->formatOutput = true;
+                $xml->loadXML($subsection_xml);
+                // Находим элемент section_content для подраздела "Платные образовательные услуги"
+                $section_content = $xml->getElementsByTagName('section_content')->item(0);
+
+                // Удаляем имеющиеся элементы с данными
+                while ($section_content->hasChildNodes()) {
+                    $section_content->removeChild($section_content->firstChild);
+                }
+
+                // Создаем элемент paid_services_info
+                $documents_node = $xml->createElement('paid_services_info');
+                $section_content->appendChild($documents_node);
+
+                // Проходимся по всем документам из таблицы и добавляем их в documents
+                foreach ($documents_data as $document) {
+                    // Создаем элемент document
+                    $document_node = $xml->createElement('document');
+                    $documents_node->appendChild($document_node);
+
+                    // Создаем элементы name и link для каждого документа
+                    $name = $xml->createElement('name', htmlspecialchars($document['document_type']));
+                    $link = $xml->createElement('link', htmlspecialchars($document['document_link']));
+                    $document_node->appendChild($name);
+                    $document_node->appendChild($link);
+                }
+                break;
             case 6:
                 // Выбираем данные о сотрудниках
                 $staff_members = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_staff", ARRAY_A);
@@ -3168,21 +3601,6 @@ class RegInfoEduOrg
         return $xml;
     }
 
-    function create_staff_pages($staff_data) {
-        echo 'привет';
-        foreach ($staff_data as $staff) {
-            $staff_page_content = generate_staff_page_content($staff);
-
-            $post_args = array(
-                'post_title' => $staff['full_name'],
-                'post_content' => $staff_page_content,
-                'post_status' => 'publish',
-                'post_type' => 'staff',
-            );
-
-            $post_id = wp_insert_post($post_args);
-        }
-    }
 
     function generate_staff_page_content($staff) {
         // Здесь вы можете использовать XSLT для форматирования данных сотрудника и создания HTML для страницы сотрудника
@@ -3190,7 +3608,18 @@ class RegInfoEduOrg
         // Этот код будет зависеть от того, как вы хотите форматировать страницу сотрудника
     }
 
-
+    function create_staff_post_type() {
+        register_post_type('staff',
+            array(
+                'labels' => array(
+                    'name' => __('Staff'),
+                    'singular_name' => __('Staff')
+                ),
+                'public' => true,
+                'has_archive' => true,
+            )
+        );
+    }
 
 }
 

@@ -100,26 +100,10 @@
 		<section_title>Документы</section_title>
 		<section_content>
 			<documents>
-				<charter>ссылка на файл устава образовательной организации</charter>
-				<license>ссылка на файл лицензии на осуществление образовательной деятельности</license>
-				<accreditation>ссылка на файл свидетельства о государственной аккредитации</accreditation>
-				<finance_plan>ссылка на файл плана финансово-хозяйственной деятельности образовательной организации</finance_plan>
-				<normative_acts>
-					<local_normative_acts>ссылка на файл локальных нормативных актов, предусмотренных законодательством</local_normative_acts>
-					<student_internal_rules>ссылка на файл правил внутреннего распорядка обучающихся</student_internal_rules>
-					<employee_internal_rules>ссылка на файл правил внутреннего трудового распорядка</employee_internal_rules>
-					<collective_agreement>ссылка на файл коллективного договора</collective_agreement>
-				</normative_acts>
-				<self_evaluation_report>ссылка на файл отчета о результатах самообследования</self_evaluation_report>
-				<paid_services>
-					<paid_services_document>ссылка на документ о порядке оказания платных образовательных услуг</paid_services_document>
-					<contract_example>ссылка на образец договора об оказании платных образовательных услуг</contract_example>
-					<tuition_fee>ссылка на документ об утверждении стоимости обучения по каждой образовательной программе</tuition_fee>
-					<maintenance_fee>ссылка на документ об установлении размера платы за присмотр и уход за детьми в образовательной организации</maintenance_fee>
-				</paid_services>
-				<supervision_reports>
-					<supervision_report>ссылка на отчеты об исполнении предписаний органов, осуществляющих государственный контроль (надзор) в сфере образования</supervision_report>
-				</supervision_reports>
+				<document>
+					<name>Устав образовательной организации</name>
+					<link>ссылка на файл устава образовательной организации</link>
+				</document>
 			</documents>
 		</section_content>
 	</section>
@@ -216,7 +200,12 @@
 	<section>
 		<section_title>Платные образовательные услуги</section_title>
 		<section_content>
-			<paid_services_info>Информация о порядке оказания платных образовательных услуг, включая перечень услуг, цены, порядок оплаты и возврата средств, информацию о скидках и льготах и другие существенные условия оказания услуг</paid_services_info>
+			<paid_services_info>
+				<document>
+					<name>Шаблон договора об образовании</name>
+					<link>https://disk.yandex.ru/i/xJvmeIFdZsJoAQ</link>
+				</document>				
+			</paid_services_info>
 		</section_content>
 	</section>
 
