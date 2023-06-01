@@ -92,7 +92,7 @@ class RegInfoEduOrg
                 // Выбираем данные из таблицы reginfoeduorg_general_information
                 $general_information = $wpdb->get_row("SELECT * FROM {$wpdb->prefix}reginfoeduorg_general_information", ARRAY_A);
                 if (!$general_information) {
-                     return null;
+                    return null;
                 }
 
                 // Выбираем пустую структуру XML для подраздела "Основные сведения" из базы данных
@@ -167,7 +167,7 @@ class RegInfoEduOrg
                 }
                 break;
 
-                case 3:
+            case 3:
                 // Выбираем данные из таблицы reginfoeduorg_documents
                 $documents_data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_documents", ARRAY_A);
                 if (!$documents_data) {
@@ -899,9 +899,7 @@ class RegInfoEduOrg
         $menu_items_data = [
             'Начальная страница плагина',
             'Настройка присвоения ролей пользователям', 
-            'Настройка ролей', 
-            'Настройка отображения подразделов сайта', 
-            'Настройка содержания подразделов сайта'
+            'Настройка ролей'
         ];
         
         
@@ -984,12 +982,6 @@ class RegInfoEduOrg
                 'menu_title' => 'Роли',
                 'slug' => 'my_plugin_roles',
                 'callback' => array($this, 'my_plugin_roles_page')
-            ),
-            array(
-                'title' => 'Настройка отображения подразделов сайта',
-                'menu_title' => 'Подразделы сайта',
-                'slug' => 'reginfoeduorg-submenu',
-                'callback' => array($this, 'submenu_page')
             )
         );
 
@@ -1031,119 +1023,6 @@ class RegInfoEduOrg
 
 
     }    
-
-    //Настройка отображения подразделов сайта
-    function submenu_page() 
-    {
-        // получаем текущего пользователя
-        $current_user = wp_get_current_user();
-        $user_id = $current_user->ID;
-
-        global $wpdb;
-
-        // получаем ID роли текущего пользователя из таблицы wp_reginfoeduorg_users_roles
-        $user_role_id = $wpdb->get_var($wpdb->prepare("SELECT role_id FROM {$wpdb->prefix}reginfoeduorg_users_roles WHERE user_id = %d", $user_id));
-
-
-        // проверяем, принадлежит ли текущий пользователь какой-то роли
-        if ($user_role_id) {
-            // Задаем название подпункта меню, для которого хотим проверить доступ
-            $menu_item_name = 'Настройка отображения подразделов сайта';
-
-            // Получаем ID подпункта меню по его названию из таблицы wp_reginfoeduorg_menu_items
-            $menu_item_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$wpdb->prefix}reginfoeduorg_menu_items WHERE name = %s", $menu_item_name));
-            $table_subsection_access = $wpdb->prefix . 'reginfoeduorg_role_subsection_access';
-
-            // получаем список разрешений доступа для текущей роли из таблицы wp_reginfoeduorg_role_menu_item_access
-            $access_menu = $wpdb->get_row($wpdb->prepare("SELECT read_permission, write_permission FROM {$wpdb->prefix}reginfoeduorg_role_menu_item_access WHERE role_id = %d AND menu_item_id = %d", $user_role_id, $menu_item_id), ARRAY_A);
-            // Получаем список подразделов из базы данных
-            global $wpdb;
-            $table_site_subsections = $wpdb->prefix . 'reginfoeduorg_site_subsections';
-            $sections = $wpdb->get_results("SELECT * FROM $table_site_subsections");
-            $subsection_access_data = $wpdb->get_results($wpdb->prepare("SELECT $table_site_subsections.id, $table_site_subsections.name, $table_subsection_access.read_permission, $table_subsection_access.write_permission FROM $table_subsection_access JOIN $table_site_subsections ON $table_site_subsections.id = $table_subsection_access.subsection_id WHERE role_id = %d", $user_role_id));
-            foreach ($subsection_access_data as $row) {
-                $access_settings[$row->name] = array(
-                    'read' => intval($row->read_permission),
-                    'edit' => intval($row->write_permission)
-                );
-            }
-            // проверяем, разрешен ли доступ к нужному подразделу меню
-            if ($access_menu['read_permission'] == 0) {
-                wp_die('У вас нет доступа');
-            } 
-            elseif ($access_menu['write_permission'] == 0) 
-            {   
-                
-            }
-            else
-            {
-                global $wpdb;
-                $table_site_subsections = $wpdb->prefix . 'reginfoeduorg_site_subsections';
-
-                $child_sections = $wpdb->get_results("SELECT name FROM {$table_site_subsections}");
-
-                $this->child_sections = $child_sections;
-
-                if (isset($_POST['submit'])) {
-                    $visible_subsections = isset($_POST['reginfoeduorg_subsections']) ? $_POST['reginfoeduorg_subsections'] : array();
-                    foreach ($child_sections as $child_section) {
-                        $visible = in_array($child_section->name, $visible_subsections) ? 1 : 0;
-                        $wpdb->update(
-                            $table_site_subsections,
-                            array('visible' => $visible),
-                            array('name' => $child_section->name),
-                            array('%d'),
-                            array('%s')
-                        );
-                    }
-                    echo '<div id="message" class="updated notice is-dismissible"><p>Настройки сохранены</p></div>';
-                }
-
-                $visible_subsections_objects = $wpdb->get_results("SELECT name FROM {$table_site_subsections} WHERE visible = 1");
-                $visible_subsections = array();
-                foreach ($visible_subsections_objects as $visible_subsection) {
-                    $visible_subsections[] = $visible_subsection->name;
-                }
-
-?>
-<div class="wrap">
-    <h1>Отображение подразделов сайта:</h1>
-    <form method="post" action="">
-        <table class="form-table">
-            <tr valign="top">
-                <th scope="row">Выберите подразделы, которые будут отображаться на сайте:</th>
-                <td>
-                    <?php foreach ($this->child_sections as $child_section) : ?>
-                    <label>
-                        <input type="checkbox" name="reginfoeduorg_subsections[]" value="<?php echo $child_section->name; ?>" <?php checked(in_array($child_section->name, $visible_subsections)); ?>>
-                        <?php echo $child_section->name; ?>
-                    </label>
-                    <br>
-                    <?php endforeach; ?>
-                    <br>
-                    <button type="button" class="button" id="select-all-button">Выбрать все</button>
-                </td>
-            </tr>
-        </table>
-        <?php submit_button( 'Сохранить', 'primary', 'submit', false ); ?>
-    </form>
-</div>
-<script type="text/javascript">
-    document.addEventListener("DOMContentLoaded", function () {
-        const selectAllButton = document.getElementById("select-all-button");
-        const checkboxes = document.querySelectorAll("input[type='checkbox']");
-        selectAllButton.addEventListener("click", function () {
-            checkboxes.forEach(function (checkbox) {
-                checkbox.checked = true;
-            });
-        });
-    });
-</script>
-<?php
-
-            }
-        }
-    }
 
     //Проверка наличия подразделов сайта
     function my_plugin_add_sections() 
@@ -2009,7 +1888,6 @@ class RegInfoEduOrg
             if ($_FILES['import_file']['error'] === UPLOAD_ERR_OK) {                
                 $xml = simplexml_load_file($_FILES['import_file']['tmp_name']);                
                 $this->import_data($subsection_id, $xml);                
-                echo "<div class='notice notice-success is-dismissible'><p>Данные успешно импортированы из файла.</p></div>";
             }
             else {
                 // Выводим сообщение об ошибке при загрузке файла
@@ -2020,14 +1898,33 @@ class RegInfoEduOrg
         //Обработчик сохранения изменений в таблице
         if (isset($_POST['save_table_changes'])) {            
             $this->save_table_changes($subsection_id);
-            echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Данные таблицы обновлены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
         }
 
         //Обработчик применения стилей
         if (isset($_POST['apply_styles'])) {
             $this->apply_styles($subsection_id);
-            echo '<div id="message" class="updated notice notice-success is-dismissible"><p>XSLT стиль применен.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
         }
+
+        if (isset($_POST['save_visibility'])) {
+            if($this->check_write($subsection_id))
+            {
+                // обрабатываем чекбокс видимости подраздела
+                $visible = isset($_POST['reginfoeduorg_subsection_visibility']) ? 1 : 0;
+                $wpdb->update(
+                    $wpdb->prefix . 'reginfoeduorg_site_subsections',
+                    array('visible' => $visible),
+                    array('id' => $subsection_id),
+                    array('%d'),
+                    array('%d')
+                );
+                echo '<div id="message" class="updated notice is-dismissible"><p>Настройки сохранены</p></div>';
+            }
+            else{
+                echo "<div class='notice notice-error is-dismissible'><p>У вас нет доступа к редактированию данного подраздела</p></div>";
+            }
+            
+        }
+
 
         echo '<div class="wrap">';
         echo '<form method="post" action="" enctype="multipart/form-data">';
@@ -2063,6 +1960,15 @@ class RegInfoEduOrg
         echo '<p>';
         echo '<input type="submit" name="apply_styles" value="Применить стиль" class="button">';
         echo '</p>';
+
+        //Новый раздел для настройки видимости подраздела
+        echo '<h2>Настройка видимости подраздела</h2>';
+        echo '<label>';
+        echo '<input type="checkbox" name="reginfoeduorg_subsection_visibility" value="1"' . checked($subsection_data['visible'], 1, false) . '>Отображать подраздел на сайте';
+        echo '<br><br><input type="submit" name="save_visibility" value="Сохранить" class="button">';
+
+        echo '</label>';
+
         echo '</form>';
         echo '</div>';
     }
@@ -2071,6 +1977,11 @@ class RegInfoEduOrg
     //-----------------------Процесс обработки и вывода данных в подпунктах меню с настройкой подразделов-------------------------------
     function import_data($subsection_id, $xml)
     {
+        if(!$this->check_write($subsection_id))
+        {
+            echo "<div class='notice notice-error is-dismissible'><p>У вас нет доступа к редактированию данного подраздела</p></div>";
+            return;
+        }
         global $wpdb;
         switch ($subsection_id)
         {
@@ -2144,7 +2055,7 @@ class RegInfoEduOrg
                             $data_type = array(
                                 'document_type' => $document_type
                             );
-        
+                            
                             // Вставляем тип документа в таблицу и сохраняем ID
                             if ($wpdb->insert($table_documents_types, $data_type) !== false) {
                                 $document_types_ids[$document_type] = $wpdb->insert_id;
@@ -2247,11 +2158,18 @@ class RegInfoEduOrg
             case 6:                
                 
                 break;
-        }    
+        }  
+        echo "<div class='notice notice-success is-dismissible'><p>Данные успешно импортированы из файла.</p></div>";
+
     }
 
     function save_table_changes($subsection_id)
     {
+        if(!$this->check_write($subsection_id))
+        {
+            echo "<div class='notice notice-error is-dismissible'><p>У вас нет доступа к редактированию данного подраздела</p></div>";
+            return;
+        }
         global $wpdb;
         switch ($subsection_id)
         {
@@ -2281,7 +2199,7 @@ class RegInfoEduOrg
                     $new_name = $_POST['document_name'][$id]; // Получаем новое название из формы
                     $new_type = $_POST['document_type'][$id]; // Получаем новый тип из формы
                     $new_link = $_POST['document_link'][$id]; // Получаем новую ссылку из формы
-           
+                    
                     // Обновляем данные в базе данных
                     $wpdb->update(
                         "{$wpdb->prefix}reginfoeduorg_documents", // Название таблицы
@@ -2326,10 +2244,17 @@ class RegInfoEduOrg
 
             default:
         }
+        echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Данные таблицы обновлены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
+
     }
 
     function apply_styles($subsection_id)
     {
+        if(!$this->check_write($subsection_id))
+        {
+            echo "<div class='notice notice-error is-dismissible'><p>У вас нет доступа к редактированию данного подраздела</p></div>";
+            return;
+        }
         global $wpdb;
         $xslt_code = isset($_POST['reginfoeduorg_xslt_code']) ? stripslashes($_POST['reginfoeduorg_xslt_code']) : '';
         
@@ -2343,6 +2268,8 @@ class RegInfoEduOrg
         );
         $xml = new DOMDocument();
         $xml = $this->generate_shortcode($subsection_id);
+        echo '<div id="message" class="updated notice notice-success is-dismissible"><p>XSLT стиль применен.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
+
     }
 
     function table_data($subsection_id)
@@ -2494,8 +2421,13 @@ class RegInfoEduOrg
                 break;
         }
     }
-        
+    
     function generate_shortcode($subsection_id) {
+        if(!$this->check_write($subsection_id))
+        {
+            echo "<div class='notice notice-error is-dismissible'><p>У вас нет доступа к редактированию данного подраздела</p></div>";
+            return;
+        }
         global $wpdb;
         switch ($subsection_id)
         {
@@ -2551,6 +2483,28 @@ class RegInfoEduOrg
         echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Изменения сохранены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
         
         return $xml;
+    }
+
+    function check_write($subsection_id)
+    {
+        global $wpdb;
+        // Получаем текущего пользователя
+        $current_user = wp_get_current_user();
+
+        // Получаем ID роли текущего пользователя
+        $user_role_id = $wpdb->get_var($wpdb->prepare("SELECT role_id FROM {$wpdb->prefix}reginfoeduorg_users_roles WHERE user_id = %d", $current_user->ID));
+        
+        // Получаем доступ к подразделам для роли текущего пользователя
+        $subsection_access_data = $wpdb->get_results($wpdb->prepare("SELECT ss.id, rsa.write_permission FROM {$wpdb->prefix}reginfoeduorg_site_subsections AS ss JOIN {$wpdb->prefix}reginfoeduorg_role_subsection_access AS rsa ON ss.id = rsa.subsection_id WHERE rsa.role_id = %d", $user_role_id), OBJECT_K);
+        
+        // Проверяем, есть ли доступ на запись для конкретного подраздела
+        if (isset($subsection_access_data[$subsection_id]) && $subsection_access_data[$subsection_id]->write_permission == 1) {
+            return true;
+        } else {
+            return false;
+        }
+
+
     }
     //-----------------------Процесс обработки и вывода данных в подпунктах меню с настройкой подразделов-------------------------------
 
