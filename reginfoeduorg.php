@@ -31,6 +31,8 @@ class RegInfoEduOrg
         add_shortcode('documents_info', array($this,'documents_info_shortcode'));
         add_shortcode('paid_services_info', array($this,'paid_services_shortcode'));
     }
+    
+    //-------------------------------Шорткоды-------------------------------
 
     public function general_info_shortcode($atts) {
         global $wpdb;
@@ -93,6 +95,10 @@ class RegInfoEduOrg
         $html_content =  $this->convert_xml_xslt_to_html($xml, $xslt_code,$subsection_id);
     }
     
+    //-------------------------------Шорткоды-------------------------------
+
+
+    //-------------------------------Обработка вывода html документов при активации шорткодов-------------------------------
     function convert_xml_xslt_to_html($xml, $xslt_code, $subsection_id) {
         // Создаем экземпляр XSLTProcessor и загружаем XSLT-код
         $xslt_processor = new XSLTProcessor();
@@ -192,127 +198,10 @@ class RegInfoEduOrg
         }
         return $xml;
     }
-
-    function generate_shortcode($subsection_id) {
-        global $wpdb;
-        switch ($subsection_id)
-        {
-            case 1:
-                // Выбираем данные из таблицы 
-                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_general_information");
-                $shortcode = '[general_info id="' . $id . '"]';                
-                
-                break;
+    //-------------------------------Обработка вывода html документов при активации шорткодов-------------------------------
 
 
-            case 3:
-                // Выбираем данные из таблицы 
-                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_documents");                
-                $shortcode = '[documents_info id="' . $id . '"]';
-                break;
-            case 9:
-                // Выбираем данные из таблицы 
-                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_paid_services");                
-                $shortcode = '[paid_services_info id="' . $id . '"]';
-                break;
-            case 6:
-                // Выбираем данные о сотрудниках
-                $staff_members = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_staff", ARRAY_A);
 
-                // Выбираем пустую структуру XML для подраздела "Сотрудники" из базы данных
-                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id=$subsection_id");
-
-                // Загружаем пустую структуру XML и дополняем ее данными
-                $xml = new DOMDocument('1.0', 'UTF-8');
-                $xml->formatOutput = true;
-                $xml->loadXML($subsection_xml);
-                // Находим элемент section_content для подраздела "Сотрудники"
-                $section_content = $xml->getElementsByTagName('section_content')->item(0);
-
-                // Удаляем имеющиеся элементы с данными
-                while ($section_content->hasChildNodes()) {
-                    $section_content->removeChild($section_content->firstChild);
-                }
-
-                // Создаем элемент staff_members
-                $staff_members_node = $xml->createElement('staff_members');
-                $section_content->appendChild($staff_members_node);
-
-                // Для каждого сотрудника создаем элемент staff и добавляем его в staff_members
-                foreach ($staff_members as $staff) {
-                    $staff_node = $xml->createElement('staff');
-                    $staff_members_node->appendChild($staff_node);
-
-                    // Создаем элементы для каждого поля из таблицы сотрудников и добавляем их в staff
-                    foreach ($staff as $key => $value) {
-                        $element = $xml->createElement($key, htmlspecialchars($value));
-                        $staff_node->appendChild($element);
-                    }
-                    
-                    // Добавляем данные из связанных таблиц
-                    $staff_id = $staff['id'];
-                    $related_tables = [
-                        'reginfoeduorg_disciplines',
-                        'reginfoeduorg_education',
-                        'reginfoeduorg_qualification_improvement',
-                        'reginfoeduorg_career'
-                    ];
-
-                    foreach ($related_tables as $table) {
-                        $related_data = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}{$table} WHERE staff_id = %d", $staff_id), ARRAY_A);
-                        
-                        // Создаем элемент для связанных данных
-                        $related_data_node = $xml->createElement($table);
-                        $staff_node->appendChild($related_data_node);
-
-                        // Добавляем элементы для каждого поля из связанных таблиц
-                        foreach ($related_data as $related_item) {
-                            $item_node = $xml->createElement('item');
-                            $related_data_node->appendChild($item_node);
-                            
-                            foreach ($related_item as $key => $value) {
-                                $element = $xml->createElement($key, htmlspecialchars($value));
-                                $item_node->appendChild($element);
-                            }
-                        }
-                    }
-                }
-                break;
-        	default:
-        }
-        
-        global $wpdb;
-        $url = $_SERVER['REQUEST_URI'];
-        $matches = array();
-        preg_match('/reginfoeduorg_subsection_(\d+)/', $url, $matches);
-        $subsection_id = isset($matches[1]) ? intval($matches[1]) : 0;
-        $subsection_name = $wpdb->get_var($wpdb->prepare("SELECT name FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = %d", $subsection_id));
-        $post_id = get_page_by_title($subsection_name)->ID;
-        $content = $shortcode;        
-
-        // Обновляем контент в таблице reginfoeduorg_site_subsections
-        $wpdb->update(
-            "{$wpdb->prefix}reginfoeduorg_site_subsections",
-            array('content' => $content),
-            array('id' => $subsection_id),
-            array('%s'),
-            array('%d')
-        );
-
-        if ($post_id && $content) {
-            $post = array(
-                'ID' => $post_id,
-                'post_content' => $content,
-            );
-            wp_update_post($post);
-        }
-
-        // Выводим сообщение об успешном сохранении изменений
-        echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Изменения сохранены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
-        
-        return $xml;
-    }
-    
 
 
     //Создание таблиц для базы данных
@@ -2068,7 +1957,10 @@ class RegInfoEduOrg
     }
     
 
+
+    // Подпункты меню с настройкой подразделов
     function reginfoeduorg_display_section_data() {
+        
         global $wpdb;
         $url = $_SERVER['REQUEST_URI'];
         $matches = array();
@@ -2082,214 +1974,12 @@ class RegInfoEduOrg
 
         $subsection_name = $wpdb->get_var($wpdb->prepare("SELECT name FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = %d", $subsection_id));
 
+
+        //Обработчик импорта
         if ( isset( $_POST['import_file_submit'] ) && isset( $_FILES['import_file'] ) ) {
-            if ($_FILES['import_file']['error'] === UPLOAD_ERR_OK) {
-                
-                $xml = simplexml_load_file($_FILES['import_file']['tmp_name']);
-                
-
-                switch ($subsection_id)
-                {
-                    case 1:
-                        // Находим секцию "Основные сведения"
-                        $section_content = $xml->xpath('//section[section_title="Основные сведения"]/section_content/general_information')[0];
-
-                        // Преобразуем дату создания в формат 'Y-m-d', игнорируя время
-                        $creation_date = DateTime::createFromFormat('d.m.Y H:i:s', (string)$section_content->creation_date);
-                        $creation_date_formatted = $creation_date ? $creation_date->format('Y-m-d') : '';
-
-
-                        // Создаем массив с данными для таблицы reginfoeduorg_general_information
-                        $data = array(
-                            'full_name' => (string)$section_content->full_name,
-                            'short_name' => (string)$section_content->short_name,
-                            'creation_date' => $creation_date_formatted,
-                            'founder' => (string)$section_content->founder,
-                            'location' => (string)$section_content->location,
-                            'branches' => (string)$section_content->branches,
-                            'working_hours' => (string)$section_content->working_hours,
-                            'contact_phones' => (string)$section_content->contact_phones,
-                            'email_addresses' => (string)$section_content->email_addresses,
-                        );
-
-                        // Вставляем или обновляем данные в таблице reginfoeduorg_general_information
-                        global $wpdb;
-                        $table_name = "{$wpdb->prefix}reginfoeduorg_general_information";
-                        $row_exists = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
-                        if ($row_exists) {
-                            $wpdb->update($table_name, $data, ['id' => 1]);
-                        } else {
-                            $wpdb->insert($table_name, $data);
-                        }
-
-                        break;
-                    case 3:
-                        // Находим секцию "Документы"
-                        $documents = $xml->xpath('//reginfoeduorg/section[section_title="Документы"]/section_content/documents')[0];
-
-                        // Очищаем таблицу перед импортом
-                        global $wpdb;
-                        $table_name = "{$wpdb->prefix}reginfoeduorg_documents";
-                        $wpdb->query("TRUNCATE TABLE $table_name");
-
-                        // Проходимся по всем документам
-                        foreach ($documents->document as $document) {
-                            // Получаем название документа и ссылку
-                            $document_name = (string)$document->name;
-                            $document_link = (string)$document->link;
-
-                            if (!empty($document_link)) {
-                                // Создаем массив с данными для таблицы reginfoeduorg_documents
-                                $data = array(
-                                    'document_type' => $document_name,
-                                    'document_link' => $document_link,
-                                );
-
-                                // Вставляем данные в таблицу reginfoeduorg_documents
-                                if ($wpdb->insert($table_name, $data) === false) {
-                                    // Выводим сообщение об ошибке при вставке данных
-                                    echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке данных в таблицу: " . $wpdb->last_error . "</p></div>";
-                                    break;
-                                }
-                            }
-                        }
-                        break;
-                    case 9:               
-                        // Находим секцию "Документы"
-                        $documents = $xml->xpath('//reginfoeduorg/section[section_title="Платные образовательные услуги"]/section_content/paid_services_info')[0];
-
-                        // Очищаем таблицу перед импортом
-                        global $wpdb;
-                        $table_name = "{$wpdb->prefix}reginfoeduorg_paid_services";
-                        $wpdb->query("TRUNCATE TABLE $table_name");
-
-                        // Проходимся по всем документам
-                        foreach ($documents->document as $document) {
-                            // Получаем название документа и ссылку
-                            $document_name = (string)$document->name;
-                            $document_link = (string)$document->link;
-
-                            if (!empty($document_link)) {
-                                // Создаем массив с данными для таблицы reginfoeduorg_documents
-                                $data = array(
-                                    'document_type' => $document_name,
-                                    'document_link' => $document_link,
-                                );
-
-                                // Вставляем данные в таблицу reginfoeduorg_documents
-                                if ($wpdb->insert($table_name, $data) === false) {
-                                    // Выводим сообщение об ошибке при вставке данных
-                                    echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке данных в таблицу: " . $wpdb->last_error . "</p></div>";
-                                    break;
-                                }
-                            }
-                        }
-
-                        break;
-
-
-                    case 6:                
-                        
-                        // Находим секцию "Руководство. Педагогический (научно-педагогический) состав"
-                        $section_content = $xml->xpath('//section[section_title="Руководство. Педагогический (научно-педагогический) состав"]/section_content')[0];
-                        // Объединяем всех сотрудников в одном массиве
-                        // Объединяем всех сотрудников в одном массиве
-                        $staff_data = array();
-
-                        if ($section_content->management->director) {
-                            $staff_data[] = $section_content->management->director;
-                        }
-
-                        if ($section_content->management->deputy_directors) {
-                            foreach ($section_content->management->deputy_directors->deputy_director as $deputy_director) {
-                                $staff_data[] = $deputy_director;
-                            }
-                        }
-
-                        if ($section_content->management->branch_directors) {
-                            foreach ($section_content->management->branch_directors->branch_director as $branch_director) {
-                                $staff_data[] = $branch_director;
-                            }
-                        }
-
-                        if ($section_content->pedagogical_staff) {
-                            foreach ($section_content->pedagogical_staff->pedagogical_worker as $pedagogical_worker) {
-                                $staff_data[] = $pedagogical_worker;
-                            }
-                        }
-
-
-                        // Очистить таблицу staff перед добавлением новых данных
-                        global $wpdb;
-                        $table_staff = $wpdb->prefix . 'reginfoeduorg_staff';
-                        $table_disciplines = $wpdb->prefix . 'reginfoeduorg_disciplines';
-                        $table_education = $wpdb->prefix . 'reginfoeduorg_education';
-                        $table_qualification_improvement = $wpdb->prefix . 'reginfoeduorg_qualification_improvement';
-                        $table_career = $wpdb->prefix . 'reginfoeduorg_career';
-                        $wpdb->query("DELETE FROM $table_staff");
-                        // Вставляем данные о сотрудниках
-                        foreach ($staff_data as $staff_member) {
-                            $staff_member_data = array(
-                                'full_name' => (string)$staff_member->full_name,
-                                'position' => (string)$staff_member->position,
-                                'email' => (string)$staff_member->email,
-                                'phone' => (string)$staff_member->phone,
-                                );
-                            // Вставляем основные данные сотрудника и получаем ID вставленного сотрудника
-                            $wpdb->insert($table_staff, $staff_member_data);
-                            $staff_member_id = $wpdb->insert_id;
-
-                            // Вставляем дисциплины
-                            if (isset($staff_member->disciplines)) {
-                                foreach ($staff_member->disciplines as $discipline) {
-                                    $wpdb->insert($table_disciplines, array(
-                                        'staff_id' => $staff_member_id,
-                                        'discipline' => (string)$discipline,
-                                    ));
-                                }
-                            }
-
-                            // Вставляем данные об образовании
-                            if (isset($staff_member->education)) {
-                                foreach ($staff_member->education as $education) {
-                                    $wpdb->insert($table_education, array(
-                                        'staff_id' => $staff_member_id,
-                                        'education_info' => (string)$education
-                                    ));
-                                }
-                            }
-
-                            // Вставляем данные о повышении квалификации
-                            if (isset($staff_member->qualification_improvement)) {
-                                foreach ($staff_member->qualification_improvement as $improvement) {
-                                    $wpdb->insert($table_qualification_improvement, array(
-                                        'staff_id' => $staff_member_id,
-                                        'improvement_info' => (string)$improvement,
-                                    ));
-                                }
-                            }
-
-
-                            // Вставляем данные о карьере
-                            if (isset($staff_member->career)) {
-                                foreach ($staff_member->career as $career) {
-                                    $career_info = (string)$career;
-                                    $wpdb->insert($table_career, array(
-                                        'staff_id' => $staff_member_id,
-                                        'career_info' => $career_info,
-                                    ));
-                                }
-                            }
-
-                            // Вставляем данные об опыте работы
-                            $wpdb->update($table_staff, array(
-                                'overall_experience' => (string)$staff_member->overall_experience,
-                                'specialization_experience' => (string)$staff_member->specialization_experience,
-                        ), array('id' => $staff_member_id));
-                        }
-
-                        break;
-                }
+            if ($_FILES['import_file']['error'] === UPLOAD_ERR_OK) {                
+                $xml = simplexml_load_file($_FILES['import_file']['tmp_name']);                
+                $this->import_data($subsection_id, $xml);                
                 echo "<div class='notice notice-success is-dismissible'><p>Данные успешно импортированы из файла.</p></div>";
             }
             else {
@@ -2297,139 +1987,317 @@ class RegInfoEduOrg
                 echo "<div class='notice notice-error is-dismissible'><p>Ошибка при загрузке файла: " . $_FILES['import_file']['error'] . "</p></div>";
             }
         }
-        
-        
 
-
-        
-
-        if (isset($_POST['save_table_changes'])) {
-            switch ($subsection_id)
-            {
-                case 1:
-                    $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_general_information");
-                    $data_to_update = $_POST['data'];
-                    $data_keys = array_keys($data_to_update);
-                    $data_values = array_values($data_to_update);
-
-                    for ($i = 0; $i < count($data_to_update); $i++) {
-                        $wpdb->update(
-                            "{$wpdb->prefix}reginfoeduorg_general_information",
-                            array($data_keys[$i] => $data_values[$i]),
-                            array('id' => $id),
-                            array('%s'),
-                            array('%d')
-                        );
-                    }
-                break;
-            	default:
-            }
-            
-            
-
+        //Обработчик сохранения изменений в таблице
+        if (isset($_POST['save_table_changes'])) {            
+            $this->save_table_changes($subsection_id);
             echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Данные таблицы обновлены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
         }
 
-        echo '<div class="wrap">';
-
-        // Извлекаем содержимое и стили из БД
-        $subsection_content = stripslashes($wpdb->get_var($wpdb->prepare("SELECT content FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = %d", $subsection_id)));
-        $css_styles = '';
-
-        // Ищем стили в содержимом и удаляем их
-        if (preg_match('/<style>(.*?)<\/style>/s', $subsection_content, $matches)) {
-            $css_styles = $matches[1];
-            $subsection_content = str_replace($matches[0], '', $subsection_content);
+        //Обработчик применения стилей
+        if (isset($_POST['apply_styles'])) {
+            $this->apply_styles($subsection_id);
+            echo '<div id="message" class="updated notice notice-success is-dismissible"><p>XSLT стиль применен.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
         }
 
+        echo '<div class="wrap">';
         echo '<form method="post" action="" enctype="multipart/form-data">';
+
+        //Заголовок - название подраздела
         echo '<h1>' . $subsection_name . '</h1>';
 
+        // Данные в таблице
         echo '<h3>Таблица данных подраздела</h3>';
+        
+        $this->table_data($subsection_id);   
+        
+        //Импорт
+        echo '<h2>Импорт данных</h2>';
+        
+        echo  '<input type="file" name="import_file" accept=".xml">';
+        echo '<input type="submit" name="import_file_submit" value="Импортировать" class="button-primary">';
+        echo '<br>';
 
-        if (isset($_POST['apply_styles'])) {
-            $xslt_code = isset($_POST['reginfoeduorg_xslt_code']) ? stripslashes($_POST['reginfoeduorg_xslt_code']) : '';
-            
-            // Сохраняем XSLT стиль в базу данных
-            $wpdb->update(
-                "{$wpdb->prefix}reginfoeduorg_site_subsections",
-                array('xslt' => $xslt_code),
-                array('id' => $subsection_id),
-                array('%s'),
-                array('%d')
-            );
-            $xml = new DOMDocument();
-            $xml = $this->generate_shortcode($subsection_id);
+        //XSLT стили
+        echo '<h2>Настройка отображения таблицы</h2>';
 
-            switch ($subsection_id) {
-                case 6:
-                    // Создайте массив данных сотрудников на основе обработанных XML данных
-                    $staff_data = array();
-                    $xml = simplexml_import_dom($xml);
-                    foreach ($xml->section_content->staff_members->staff as $staff) {                
-                        $staff_data[] = array(
-                            //'id' => (string) $wpdb->get_var($wpdb->prepare("SELECT id FROM {$wpdb->prefix}reginfoeduorg_staff WHERE full_name = %s", (string) $staff->full_name)),
-                            'full_name' => (string) $staff->full_name,
-                            //'position' => (string) $staff->position,
-                            //'email' => (string) $staff->email,
-                            //'phone' => (string) $staff->phone,
-                            //'overall_experience' => (string) $staff->overall_experience,
-                            //'specialization_experience' => (string) $staff->specialization_experience,
+        echo '<table class="form-table">';
+        echo '<tr>';
+        echo '<th><label for="xslt-styles">XSLT стили:</label></th>';
+        echo '<td>';
+        $subsection_data = $wpdb->get_row("SELECT * FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = {$subsection_id}", ARRAY_A);
+        $saved_xslt_code = isset($subsection_data['xslt']) ? $subsection_data['xslt'] : '';
+        echo '<textarea name="reginfoeduorg_xslt_code" id="reginfoeduorg_xslt_code" rows="10" style="width: 100%;">' . esc_textarea($saved_xslt_code) . '</textarea>';
+        echo '</td>';
+        echo '</tr>';
+        echo '</table>';
+        echo '<p>';
+        echo '<input type="submit" name="apply_styles" value="Применить стиль" class="button">';
+        echo '</p>';
+        echo '</form>';
+        echo '</div>';
+    }
+
+
+    //-----------------------Процесс обработки и вывода данных в подпунктах меню с настройкой подразделов-------------------------------
+    function import_data($subsection_id, $xml)
+    {
+        global $wpdb;
+        switch ($subsection_id)
+        {
+            case 1:
+                // Находим секцию "Основные сведения"
+                $section_content = $xml->xpath('//section[section_title="Основные сведения"]/section_content/general_information')[0];
+
+                // Преобразуем дату создания в формат 'Y-m-d', игнорируя время
+                $creation_date = DateTime::createFromFormat('d.m.Y H:i:s', (string)$section_content->creation_date);
+                $creation_date_formatted = $creation_date ? $creation_date->format('Y-m-d') : '';
+
+                // Создаем массив с данными для таблицы reginfoeduorg_general_information
+                $data = array(
+                    'full_name' => (string)$section_content->full_name,
+                    'short_name' => (string)$section_content->short_name,
+                    'creation_date' => $creation_date_formatted,
+                    'founder' => (string)$section_content->founder,
+                    'location' => (string)$section_content->location,
+                    'branches' => (string)$section_content->branches,
+                    'working_hours' => (string)$section_content->working_hours,
+                    'contact_phones' => (string)$section_content->contact_phones,
+                    'email_addresses' => (string)$section_content->email_addresses,
+                );
+
+                // Вставляем или обновляем данные в таблице reginfoeduorg_general_information
+                global $wpdb;
+                $table_name = "{$wpdb->prefix}reginfoeduorg_general_information";
+                $row_exists = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
+                if ($row_exists) {
+                    $wpdb->update($table_name, $data, ['id' => 1]);
+                } else {
+                    $wpdb->insert($table_name, $data);
+                }
+
+                break;
+            case 3:
+                // Находим секцию "Документы"
+                $documents = $xml->xpath('//reginfoeduorg/section[section_title="Документы"]/section_content/documents')[0];
+
+                // Очищаем таблицу перед импортом
+                global $wpdb;
+                $table_name = "{$wpdb->prefix}reginfoeduorg_documents";
+                $wpdb->query("TRUNCATE TABLE $table_name");
+
+                // Проходимся по всем документам
+                foreach ($documents->document as $document) {
+                    // Получаем данные
+                    $document_name = (string)$document->name;
+                    $document_link = (string)$document->link;
+                    $document_type = (string)$document->type;
+
+                    if (!empty($document_link)) {
+                        // Создаем массив с данными для таблицы reginfoeduorg_documents
+                        $data = array(
+                            'document_name' => $document_name,
+                            'document_link' => $document_link,
+                            'document_type' => $document_type,
                         );
-                    }
 
-
-                    // Создайте страницы сотрудников
-                    foreach ($staff_data as $staff) {
-                        // Проверяем, существует ли уже страница с этим заголовком
-                        $existing_page = get_page_by_path($staff['id'], OBJECT, 'staff');
-                        $staff_page_slug = $staff['id'];
-                        
-                        if ($existing_page == null) {
-                            // Страница не существует, создаем новую
-                            $staff_page_content = '';
-                            foreach ($staff as $st) {
-                                $staff_page_content .= $st;
-                            }
-                            
-                            
-                            $post_args = array(
-                                'post_title' => $staff['full_name'],
-                                'post_content' => $staff_page_content,
-                                'post_status' => 'publish',
-                                'post_type' => 'staff',
-                                'post_name' => $staff_page_slug,
-                            );
-
-                            
-                            if (post_type_exists('staff')) {
-                                $post_id = wp_insert_post($post_args);
-                            }
-                        } else {
-                            // Страница существует, обновляем ее данные
-                            $staff_page_content = '';
-                            foreach ($staff as $key => $value) {
-                                $staff_page_content .= $value . '<br/>';
-                            }
-
-                            $post_args = array(
-                                'ID' => $existing_page->ID,
-                                'post_content' => $staff_page_content,
-                                'post_name' => $staff_page_slug,
-                            );
-                            
-                            wp_update_post($post_args);
+                        // Вставляем данные в таблицу reginfoeduorg_documents
+                        if ($wpdb->insert($table_name, $data) === false) {
+                            // Выводим сообщение об ошибке при вставке данных
+                            echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке данных в таблицу: " . $wpdb->last_error . "</p></div>";
+                            break;
                         }
                     }
-            }
-        }
+                }
+                break;
+            case 9:               
+                // Находим секцию "Документы"
+                $documents = $xml->xpath('//reginfoeduorg/section[section_title="Платные образовательные услуги"]/section_content/paid_services_info')[0];
 
+                // Очищаем таблицу перед импортом
+                global $wpdb;
+                $table_name = "{$wpdb->prefix}reginfoeduorg_paid_services";
+                $wpdb->query("TRUNCATE TABLE $table_name");
+
+                // Проходимся по всем документам
+                foreach ($documents->document as $document) {
+                    // Получаем название документа и ссылку
+                    $document_name = (string)$document->name;
+                    $document_link = (string)$document->link;
+
+                    if (!empty($document_link)) {
+                        // Создаем массив с данными для таблицы reginfoeduorg_documents
+                        $data = array(
+                            'document_type' => $document_name,
+                            'document_link' => $document_link,
+                        );
+
+                        // Вставляем данные в таблицу reginfoeduorg_documents
+                        if ($wpdb->insert($table_name, $data) === false) {
+                            // Выводим сообщение об ошибке при вставке данных
+                            echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке данных в таблицу: " . $wpdb->last_error . "</p></div>";
+                            break;
+                        }
+                    }
+                }
+
+                break;
+
+            case 6:                
+                
+                // Находим секцию "Руководство. Педагогический (научно-педагогический) состав"
+                $section_content = $xml->xpath('//section[section_title="Руководство. Педагогический (научно-педагогический) состав"]/section_content')[0];
+                // Объединяем всех сотрудников в одном массиве
+                // Объединяем всех сотрудников в одном массиве
+                $staff_data = array();
+
+                if ($section_content->management->director) {
+                    $staff_data[] = $section_content->management->director;
+                }
+
+                if ($section_content->management->deputy_directors) {
+                    foreach ($section_content->management->deputy_directors->deputy_director as $deputy_director) {
+                        $staff_data[] = $deputy_director;
+                    }
+                }
+
+                if ($section_content->management->branch_directors) {
+                    foreach ($section_content->management->branch_directors->branch_director as $branch_director) {
+                        $staff_data[] = $branch_director;
+                    }
+                }
+
+                if ($section_content->pedagogical_staff) {
+                    foreach ($section_content->pedagogical_staff->pedagogical_worker as $pedagogical_worker) {
+                        $staff_data[] = $pedagogical_worker;
+                    }
+                }
+
+
+                // Очистить таблицу staff перед добавлением новых данных
+                global $wpdb;
+                $table_staff = $wpdb->prefix . 'reginfoeduorg_staff';
+                $table_disciplines = $wpdb->prefix . 'reginfoeduorg_disciplines';
+                $table_education = $wpdb->prefix . 'reginfoeduorg_education';
+                $table_qualification_improvement = $wpdb->prefix . 'reginfoeduorg_qualification_improvement';
+                $table_career = $wpdb->prefix . 'reginfoeduorg_career';
+                $wpdb->query("DELETE FROM $table_staff");
+                // Вставляем данные о сотрудниках
+                foreach ($staff_data as $staff_member) {
+                    $staff_member_data = array(
+                        'full_name' => (string)$staff_member->full_name,
+                        'position' => (string)$staff_member->position,
+                        'email' => (string)$staff_member->email,
+                        'phone' => (string)$staff_member->phone,
+                        );
+                    // Вставляем основные данные сотрудника и получаем ID вставленного сотрудника
+                    $wpdb->insert($table_staff, $staff_member_data);
+                    $staff_member_id = $wpdb->insert_id;
+
+                    // Вставляем дисциплины
+                    if (isset($staff_member->disciplines)) {
+                        foreach ($staff_member->disciplines as $discipline) {
+                            $wpdb->insert($table_disciplines, array(
+                                'staff_id' => $staff_member_id,
+                                'discipline' => (string)$discipline,
+                            ));
+                        }
+                    }
+
+                    // Вставляем данные об образовании
+                    if (isset($staff_member->education)) {
+                        foreach ($staff_member->education as $education) {
+                            $wpdb->insert($table_education, array(
+                                'staff_id' => $staff_member_id,
+                                'education_info' => (string)$education
+                            ));
+                        }
+                    }
+
+                    // Вставляем данные о повышении квалификации
+                    if (isset($staff_member->qualification_improvement)) {
+                        foreach ($staff_member->qualification_improvement as $improvement) {
+                            $wpdb->insert($table_qualification_improvement, array(
+                                'staff_id' => $staff_member_id,
+                                'improvement_info' => (string)$improvement,
+                            ));
+                        }
+                    }
+
+
+                    // Вставляем данные о карьере
+                    if (isset($staff_member->career)) {
+                        foreach ($staff_member->career as $career) {
+                            $career_info = (string)$career;
+                            $wpdb->insert($table_career, array(
+                                'staff_id' => $staff_member_id,
+                                'career_info' => $career_info,
+                            ));
+                        }
+                    }
+
+                    // Вставляем данные об опыте работы
+                    $wpdb->update($table_staff, array(
+                        'overall_experience' => (string)$staff_member->overall_experience,
+                        'specialization_experience' => (string)$staff_member->specialization_experience,
+                ), array('id' => $staff_member_id));
+                }
+
+                break;
+        }    
+    }
+
+    function save_table_changes($subsection_id)
+    {
+        global $wpdb;
+        switch ($subsection_id)
+        {
+            case 1:
+                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_general_information");
+                $data_to_update = $_POST['data'];
+                $data_keys = array_keys($data_to_update);
+                $data_values = array_values($data_to_update);
+
+                for ($i = 0; $i < count($data_to_update); $i++) {
+                    $wpdb->update(
+                        "{$wpdb->prefix}reginfoeduorg_general_information",
+                        array($data_keys[$i] => $data_values[$i]),
+                        array('id' => $id),
+                        array('%s'),
+                        array('%d')
+                    );
+                }
+                break;
+
+            default:
+        }
+    }
+
+    function apply_styles($subsection_id)
+    {
+        global $wpdb;
+        $xslt_code = isset($_POST['reginfoeduorg_xslt_code']) ? stripslashes($_POST['reginfoeduorg_xslt_code']) : '';
+        
+        // Сохраняем XSLT стиль в базу данных
+        $wpdb->update(
+            "{$wpdb->prefix}reginfoeduorg_site_subsections",
+            array('xslt' => $xslt_code),
+            array('id' => $subsection_id),
+            array('%s'),
+            array('%d')
+        );
+        $xml = new DOMDocument();
+        $xml = $this->generate_shortcode($subsection_id);
+    }
+
+    function table_data($subsection_id)
+    {
+        global $wpdb;
         switch ($subsection_id) {
             case 1:
                 $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_general_information", ARRAY_A);
                 if ($data) 
-                {
-                    
+                {                   
 
                     echo '<table class="wp-list-table widefat fixed striped">';
                     echo '<thead><tr>';
@@ -2655,27 +2523,129 @@ class RegInfoEduOrg
                 echo '<p>Страница находится в разработке.</p>';
                 break;
         }
-        echo '<h2>Импорт данных</h2>';
-        echo  '<input type="file" name="import_file" accept=".xml">';
-        echo '<input type="submit" name="import_file_submit" value="Импортировать" class="button-primary">';
-        echo '<br>';
-        echo '<h2>Настройка отображения таблицы</h2>';
-        echo '<table class="form-table">';
-        echo '<tr>';
-        echo '<th><label for="xslt-styles">XSLT стили:</label></th>';
-        echo '<td>';
-        $subsection_data = $wpdb->get_row("SELECT * FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = {$subsection_id}", ARRAY_A);
-        $saved_xslt_code = isset($subsection_data['xslt']) ? $subsection_data['xslt'] : '';
-        echo '<textarea name="reginfoeduorg_xslt_code" id="reginfoeduorg_xslt_code" rows="10" style="width: 100%;">' . esc_textarea($saved_xslt_code) . '</textarea>';
-        echo '</td>';
-        echo '</tr>';
-        echo '</table>';
-        echo '<p>';
-        echo '<input type="submit" name="apply_styles" value="Применить стиль" class="button">';
-        echo '</p>';
-        echo '</form>';
-        echo '</div>';
     }
+        
+    function generate_shortcode($subsection_id) {
+        global $wpdb;
+        switch ($subsection_id)
+        {
+            case 1:
+                // Выбираем данные из таблицы 
+                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_general_information");
+                $shortcode = '[general_info id="' . $id . '"]';                
+                
+                break;
+
+
+            case 3:
+                // Выбираем данные из таблицы 
+                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_documents");                
+                $shortcode = '[documents_info id="' . $id . '"]';
+                break;
+            case 9:
+                // Выбираем данные из таблицы 
+                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_paid_services");                
+                $shortcode = '[paid_services_info id="' . $id . '"]';
+                break;
+            case 6:
+                // Выбираем данные о сотрудниках
+                $staff_members = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_staff", ARRAY_A);
+
+                // Выбираем пустую структуру XML для подраздела "Сотрудники" из базы данных
+                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id=$subsection_id");
+
+                // Загружаем пустую структуру XML и дополняем ее данными
+                $xml = new DOMDocument('1.0', 'UTF-8');
+                $xml->formatOutput = true;
+                $xml->loadXML($subsection_xml);
+                // Находим элемент section_content для подраздела "Сотрудники"
+                $section_content = $xml->getElementsByTagName('section_content')->item(0);
+
+                // Удаляем имеющиеся элементы с данными
+                while ($section_content->hasChildNodes()) {
+                    $section_content->removeChild($section_content->firstChild);
+                }
+
+                // Создаем элемент staff_members
+                $staff_members_node = $xml->createElement('staff_members');
+                $section_content->appendChild($staff_members_node);
+
+                // Для каждого сотрудника создаем элемент staff и добавляем его в staff_members
+                foreach ($staff_members as $staff) {
+                    $staff_node = $xml->createElement('staff');
+                    $staff_members_node->appendChild($staff_node);
+
+                    // Создаем элементы для каждого поля из таблицы сотрудников и добавляем их в staff
+                    foreach ($staff as $key => $value) {
+                        $element = $xml->createElement($key, htmlspecialchars($value));
+                        $staff_node->appendChild($element);
+                    }
+                    
+                    // Добавляем данные из связанных таблиц
+                    $staff_id = $staff['id'];
+                    $related_tables = [
+                        'reginfoeduorg_disciplines',
+                        'reginfoeduorg_education',
+                        'reginfoeduorg_qualification_improvement',
+                        'reginfoeduorg_career'
+                    ];
+
+                    foreach ($related_tables as $table) {
+                        $related_data = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}{$table} WHERE staff_id = %d", $staff_id), ARRAY_A);
+                        
+                        // Создаем элемент для связанных данных
+                        $related_data_node = $xml->createElement($table);
+                        $staff_node->appendChild($related_data_node);
+
+                        // Добавляем элементы для каждого поля из связанных таблиц
+                        foreach ($related_data as $related_item) {
+                            $item_node = $xml->createElement('item');
+                            $related_data_node->appendChild($item_node);
+                            
+                            foreach ($related_item as $key => $value) {
+                                $element = $xml->createElement($key, htmlspecialchars($value));
+                                $item_node->appendChild($element);
+                            }
+                        }
+                    }
+                }
+                break;
+        	default:
+        }
+        
+        global $wpdb;
+        $url = $_SERVER['REQUEST_URI'];
+        $matches = array();
+        preg_match('/reginfoeduorg_subsection_(\d+)/', $url, $matches);
+        $subsection_id = isset($matches[1]) ? intval($matches[1]) : 0;
+        $subsection_name = $wpdb->get_var($wpdb->prepare("SELECT name FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = %d", $subsection_id));
+        $post_id = get_page_by_title($subsection_name)->ID;
+        $content = $shortcode;        
+
+        // Обновляем контент в таблице reginfoeduorg_site_subsections
+        $wpdb->update(
+            "{$wpdb->prefix}reginfoeduorg_site_subsections",
+            array('content' => $content),
+            array('id' => $subsection_id),
+            array('%s'),
+            array('%d')
+        );
+
+        if ($post_id && $content) {
+            $post = array(
+                'ID' => $post_id,
+                'post_content' => $content,
+            );
+            wp_update_post($post);
+        }
+
+        // Выводим сообщение об успешном сохранении изменений
+        echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Изменения сохранены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
+        
+        return $xml;
+    }
+    //-----------------------Процесс обработки и вывода данных в подпунктах меню с настройкой подразделов-------------------------------
+    
 
 }
 
