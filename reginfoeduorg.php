@@ -583,19 +583,25 @@ class RegInfoEduOrg
 	</section>',
             'xslt' => '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
   <xsl:output method="html" encoding="UTF-8" indent="yes" />
+  
+  <xsl:key name="documents-by-type" match="document" use="type" />
+  
   <xsl:template match="/">
     <html>
       <body>
-        <xsl:apply-templates select="//documents/document" />
+        <xsl:for-each select="//documents/document[generate-id() = generate-id(key('documents-by-type', type)[1])]">
+          <xsl:sort select="type" />
+          <p><strong><xsl:value-of select="type" /></strong></p>
+          <xsl:for-each select="key('"documents-by-type"', type)">
+            <p><a href="{link}"><xsl:value-of select="name" /></a></p>
+          </xsl:for-each>
+        </xsl:for-each>
       </body>
     </html>
   </xsl:template>
-  <xsl:template match="document">
-    <p>
-      <a href="{link}"><xsl:value-of select="name" /></a>
-    </p>
-  </xsl:template>
+  
 </xsl:stylesheet>
+
 '
             ],
             [ 
