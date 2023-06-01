@@ -589,7 +589,7 @@ class RegInfoEduOrg
   <xsl:template match="/">
     <html>
       <body>
-        <xsl:for-each select="//documents/document[generate-id() = generate-id(key('documents-by-type', type)[1])]">
+        <xsl:for-each select="//documents/document[generate-id() = generate-id(key('"documents-by-type"', type)[1])]">
           <xsl:sort select="type" />
           <p><strong><xsl:value-of select="type" /></strong></p>
           <xsl:for-each select="key('"documents-by-type"', type)">
