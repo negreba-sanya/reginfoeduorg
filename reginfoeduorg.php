@@ -27,9 +27,293 @@ class RegInfoEduOrg
         add_action('init', array($this, 'my_plugin_add_sections'));
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_menu', array($this, 'add_menu_pages'));
-        add_action( 'init', array($this,'reginfoeduorg_create_post_type'));
-        add_action('init', array($this,'create_staff_post_type'));
+        add_shortcode('general_info', array($this,'general_info_shortcode'));
+        add_shortcode('documents_info', array($this,'documents_info_shortcode'));
+        add_shortcode('paid_services_info', array($this,'paid_services_shortcode'));
     }
+
+    public function general_info_shortcode($atts) {
+        global $wpdb;
+        // Извлекаем ID из атрибутов шорткода
+        $id = $atts['id'];
+        
+        $subsection_id = 1;
+        $xml = $this->generate_xml($subsection_id);
+        
+        if (!$xml) {
+            return null;
+        }
+
+        $xslt_code = $wpdb->get_var("SELECT xslt FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Основные сведения'");
+
+
+        // Преобразуем XML контент в HTML с использованием вашего XSLT-преобразования
+        $html_content =  $this->convert_xml_xslt_to_html($xml, $xslt_code,$subsection_id);
+
+        // Возвращаем HTML-контент, который заменит шорткод на странице
+        return $html_content;
+    }
+
+    public function documents_info_shortcode($atts) {
+        global $wpdb;
+        // Извлекаем ID из атрибутов шорткода
+        $id = $atts['id'];
+        $subsection_id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Документы'");
+        $xml = $this->generate_xml($subsection_id);
+        
+        if (!$xml) {
+            return null;
+        }
+
+        $xslt_code = $wpdb->get_var("SELECT xslt FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Документы'");
+
+
+        // Преобразуем XML контент в HTML с использованием вашего XSLT-преобразования
+        $html_content =  $this->convert_xml_xslt_to_html($xml, $xslt_code,$subsection_id);
+
+        // Возвращаем HTML-контент, который заменит шорткод на странице
+        return $html_content;
+    }
+
+    public function paid_services_shortcode($atts) {
+        global $wpdb;
+        // Извлекаем ID из атрибутов шорткода
+        $id = $atts['id'];
+        $subsection_id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Платные образовательные услуги'");
+        $xml = $this->generate_xml($subsection_id);
+        
+        if (!$xml) {
+            return null;
+        }
+
+        $xslt_code = $wpdb->get_var("SELECT xslt FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Платные образовательные услуги'");
+
+
+        // Преобразуем XML контент в HTML с использованием вашего XSLT-преобразования
+        $html_content =  $this->convert_xml_xslt_to_html($xml, $xslt_code,$subsection_id);
+    }
+    
+    function convert_xml_xslt_to_html($xml, $xslt_code, $subsection_id) {
+        // Создаем экземпляр XSLTProcessor и загружаем XSLT-код
+        $xslt_processor = new XSLTProcessor();
+        $xslt = new DOMDocument();
+        $xslt->loadXML($xslt_code);
+        $xslt_processor->importStylesheet($xslt);
+        
+        // Применяем XSLT-код к XML данным
+        $transformed_data = $xslt_processor->transformToXml($xml); // Применяем XSLT-преобразование
+        
+        // Создаем экземпляр DOMDocument для преобразованных данных
+        $transformed_doc = new DOMDocument();
+        $transformed_doc->loadXML($transformed_data); // Загружаем преобразованные данные
+        
+        return $transformed_doc->saveHTML();        
+        
+    }
+
+    function generate_xml($subsection_id) {
+        switch ($subsection_id)
+        {
+            case 1:
+                global $wpdb;
+
+                // Выбираем данные из таблицы reginfoeduorg_general_information
+                $general_information = $wpdb->get_row("SELECT * FROM {$wpdb->prefix}reginfoeduorg_general_information", ARRAY_A);
+                if (!$general_information) {
+                     return null;
+                }
+
+                // Выбираем пустую структуру XML для подраздела "Основные сведения" из базы данных
+                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Основные сведения'");
+
+                // Загружаем пустую структуру XML и дополняем ее данными
+                $xml = new DOMDocument('1.0', 'UTF-8');
+                $xml->formatOutput = true;
+                $xml->loadXML($subsection_xml);
+
+                // Находим элемент general_information для подраздела "Основные сведения"
+                $general_information_node = $xml->getElementsByTagName('general_information')->item(0);
+
+                // Добавляем атрибут id к элементу general_information
+                $general_information_node->setAttribute('id', $general_information['id']);
+
+                // Создаем элементы для каждого поля из таблицы и обновляем их в general_information
+                foreach ($general_information as $key => $value) {
+                    $element = $general_information_node->getElementsByTagName($key)->item(0);
+                    if ($element) {
+                        $element->nodeValue = htmlspecialchars($value);
+                    } else {
+                        $element = $xml->createElement($key, htmlspecialchars($value));
+                        $general_information_node->appendChild($element);
+                    }
+                }
+                break;
+
+            case 3:
+                // Выбираем данные из таблицы reginfoeduorg_documents
+                $documents_data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_documents", ARRAY_A);
+                if (!$documents_data) {
+                    return null;
+                }
+                // Выбираем пустую структуру XML для подраздела "Документы" из базы данных
+                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Документы'");
+
+                // Загружаем пустую структуру XML и дополняем ее данными
+                $xml = new DOMDocument('1.0', 'UTF-8');
+                $xml->formatOutput = true;
+                $xml->loadXML($subsection_xml);
+                // Находим элемент section_content для подраздела "Документы"
+                $section_content = $xml->getElementsByTagName('section_content')->item(0);
+
+                // Удаляем имеющиеся элементы с данными
+                while ($section_content->hasChildNodes()) {
+                    $section_content->removeChild($section_content->firstChild);
+                }
+
+                // Создаем элемент documents
+                $documents_node = $xml->createElement('documents');
+                $section_content->appendChild($documents_node);
+
+                // Проходимся по всем документам из таблицы и добавляем их в documents
+                foreach ($documents_data as $document) {
+                    // Создаем элемент document
+                    $document_node = $xml->createElement('document');
+                    $documents_node->appendChild($document_node);
+
+                    // Создаем элементы name и link для каждого документа
+                    $name = $xml->createElement('name', htmlspecialchars($document['document_type']));
+                    $link = $xml->createElement('link', htmlspecialchars($document['document_link']));
+                    $document_node->appendChild($name);
+                    $document_node->appendChild($link);
+                }
+                break;
+
+            default:
+        }
+        return $xml;
+    }
+
+    function generate_shortcode($subsection_id) {
+        global $wpdb;
+        switch ($subsection_id)
+        {
+            case 1:
+                // Выбираем данные из таблицы 
+                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_general_information");
+                $shortcode = '[general_info id="' . $id . '"]';                
+                
+                break;
+
+
+            case 3:
+                // Выбираем данные из таблицы 
+                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_documents");                
+                $shortcode = '[documents_info id="' . $id . '"]';
+                break;
+            case 9:
+                // Выбираем данные из таблицы 
+                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_paid_services");                
+                $shortcode = '[paid_services_info id="' . $id . '"]';
+                break;
+            case 6:
+                // Выбираем данные о сотрудниках
+                $staff_members = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_staff", ARRAY_A);
+
+                // Выбираем пустую структуру XML для подраздела "Сотрудники" из базы данных
+                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id=$subsection_id");
+
+                // Загружаем пустую структуру XML и дополняем ее данными
+                $xml = new DOMDocument('1.0', 'UTF-8');
+                $xml->formatOutput = true;
+                $xml->loadXML($subsection_xml);
+                // Находим элемент section_content для подраздела "Сотрудники"
+                $section_content = $xml->getElementsByTagName('section_content')->item(0);
+
+                // Удаляем имеющиеся элементы с данными
+                while ($section_content->hasChildNodes()) {
+                    $section_content->removeChild($section_content->firstChild);
+                }
+
+                // Создаем элемент staff_members
+                $staff_members_node = $xml->createElement('staff_members');
+                $section_content->appendChild($staff_members_node);
+
+                // Для каждого сотрудника создаем элемент staff и добавляем его в staff_members
+                foreach ($staff_members as $staff) {
+                    $staff_node = $xml->createElement('staff');
+                    $staff_members_node->appendChild($staff_node);
+
+                    // Создаем элементы для каждого поля из таблицы сотрудников и добавляем их в staff
+                    foreach ($staff as $key => $value) {
+                        $element = $xml->createElement($key, htmlspecialchars($value));
+                        $staff_node->appendChild($element);
+                    }
+                    
+                    // Добавляем данные из связанных таблиц
+                    $staff_id = $staff['id'];
+                    $related_tables = [
+                        'reginfoeduorg_disciplines',
+                        'reginfoeduorg_education',
+                        'reginfoeduorg_qualification_improvement',
+                        'reginfoeduorg_career'
+                    ];
+
+                    foreach ($related_tables as $table) {
+                        $related_data = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}{$table} WHERE staff_id = %d", $staff_id), ARRAY_A);
+                        
+                        // Создаем элемент для связанных данных
+                        $related_data_node = $xml->createElement($table);
+                        $staff_node->appendChild($related_data_node);
+
+                        // Добавляем элементы для каждого поля из связанных таблиц
+                        foreach ($related_data as $related_item) {
+                            $item_node = $xml->createElement('item');
+                            $related_data_node->appendChild($item_node);
+                            
+                            foreach ($related_item as $key => $value) {
+                                $element = $xml->createElement($key, htmlspecialchars($value));
+                                $item_node->appendChild($element);
+                            }
+                        }
+                    }
+                }
+                break;
+        	default:
+        }
+        
+        global $wpdb;
+        $url = $_SERVER['REQUEST_URI'];
+        $matches = array();
+        preg_match('/reginfoeduorg_subsection_(\d+)/', $url, $matches);
+        $subsection_id = isset($matches[1]) ? intval($matches[1]) : 0;
+        $subsection_name = $wpdb->get_var($wpdb->prepare("SELECT name FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = %d", $subsection_id));
+        $post_id = get_page_by_title($subsection_name)->ID;
+        $content = $shortcode;        
+
+        // Обновляем контент в таблице reginfoeduorg_site_subsections
+        $wpdb->update(
+            "{$wpdb->prefix}reginfoeduorg_site_subsections",
+            array('content' => $content),
+            array('id' => $subsection_id),
+            array('%s'),
+            array('%d')
+        );
+
+        if ($post_id && $content) {
+            $post = array(
+                'ID' => $post_id,
+                'post_content' => $content,
+            );
+            wp_update_post($post);
+        }
+
+        // Выводим сообщение об успешном сохранении изменений
+        echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Изменения сохранены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
+        
+        return $xml;
+    }
+    
+
 
     //Создание таблиц для базы данных
     function create_custom_tables() {
@@ -56,6 +340,7 @@ class RegInfoEduOrg
         $table_founders = $wpdb->prefix . 'reginfoeduorg_founders';
         $table_meetings = $wpdb->prefix . 'reginfoeduorg_meetings';
         $table_documents = $wpdb->prefix . 'reginfoeduorg_documents';
+        $table_documents_types = $wpdb->prefix . 'reginfoeduorg_documents_types';
         $table_education_programs = $wpdb->prefix . 'reginfoeduorg_education_programs';
         $table_free_education = $wpdb->prefix . 'reginfoeduorg_free_education';
         $table_property = $wpdb->prefix . 'reginfoeduorg_property';
@@ -212,10 +497,17 @@ class RegInfoEduOrg
               meeting_info TEXT
             )$charset_collate;
 
+             CREATE TABLE $table_documents_types (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                document_type VARCHAR(255)
+            )$charset_collate;
+
             CREATE TABLE $table_documents (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              document_type VARCHAR(255),
-              document_link VARCHAR(255)
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                document_name VARCHAR(255),
+                document_type INT(11) NOT NULL,
+                FOREIGN KEY (document_type) REFERENCES $table_documents_types(id) ON DELETE CASCADE,
+                document_link VARCHAR(255)
             )$charset_collate;
 
             CREATE TABLE $table_education_programs (
@@ -337,17 +629,17 @@ class RegInfoEduOrg
     </html>
   </xsl:template>
   <xsl:template match="general_information">
+  <general_information id="{@id}">
     <p><strong>Полное название образовательной организации:</strong> <xsl:value-of select="full_name" /></p>
     <p><strong>Краткое название образовательной организации:</strong> <xsl:value-of select="short_name" /></p>
     <p><strong>Дата создания образовательной организации:</strong> <xsl:value-of select="creation_date" /></p>
     <p><strong>Учредитель:</strong> <xsl:value-of select="founder" /></p>
     <p><strong>Место нахождения образовательной организации:</strong> <xsl:value-of select="location" /></p>
-    <p><strong>Адрес осуществления образовательной деятельности:</strong> <xsl:value-of select="addresses_educational_activities/address_educational_activities" /></p>
-    <p><strong>Адрес расположения структурных подразделений:</strong> <xsl:value-of select="addresses_structural_subdivisions/address_structural_subdivisions" /></p>
     <p><strong>Филиалы образовательной организации:</strong> <xsl:value-of select="branches" /></p>
     <p><strong>График работы:</strong> <xsl:value-of select="working_hours" /></p>
     <p><strong>Контактные телефоны:</strong> <xsl:value-of select="contact_phones" /></p>
     <p><strong>Адреса электронной почты:</strong> <xsl:value-of select="email_addresses" /></p>
+</general_information>
   </xsl:template>
 </xsl:stylesheet>
 '
@@ -778,12 +1070,6 @@ class RegInfoEduOrg
                 'menu_title' => 'Подразделы сайта',
                 'slug' => 'reginfoeduorg-submenu',
                 'callback' => array($this, 'submenu_page')
-            ),
-            array(
-                'title' => 'Настройка содержания подразделов сайта',
-                'menu_title' => 'Содержание подразделов сайта',
-                'slug' => 'reginfoeduorg-contents',
-                'callback' => array($this, 'reginfoeduorg_submenu')
             )
         );
 
@@ -824,920 +1110,8 @@ class RegInfoEduOrg
 
 
 
-    }
-    
-    //Настройка содержания подразделов сайта
-    function reginfoeduorg_submenu() 
-    {
-        // получаем текущего пользователя
-        $current_user = wp_get_current_user();
-        $user_id = $current_user->ID;
+    }    
 
-        global $wpdb;
-
-        // получаем ID роли текущего пользователя из таблицы wp_reginfoeduorg_users_roles
-        $user_role_id = $wpdb->get_var($wpdb->prepare("SELECT role_id FROM {$wpdb->prefix}reginfoeduorg_users_roles WHERE user_id = %d", $user_id));
-
-
-        // проверяем, принадлежит ли текущий пользователь какой-то роли
-        if ($user_role_id) {
-            // Задаем название подпункта меню, для которого хотим проверить доступ
-            $menu_item_name = 'Настройка содержания подразделов сайта';
-
-            // Получаем ID подпункта меню по его названию из таблицы wp_reginfoeduorg_menu_items
-            $menu_item_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$wpdb->prefix}reginfoeduorg_menu_items WHERE name = %s", $menu_item_name));
-            $table_subsection_access = $wpdb->prefix . 'reginfoeduorg_role_subsection_access';
-
-            // получаем список разрешений доступа для текущей роли из таблицы wp_reginfoeduorg_role_menu_item_access
-            $access_menu = $wpdb->get_row($wpdb->prepare("SELECT read_permission, write_permission FROM {$wpdb->prefix}reginfoeduorg_role_menu_item_access WHERE role_id = %d AND menu_item_id = %d", $user_role_id, $menu_item_id), ARRAY_A);
-            // Получаем список подразделов из базы данных
-            global $wpdb;
-            $table_site_subsections = $wpdb->prefix . 'reginfoeduorg_site_subsections';
-            $sections = $wpdb->get_results("SELECT * FROM $table_site_subsections");
-            $subsection_access_data = $wpdb->get_results($wpdb->prepare("SELECT $table_site_subsections.id, $table_site_subsections.name, $table_subsection_access.read_permission, $table_subsection_access.write_permission FROM $table_subsection_access JOIN $table_site_subsections ON $table_site_subsections.id = $table_subsection_access.subsection_id WHERE role_id = %d", $user_role_id));
-            foreach ($subsection_access_data as $row) {
-                $access_settings[$row->name] = array(
-                    'read' => intval($row->read_permission),
-                    'edit' => intval($row->write_permission)
-                );
-            }
-            // проверяем, разрешен ли доступ к нужному подразделу меню
-            if ($access_menu['read_permission'] == 0) {
-                wp_die('У вас нет доступа');
-            } 
-            elseif ($access_menu['write_permission'] == 0) 
-            {
-                global $wpdb;
-                $sections = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_site_subsections");
-                // Выводим верстку
-                echo '<div class="wrap">';
-                echo '<h1>Изменение содержания подразделов:</h1>';
-                echo '<form method="post" action="" enctype="multipart/form-data">';
-                echo '<table class="form-table">';
-                if (is_array($sections)) {
-                    foreach ($sections as $key => $section) {                
-                        if ($access_settings[$section->name]['read'] == 1) { 
-                            if ($access_settings[$section->name]['edit'] == 1) {
-                                echo '<tr><th><label for="section-'.$key.'">'.esc_attr($section->name).':</label></th><td>';
-                                $post = get_page_by_title($section->name);
-                                $content = $post ? $post->post_content : '';
-                                $editor_id = 'section-' . $key;
-                                $settings = array(
-                                    'textarea_name' => 'reginfoeduorg_subsections['.$key.']',
-                                    'editor_height' => 200,
-                                    'media_buttons' => true,
-                                );
-                                wp_editor($content, $editor_id, $settings);
-                            } 
-                            else {
-                                echo '<tr><th><label for="section-'.$key.'">'.esc_attr($section->name).':</label></th><td>';
-                                $post = get_page_by_title($section->name);
-                                $content = $post ? $post->post_content : '';
-                                echo '<p>'.$content.'<p>';
-                            }
-                        }      
-                    }
-                }
-                echo '</table>';                   
-                echo '</form>';
-                echo '</div>';
-
-            }
-            else
-            {
-                if ( isset( $_POST['import_file_submit'] ) && isset( $_FILES['import_file'] ) ) {
-                    if ( $_FILES['import_file']['error'] === UPLOAD_ERR_OK ) {
-                        $xml = simplexml_load_file( $_FILES['import_file']['tmp_name'] );
-                        $editor_id = '';
-                        $section_title = 'Основные сведения';
-                        $file_contents = '';
-                        foreach ( $xml->section as $section ) {
-                            switch ((string) $section->section_title)
-                            {
-                                case 'Основные сведения':
-                                    $editor_id = 'section-0';
-                                    $section_content = $section->section_content->general_information;
-                                    $adress_one = $section_content->addresses_educational_activities;
-                                    $adress_two = $section_content->addresses_structural_subdivisions;
-                                    $file_contents = '<h4>Основные сведения:</h4><br>';
-                                    $file_contents .= "<b>Полное название образовательной организации:</b> {$section_content->full_name}<br>";
-                                    $file_contents .= "<b>Краткое название образовательной организации:</b> {$section_content->short_name}<br>";
-                                    $file_contents .= "<b>Дата создания образовательной организации:</b> {$section_content->creation_date}<br>";
-                                    $file_contents .= "<b>Учредитель:</b> {$section_content->founder}<br>";
-                                    $file_contents .= "<b>Адреса осуществления образовательной деятельности:</b><br><ul>";                                    
-                                    foreach ($adress_one->children() as $child) {
-                                        $file_contents .= "<li>{$child}</li>";
-                                    }
-                                    $file_contents .= "</ul><b>Адреса расположения структурных подразделений:</b><br><ul>";                                     
-                                    foreach ($adress_two->children() as $child) {
-                                        $file_contents .= "<li>{$child}</li>";
-                                    }
-                                    $file_contents .= "</ul><br><b>Место нахождения образовательной организации:</b> {$section_content->location}<br>";
-                                    $file_contents .= "<b>Филиалы образовательной организации:</b> {$section_content->branches}<br>";
-                                    $file_contents .= "<b>График работы:</b> {$section_content->working_hours}<br>";                                    
-                                    $file_contents .= "<b>Контактные телефоны:</b> {$section_content->contact_phones}<br>";
-                                    $file_contents .= "<b>Адреса электронной почты:</b> {$section_content->email_addresses}<br>";
-?>
-                                <script>
-                                jQuery(document).ready(function() {
-                                    var new_content = <?php echo json_encode($file_contents); ?>;
-                                    var editor = tinyMCE.get('<?php echo $editor_id; ?>');
-                                    editor.setContent(new_content);
-                                });
-                                </script>
-                            <?php
-                                    break;
-
-                                case 'Структура и органы управления образовательной организацией':
-                                    $editor_id = 'section-1';
-                                    $section_content = $section->section_content->management_structure;
-                                    $file_contents = '<p><b>Структурные подразделения</b></p>';
-
-                                    // выводим информацию о структурных подразделениях
-                                    $structural_units = $section_content->structural_units;
-                                    foreach ($structural_units->children() as $child) {
-                                        $file_contents .= "<b>Наименование структурного подразделения:</b> {$child->name}<br>";
-                                        $file_contents .= "<b>ФИО руководителя структурного подразделения:</b> {$child->leader}<br>";
-                                        $file_contents .= "<b>Должность руководителя структурного подразделения:</b> {$child->position}<br>";
-                                        $file_contents .= "<b>Местонахождение структурного подразделения:</b> {$child->location}<br>";
-                                        $file_contents .= "<b>Адрес официального сайта структурного подразделения:</b> {$child->official_website}<br>";
-                                        $file_contents .= "<b>Адрес электронной почты структурного подразделения:</b> {$child->email}<br>";
-                                        $file_contents .= "<b>Сведения о положении о структурном подразделении (об органе управления) с приложением копии указанного положения:</b> {$child->regulations}<br><br>";
-                                    }
-
-                                    $file_contents .= '<p><b>Органы управления</b></p>';
-                                    // выводим информацию об органах управления
-                                    $management_bodies = $section_content->management_bodies;
-                                    foreach ($management_bodies->children() as $child) {
-                                        $file_contents .= "<b>Наименование органа управления:</b> {$child->name}<br>";
-                                        $file_contents .= "<b>ФИО руководителя органа управления:</b> {$child->leader}<br>";
-                                        $file_contents .= "<b>Должность руководителя органа управления:</b> {$child->position}<br>";
-                                        $file_contents .= "<b>Местонахождение органа управления:</b> {$child->location}<br>";
-                                        $file_contents .= "<b>Адрес официального сайта органа управления:</b> {$child->official_website}<br>";
-                                        $file_contents .= "<b>Адрес электронной почты органа управления:</b> {$child->email}<br>";
-                                        $file_contents .= "<b>Сведения о положении об органе управления с приложением копии указанного положения:</b> {$child->regulations}<br><br>";
-                                    }
-
-                            ?>
-                            <script>
-                                jQuery(document).ready(function() {
-                                    var new_content = <?php echo json_encode($file_contents); ?>;
-                                    var editor = tinyMCE.get('<?php echo $editor_id; ?>');
-                                    editor.setContent(new_content);
-                                });
-                            </script>
-                            <?php
-                                    break;
-
-                                case 'Документы':
-                                    $editor_id = 'section-2';
-                                    $section_content = $section->section_content->documents;
-                                    $file_contents = '<strong>Документы:</strong><br>';
-                                    foreach ($section_content->children() as $child) {
-                                        $title = $child->getName();
-                                        if ($title === 'normative_acts') {
-                                            $file_contents .= "<strong>Нормативные акты:</strong><br>";
-                                            foreach ($child->children() as $inner_child) {
-                                                $inner_title = $inner_child->getName();
-                                                $inner_info = (string) $inner_child;
-                                                $file_contents .= "<a href='$inner_child'>$inner_child</a><br>";
-                                            }
-                                        }
-                                        if ($title === 'self_evaluation_report') 
-                                        {
-                                            $file_contents .= "<strong>Отчеты:</strong><br>";
-                                            $info = (string) $child;
-                                            $file_contents .= "<a href='$info'>$info</a><br>";
-                                        }
-                                        if ($title === 'paid_services') {
-                                            $file_contents .= "<strong>Платные образовательные услуги:</strong><br>";
-                                            foreach ($child->children() as $inner_child) {
-                                                $inner_title = $inner_child->getName();
-                                                $inner_info = (string) $inner_child;
-                                                $file_contents .= "<a href='$inner_child'>$inner_child</a><br>";
-                                            }
-                                        } 
-                                        else {
-                                            $info = (string) $child;
-                                            $file_contents .= "<a href='$info'>$info</a><br>";
-                                        }
-                                    }
-                            ?>
-                            <script>
-                                jQuery(document).ready(function() {
-                                    var new_content = <?php echo json_encode($file_contents); ?>;
-                                    var editor = tinyMCE.get('<?php echo $editor_id; ?>');
-                                    editor.setContent(new_content);
-                                });
-                            </script>
-                            <?php
-                                    break;
-
-
-                                case 'Образование':
-                                    $editor_id = 'section-3';
-                                    $section_content = $section->section_content;
-                                    $file_contents = '';
-                                    
-                                    $education_levels = $section_content->education_levels;
-                                    $file_contents .= '<p><b>Уровни образования:</b></p>';
-                                    $level_info = $education_levels->level_info;
-                                    $file_contents .= "<p>$level_info</p>";
-                                    
-
-                                    // выводим информацию об образовательных программах
-                                    $educational_programs = $section_content->educational_programs;
-                                    $file_contents .= '<p><b>Образовательные программы:</b></p>';
-                                    $program_info = $educational_programs->program_info;
-                                    $program_attachment = $educational_programs->program_attachment;
-                                    $file_contents .= "<p>$program_info</p><p><b>Приложение с копией образовательной программы:</b> $program_attachment</p>";
-                                    
-
-                                    // выводим информацию об учебном плане
-                                    $educational_plan = $section_content->educational_plan;
-                                    $plan_title = $educational_plan->plan_title;
-                                    $plan_info = $educational_plan->plan_info;
-                                    $file_contents .= "<p><b>$plan_title:</b> $plan_info</p>";
-
-                                    // выводим информацию о календарном учебном графике
-                                    $educational_schedule = $section_content->educational_schedule;
-                                    $schedule_title = $educational_schedule->schedule_title;
-                                    $schedule_info = $educational_schedule->schedule_info;
-                                    $file_contents .= "<p><b>$schedule_title:</b> $schedule_info</p>";
-
-                                    // выводим информацию о документах для обеспечения образовательного процесса
-                                    $educational_documents = $section_content->educational_documents;
-                                    $documents_title = $educational_documents->documents_title;
-                                    $documents_info = $educational_documents->documents_info;
-                                    $file_contents .= "<p><b>$documents_title:</b> $documents_info</p>";
-                            ?>
-                        <script>
-                        jQuery(document).ready(function() {
-                            var new_content = <?php echo json_encode($file_contents); ?>;
-                            var editor = tinyMCE.get('<?php echo $editor_id; ?>');
-                            editor.setContent(new_content);
-                        });
-                        </script>
-                        <?php
-                                    break;
-
-                                case 'Образовательные стандарты':
-                                    $editor_id = 'section-4';
-                                    $section_content = $section->section_content;
-                                    $file_contents = '';
-                                    foreach ($section_content->children() as $child) {
-                                        foreach ( $child->children() as $inner_child ) {
-                                            $title = $inner_child->getName();
-                                            $info = (string) $inner_child;
-                                            $file_contents .= "$info<br>";
-                                        }
-                                    }
-                        ?>
-                        <script>
-                        jQuery(document).ready(function() {
-                            var new_content = <?php echo json_encode($file_contents); ?>;
-                            var editor = tinyMCE.get('<?php echo $editor_id; ?>');
-                            editor.setContent(new_content);
-                        });
-                        </script>
-                        <?php
-                                    break;
-
-                                case 'Руководство. Педагогический (научно-педагогический) состав':
-                                    $editor_id = 'section-5';
-                                    $section_content = $section->section_content;
-                                    $file_contents = '';
-                                    foreach ($section_content->children() as $inner_child) {
-                                        $title = $inner_child->getName();
-                                        if ($title == 'management') {
-                                            $director = $inner_child->director;
-                                            $contents = "<b>Должность:</b> {$director->position}<br>";
-                                            $contents .= "<b>Контактный телефон:</b> {$director->phone}<br>";
-                                            $contents .= "<b>Адрес электронной почты:</b> {$director->email}<br>";
-                                            $contents .= "<b>Дисциплины:</b> {$director->disciplines}<br>";
-                                            $contents .= "<b>Образование:</b> {$director->education}<br>";
-                                            $contents .= "<b>Специализация:</b> {$director->specialization}<br>";
-                                            $contents .= "<b>Повышение квалификации:</b> {$director->qualification_improvement}<br>";
-                                            $contents .= "<b>Карьера:</b> {$director->career}<br>";
-                                            $contents .= "<b>Общий стаж:</b> {$director->overall_experience}<br>";
-                                            $contents .= "<b>Стаж по специализации:</b> {$director->specialization_experience}<br><br>";
-                                            $contents .= "</div>";
-
-                                            
-                                            $full_name = (string) $director->full_name;
-                                            $position = (string) $director->position;
-                                            $phone = (string) $director->phone;
-                                            $email = (string) $director->email;
-                                            $disciplines = (string) $director->disciplines;
-                                            $education = (string) $director->education;
-                                            $specialization = (string) $director->specialization;
-                                            $qualification_improvement = (string) $director->qualification_improvement;
-                                            $career = (string) $director->career;
-                                            $overall_experience = (string) $director->overall_experience;
-                                            $specialization_experience = (string) $director->specialization_experience;
-
-
-                                            $post_args = array(
-                                                    'post_title' => $full_name,
-                                                    'post_content' => $contents,
-                                                    'post_status' => 'private',
-                                                    'exclude_from_search' => true,
-                                                    'menu_order' => null,
-                                                    'post_parent' => -1,
-                                                    'post_type' => 'page'
-                                                );
-                                            $parent_page = get_page_by_title($full_name);
-                                            if (empty($parent_page)) {
-                                                // создание новой страницы
-                                                $post_id = wp_insert_post($post_args);
-
-                                                // добавление метаполей
-                                                update_post_meta($post_id, 'position', $position);
-                                                update_post_meta($post_id, 'phone', $phone);
-                                                update_post_meta($post_id, 'email', $email);
-                                                update_post_meta($post_id, 'disciplines', $disciplines);
-                                                update_post_meta($post_id, 'education', $education);
-                                                update_post_meta($post_id, 'specialization', $specialization);
-                                                update_post_meta($post_id, 'qualification_improvement', $qualification_improvement);
-                                                update_post_meta($post_id, 'career', $career);
-                                                update_post_meta($post_id, 'overall_experience', $overall_experience);
-                                                update_post_meta($post_id, 'specialization_experience', $specialization_experience);
-                                            } else {
-                                                // обновление существующей страницы
-                                                $post_id = $parent_page->ID;
-
-                                                // обновление содержимого страницы
-                                                $post_args['ID'] = $post_id;
-                                                $post_args['post_content'] = $contents;
-                                                wp_update_post($post_args);
-
-                                                // обновление метаполей
-                                                update_post_meta($post_id, 'position', $position);
-                                                update_post_meta($post_id, 'phone', $phone);
-                                                update_post_meta($post_id, 'email', $email);
-                                                update_post_meta($post_id, 'disciplines', $disciplines);
-                                                update_post_meta($post_id, 'education', $education);
-                                                update_post_meta($post_id, 'specialization', $specialization);
-                                                update_post_meta($post_id, 'qualification_improvement', $qualification_improvement);
-                                                update_post_meta($post_id, 'career', $career);
-                                                update_post_meta($post_id, 'overall_experience', $overall_experience);
-                                                update_post_meta($post_id, 'specialization_experience', $specialization_experience);
-                                            }
-
-                                            // создание ссылки на созданную страницу
-                                            $permalink = get_permalink($post_id);
-
-
-                                            $file_contents .= "<h4>Руководитель:</h4>";
-                                            $file_contents .= "<div style='width: 145px;text-align: center;display: inline-flex;'>";
-                                            $file_contents .= "<a href = '{$permalink}'>{$director->full_name}</a><br>";
-                                            $file_contents .= "</div>";
-
-
-                                            $deputy_directors = $inner_child->deputy_directors;
-                                            $file_contents .= "<h4>Заместители руководителя:</h4>";
-                                            foreach ($deputy_directors->children() as $deputy_director) {
-
-                                                $contents = "<b>Должность:</b> {$deputy_director->position}<br>";
-                                                $contents .= "<b>Контактный телефон:</b> {$deputy_director->phone}<br>";
-                                                $contents .= "<b>Адрес электронной почты:</b> {$deputy_director->email}<br>";
-                                                $contents .= "<b>Дисциплины:</b> {$deputy_director->disciplines}<br>";
-                                                $contents .= "<b>Образование:</b> {$deputy_director->education}<br>";
-                                                $contents .= "<b>Специализация:</b> {$deputy_director->specialization}<br>";
-                                                $contents .= "<b>Повышение квалификации:</b> {$deputy_director->qualification_improvement}<br>";
-                                                $contents .= "<b>Карьера:</b> {$deputy_director->career}<br>";
-                                                $contents .= "<b>Общий стаж:</b> {$deputy_director->overall_experience}<br>";
-                                                $contents .= "<b>Стаж по специализации:</b> {$deputy_director->specialization_experience}<br><br>";
-                                                $contents .= "</div>";
-
-                                                $full_name = (string) $deputy_director->full_name;
-                                                $position = (string) $deputy_director->position;
-                                                $phone = (string) $deputy_director->phone;
-                                                $email = (string) $deputy_director->email;
-                                                $disciplines = (string) $deputy_director->disciplines;
-                                                $education = (string) $deputy_director->education;
-                                                $specialization = (string) $deputy_director->specialization;
-                                                $qualification_improvement = (string) $deputy_director->qualification_improvement;
-                                                $career = (string) $deputy_director->career;
-                                                $overall_experience = (string) $deputy_director->overall_experience;
-                                                $specialization_experience = (string) $deputy_director->specialization_experience;
-
-                                                $post_args = array(
-                                                        'post_title' => $full_name,
-                                                        'post_content' => $contents,
-                                                        'post_status' => 'private',
-                                                        'exclude_from_search' => true,
-                                                        'menu_order' => null,
-                                                        'post_parent' => -1,
-                                                        'post_type' => 'page'
-                                                    );
-                                                $parent_page = get_page_by_title($full_name);
-                                                if (empty($parent_page)) {
-                                                    // создание новой страницы
-                                                    $post_id = wp_insert_post($post_args);
-
-                                                    // добавление метаполей
-                                                    update_post_meta($post_id, 'position', $position);
-                                                    update_post_meta($post_id, 'phone', $phone);
-                                                    update_post_meta($post_id, 'email', $email);
-                                                    update_post_meta($post_id, 'disciplines', $disciplines);
-                                                    update_post_meta($post_id, 'education', $education);
-                                                    update_post_meta($post_id, 'specialization', $specialization);
-                                                    update_post_meta($post_id, 'qualification_improvement', $qualification_improvement);
-                                                    update_post_meta($post_id, 'career', $career);
-                                                    update_post_meta($post_id, 'overall_experience', $overall_experience);
-                                                    update_post_meta($post_id, 'specialization_experience', $specialization_experience);
-                                                } else {
-                                                    // обновление существующей страницы
-                                                    $post_id = $parent_page->ID;
-
-                                                    // обновление содержимого страницы
-                                                    $post_args['ID'] = $post_id;
-                                                    $post_args['post_content'] = $contents;
-                                                    wp_update_post($post_args);
-
-                                                    // обновление метаполей
-                                                    update_post_meta($post_id, 'position', $position);
-                                                    update_post_meta($post_id, 'phone', $phone);
-                                                    update_post_meta($post_id, 'email', $email);
-                                                    update_post_meta($post_id, 'disciplines', $disciplines);
-                                                    update_post_meta($post_id, 'education', $education);
-                                                    update_post_meta($post_id, 'specialization', $specialization);
-                                                    update_post_meta($post_id, 'qualification_improvement', $qualification_improvement);
-                                                    update_post_meta($post_id, 'career', $career);
-                                                    update_post_meta($post_id, 'overall_experience', $overall_experience);
-                                                    update_post_meta($post_id, 'specialization_experience', $specialization_experience);
-                                                }
-
-                                                // создание ссылки на созданную страницу
-                                                $permalink = get_permalink($post_id);
-
-
-                                                
-                                                $file_contents .= "<div style='width: 145px;text-align: center;display: inline-flex;'>";
-                                                $file_contents .= "<a href = '{$permalink}'> {$deputy_director->full_name}<br>";
-                                                $file_contents .= "</div>";
-                                            }
-                                            $branch_directors = $inner_child->branch_directors;
-                                            $file_contents .= "<h4>Руководители филиалов:</h4>";
-                                            foreach ($branch_directors->children() as $branch_director) {
-                                                $contents = "<b>Должность:</b> {$branch_director->position}<br>";
-                                                $contents .= "<b>Контактный телефон:</b> {$branch_director->phone}<br>";
-                                                $contents .= "<b>Адрес электронной почты:</b> {$branch_director->email}<br>";
-                                                $contents .= "<b>Дисциплины:</b> {$branch_director->disciplines}<br>";
-                                                $contents .= "<b>Образование:</b> {$branch_director->education}<br>";
-                                                $contents .= "<b>Специализация:</b> {$branch_director->specialization}<br>";
-                                                $contents .= "<b>Повышение квалификации:</b> {$branch_director->qualification_improvement}<br>";
-                                                $contents .= "<b>Карьера:</b> {$branch_director->career}<br>";
-                                                $contents .= "<b>Общий стаж:</b> {$branch_director->overall_experience}<br>";
-                                                $contents .= "<b>Стаж по специализации:</b> {$branch_director->specialization_experience}<br><br>";
-                                                $contents .= "</div>";
-
-                                                $full_name = (string) $branch_director->full_name;
-                                                $position = (string) $branch_director->position;
-                                                $phone = (string) $branch_director->phone;
-                                                $email = (string) $branch_director->email;
-                                                $disciplines = (string) $branch_director->disciplines;
-                                                $education = (string) $branch_director->education;
-                                                $specialization = (string) $branch_director->specialization;
-                                                $qualification_improvement = (string) $branch_director->qualification_improvement;
-                                                $career = (string) $branch_director->career;
-                                                $overall_experience = (string) $branch_director->overall_experience;
-                                                $specialization_experience = (string) $branch_director->specialization_experience;
-
-                                                $post_args = array(
-                                                        'post_title' => $full_name,
-                                                        'post_content' => $contents,
-                                                        'post_status' => 'private',
-                                                        'exclude_from_search' => true,
-                                                        'menu_order' => null,
-                                                        'post_parent' => -1,
-                                                        'post_type' => 'page'
-                                                    );
-                                                $parent_page = get_page_by_title($full_name);
-                                                if (empty($parent_page)) {
-                                                    // создание новой страницы
-                                                    $post_id = wp_insert_post($post_args);
-
-                                                    // добавление метаполей
-                                                    update_post_meta($post_id, 'position', $position);
-                                                    update_post_meta($post_id, 'phone', $phone);
-                                                    update_post_meta($post_id, 'email', $email);
-                                                    update_post_meta($post_id, 'disciplines', $disciplines);
-                                                    update_post_meta($post_id, 'education', $education);
-                                                    update_post_meta($post_id, 'specialization', $specialization);
-                                                    update_post_meta($post_id, 'qualification_improvement', $qualification_improvement);
-                                                    update_post_meta($post_id, 'career', $career);
-                                                    update_post_meta($post_id, 'overall_experience', $overall_experience);
-                                                    update_post_meta($post_id, 'specialization_experience', $specialization_experience);
-                                                } else {
-                                                    // обновление существующей страницы
-                                                    $post_id = $parent_page->ID;
-
-                                                    // обновление содержимого страницы
-                                                    $post_args['ID'] = $post_id;
-                                                    $post_args['post_content'] = $contents;
-                                                    wp_update_post($post_args);
-
-                                                    // обновление метаполей
-                                                    update_post_meta($post_id, 'position', $position);
-                                                    update_post_meta($post_id, 'phone', $phone);
-                                                    update_post_meta($post_id, 'email', $email);
-                                                    update_post_meta($post_id, 'disciplines', $disciplines);
-                                                    update_post_meta($post_id, 'education', $education);
-                                                    update_post_meta($post_id, 'specialization', $specialization);
-                                                    update_post_meta($post_id, 'qualification_improvement', $qualification_improvement);
-                                                    update_post_meta($post_id, 'career', $career);
-                                                    update_post_meta($post_id, 'overall_experience', $overall_experience);
-                                                    update_post_meta($post_id, 'specialization_experience', $specialization_experience);
-                                                }
-
-                                                // создание ссылки на созданную страницу
-                                                $permalink = get_permalink($post_id);
-
-
-                                                $file_contents .= "<div style='width: 145px;text-align: center;display: inline-flex;'>";
-                                                $file_contents .= "<a href = '{$permalink}'> {$branch_director->full_name}</a><br>";
-                                                $file_contents .= "</div>";
-                                            }
-                                        } else if ($title == 'pedagogical_staff') {
-                                            $pedagogical_workers = $inner_child->pedagogical_worker;
-                                            $file_contents .= "<h4>Педагогические работники:</h4>";
-                                            foreach ($pedagogical_workers as $pedagogical_worker) {
-                                                
-                                                
-                                                $contents = "<b>Должность:</b> {$pedagogical_worker->position}<br>";
-                                                $contents .= "<b>Контактный телефон:</b> {$pedagogical_worker->phone}<br>";
-                                                $contents .= "<b>Адрес электронной почты:</b> {$pedagogical_worker->email}<br>";
-                                                $contents .= "<b>Дисциплины:</b> {$pedagogical_worker->disciplines}<br>";
-                                                $contents .= "<b>Образование:</b> {$pedagogical_worker->education}<br>";
-                                                $contents .= "<b>Специализация:</b> {$pedagogical_worker->specialization}<br>";
-                                                $contents .= "<b>Повышение квалификации:</b> {$pedagogical_worker->qualification_improvement}<br>";
-                                                $contents .= "<b>Карьера:</b> {$pedagogical_worker->career}<br>";
-                                                $contents .= "<b>Общий стаж:</b> {$pedagogical_worker->overall_experience}<br>";
-                                                $contents .= "<b>Стаж по специализации:</b> {$pedagogical_worker->specialization_experience}<br><br>";
-                                                $contents .= "</div>";
-
-                                                $full_name = (string) $pedagogical_worker->full_name;
-                                                $position = (string) $pedagogical_worker->position;
-                                                $phone = (string) $pedagogical_worker->phone;
-                                                $email = (string) $pedagogical_worker->email;
-                                                $disciplines = (string) $pedagogical_worker->disciplines;
-                                                $education = (string) $pedagogical_worker->education;
-                                                $specialization = (string) $pedagogical_worker->specialization;
-                                                $qualification_improvement = (string) $pedagogical_worker->qualification_improvement;
-                                                $career = (string) $pedagogical_worker->career;
-                                                $overall_experience = (string) $pedagogical_worker->overall_experience;
-                                                $specialization_experience = (string) $pedagogical_worker->specialization_experience;
-
-                                                $post_args = array(
-                                                    'post_title' => $full_name,
-                                                    'post_content' => $contents,
-                                                    'post_status' => 'private',
-                                                    'exclude_from_search' => true,
-                                                    'menu_order' => null,
-                                                    'post_parent' => -1,
-                                                    'post_type' => 'page'
-                                                );
-                                                $parent_page = get_page_by_title($full_name);
-                                                if (empty($parent_page)) {
-                                                    // создание новой страницы
-                                                    $post_id = wp_insert_post($post_args);
-
-                                                    // добавление метаполей
-                                                    update_post_meta($post_id, 'position', $position);
-                                                    update_post_meta($post_id, 'phone', $phone);
-                                                    update_post_meta($post_id, 'email', $email);
-                                                    update_post_meta($post_id, 'disciplines', $disciplines);
-                                                    update_post_meta($post_id, 'education', $education);
-                                                    update_post_meta($post_id, 'specialization', $specialization);
-                                                    update_post_meta($post_id, 'qualification_improvement', $qualification_improvement);
-                                                    update_post_meta($post_id, 'career', $career);
-                                                    update_post_meta($post_id, 'overall_experience', $overall_experience);
-                                                    update_post_meta($post_id, 'specialization_experience', $specialization_experience);
-                                                } else {
-                                                    // обновление существующей страницы
-                                                    $post_id = $parent_page->ID;
-
-                                                    // обновление содержимого страницы
-                                                    $post_args['ID'] = $post_id;
-                                                    $post_args['post_content'] = $contents;
-                                                    wp_update_post($post_args);
-
-                                                    // обновление метаполей
-                                                    update_post_meta($post_id, 'position', $position);
-                                                    update_post_meta($post_id, 'phone', $phone);
-                                                    update_post_meta($post_id, 'email', $email);
-                                                    update_post_meta($post_id, 'disciplines', $disciplines);
-                                                    update_post_meta($post_id, 'education', $education);
-                                                    update_post_meta($post_id, 'specialization', $specialization);
-                                                    update_post_meta($post_id, 'qualification_improvement', $qualification_improvement);
-                                                    update_post_meta($post_id, 'career', $career);
-                                                    update_post_meta($post_id, 'overall_experience', $overall_experience);
-                                                    update_post_meta($post_id, 'specialization_experience', $specialization_experience);
-                                                }
-
-                                                // создание ссылки на созданную страницу
-                                                $permalink = get_permalink($post_id);
-
-
-
-
-                                                $file_contents .= "<div style='width: 145px;text-align: center;display: inline-flex;'>";
-                                                $file_contents .= "<a href='{$permalink}'>{$pedagogical_worker->full_name}</a><br>";
-                                                $file_contents .= "</div>";
-                                            }
-                                        }
-                                    }
-                                    
-                        ?>
-                            <script>
-                            jQuery(document).ready(function() {
-                                var new_content = <?php echo json_encode($file_contents); ?>;
-                                var editor = tinyMCE.get('<?php echo $editor_id; ?>');
-                                editor.setContent(new_content);
-                            });
-                            </script>
-                            <?php
-                                    break;
-
-
-                                case 'Материально-техническое обеспечение и оснащенность образовательного процесса':
-                                    $editor_id = 'section-6';
-                                    $section_content = $section->section_content;
-                                    $file_contents = '';
-                                    foreach ($section_content->technical_equipment->children() as $child) {
-                                        $title = $child->getName();
-                                        if ($title == 'classrooms') {
-                                            $file_contents .= "<h4>Учебные кабинеты:</h4><br>";
-                                            foreach ($child->children() as $classroom) {
-                                                $file_contents .= "<b>Наименование:</b> {$classroom->name}<br>";
-                                                $file_contents .= "<b>Тип:</b> {$classroom->type}<br>";
-                                                $file_contents .= "<b>Оборудование:</b> {$classroom->equipment}<br>";
-                                                $file_contents .= "<b>Доступность для инвалидов:</b> {$classroom->accessibility}<br><br>";
-                                            }
-                                        } else if ($title == 'training_objects') {
-                                            $file_contents .= "<h4>Объекты для практических занятий:</h4><br>";
-                                            foreach ($child->children() as $training_object) {
-                                                $file_contents .= "<b>Наименование:</b> {$training_object->name}<br>";
-                                                $file_contents .= "<b>Тип:</b> {$training_object->type}<br>";
-                                                $file_contents .= "<b>Оборудование:</b> {$training_object->equipment}<br>";
-                                                $file_contents .= "<b>Доступность для инвалидов:</b> {$training_object->accessibility}<br><br>";
-                                            }
-                                        } else if ($title == 'library') {
-                                            $file_contents .= "<h4>Библиотека:</h4><br>";
-                                            $file_contents .= "<b>Название:</b> {$child->name}<br>";
-                                            $file_contents .= "<b>Коллекция:</b> {$child->collection}<br>";
-                                            $file_contents .= "<b>Услуги:</b> {$child->services}<br>";
-                                            $file_contents .= "<b>Доступность для инвалидов:</b> {$child->accessibility}<br><br>";
-                                        } else if ($title == 'sports_facilities') {
-                                            $file_contents .= "<h4>Спортивные объекты:</h4><br>";
-                                            foreach ($child->children() as $sports_facility) {
-                                                $file_contents .= "<b>Наименование:</b> {$sports_facility->name}<br>";
-                                                $file_contents .= "<b>Тип:</b> {$sports_facility->type}<br>";
-                                                $file_contents .= "<b>Оборудование:</b> {$sports_facility->equipment}<br>";
-                                                $file_contents .= "<b>Доступность для инвалидов:</b> {$sports_facility->accessibility}<br><br>";
-                                            }
-                                        } else if ($title == 'learning_resources') {
-                                            $file_contents .= "<h4>Средства обучения и воспитания:</h4><br>";
-                                            foreach ($child->children() as $resource) {
-                                                $file_contents .= "<b>Тип:</b> {$resource->type}<br>";
-                                                $file_contents .= "<b>Доступность для инвалидов:</b> {$resource->accessibility}<br><br>";
-                                            }
-                                        }
-                                        else if ($title == 'facilities_for_disabled') {
-                                            $file_contents .= "<h4>Объекты для инвалидов:</h4><br>";
-                                            foreach ($child->children() as $facility) {
-                                                $file_contents .= "<b>Тип:</b> {$facility->type}<br>";
-                                                $file_contents .= "<b>Список оборудования:</b> {$facility->equipment}<br><br>";
-                                            }
-                                        }
-                                    }
-                            ?>
-                            <script>
-                            jQuery(document).ready(function() {
-                                var new_content = <?php echo json_encode($file_contents); ?>;
-                                var editor = tinyMCE.get('<?php echo $editor_id; ?>');
-                                editor.setContent(new_content);
-                            });
-                            </script>
-                            <?php
-                                    break;
-
-
-                                
-                                case 'Студенческие стипендии и материальная поддержка':
-                                    $editor_id = 'section-7';
-                                    $section_content = $section->section_content;
-                                    $file_contents = '';
-                                    foreach ($section_content->children() as $child) {
-                                        $title = $child->getName();
-                                        if ($title == 'scholarships') {
-                                            $scholarship_title = $child->scholarship_title;
-                                            $file_contents .= "<h4>{$scholarship_title}</h4><br>";
-                                            $scholarship_info = $child->scholarship_info;
-                                            $file_contents .= "<p>{$scholarship_info}</p><br>";
-                                        } else if ($title == 'social_support') {
-                                            $support_title = $child->support_title;
-                                            $file_contents .= "<h4>{$support_title}</h4><br>";
-                                            $support_info = $child->support_info;
-                                            $file_contents .= "<p>{$support_info}</p><br>";
-                                        } else if ($title == 'dormitories') {
-                                            $dormitory_title = $child->dormitory_title;
-                                            $file_contents .= "<h4>{$dormitory_title}</h4><br>";
-                                            $dormitory_info = $child->dormitory_info;
-                                            $file_contents .= "<p>{$dormitory_info}</p><br>";
-                                        } else if ($title == 'employment') {
-                                            $employment_title = $child->employment_title;
-                                            $file_contents .= "<h4>{$employment_title}</h4><br>";
-                                            $employment_info = $child->employment_info;
-                                            $file_contents .= "<p>{$employment_info}</p><br>";
-                                        }
-                                    }
-                            ?>
-                            <script>
-                            jQuery(document).ready(function() {
-                                var new_content = <?php echo json_encode($file_contents); ?>;
-                                var editor = tinyMCE.get('<?php echo $editor_id; ?>');
-                                editor.setContent(new_content);
-                            });
-                            </script>
-                            <?php
-                                    break;
-
-
-                                case 'Платные образовательные услуги':
-                                    $editor_id = 'section-8';
-                                    $section_content = $section->section_content;
-                                    $file_contents = '';
-                                    foreach ($section_content->children() as $child) {
-                                        $info = (string) $child;
-                                        $file_contents .= "$info<br>";
-                                    }
-                            ?>
-                            <script>
-                                jQuery(document).ready(function() {
-                                    var new_content = <?php echo json_encode($file_contents); ?>;
-                                    var editor = tinyMCE.get('<?php echo $editor_id; ?>');
-                                    editor.setContent(new_content);
-                                });
-                            </script>
-                            <?php
-                                    break;
-
-                                case 'Финансово-хозяйственная деятельность':
-                                    $editor_id = 'section-9';
-                                    $section_content = $section->section_content;
-                                    $file_contents = '';
-                                    foreach ($section_content->children() as $child) {
-                                        foreach ( $child->children() as $inner_child ) {
-                                            $title = $inner_child->getName();
-                                            $info = (string) $inner_child;
-                                            $file_contents .= "$info<br>";
-                                        }
-                                    }
-                            ?>
-                            <script>
-                                jQuery(document).ready(function() {
-                                    var new_content = <?php echo json_encode($file_contents); ?>;
-                                    var editor = tinyMCE.get('<?php echo $editor_id; ?>');
-                                    editor.setContent(new_content);
-                                });
-                            </script>
-                            <?php
-                                    break;
-
-                                case 'Вакантные места для приема (перевода)':
-                                    $editor_id = 'section-10';
-                                    $vacancies = $section->section_content->vacancies_info;
-                                    $file_contents = '<p><b>Информация о вакантных местах</b></p>';
-                                    foreach ($vacancies->vacancies_list->program as $program) {
-                                        $program_name = (string)$program->program_name;
-                                        $profession = (string)$program->profession;
-                                        $specialization = (string)$program->specialization;
-                                        $study_direction = (string)$program->study_direction;
-                                        $budget_vacancies = (string)$program->budget_vacancies;
-                                        $contract_vacancies = (string)$program->contract_vacancies;
-                                        $file_contents .= "<p>$program_name<br>$profession, $specialization, $study_direction<br>Бюджетные места: $budget_vacancies, по договорам: $contract_vacancies</p>";
-                                    }
-                            ?>
-                            <script>
-                                jQuery(document).ready(function() {
-                                    var new_content = <?php echo json_encode($file_contents); ?>;
-                                    var editor = tinyMCE.get('<?php echo $editor_id; ?>');
-                                    editor.setContent(new_content);
-                                });
-                            </script>
-                            <?php
-                                    break;
-
-
-                                
-                            } 
-                            
-                        }
-                        echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Импорт успешно выполнен</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
-                        
-                    }
-                    else {
-                        echo '<div id="message" class="error notice notice-error is-dismissible"><p>Файл не загружен</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
-                    }
-                }
-
-
-                
-                // Проверяем, была ли кнопка "Сохранить изменения" нажата
-                if (isset($_POST['reginfoeduorg_save_changes'])) {
-                    // Получаем список подразделов из базы данных
-                    global $wpdb;
-                    $sections = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_site_subsections");
-
-                    // Перебираем все подразделы и обновляем контент, если он был изменен
-                    foreach ($sections as $key => $section) {
-                        $post_id = get_page_by_title($section->name)->ID;
-                        $content = $_POST['reginfoeduorg_subsections'][$key];
-
-                        // Обновляем контент в таблице reginfoeduorg_site_subsections
-                        $wpdb->update(
-                            "{$wpdb->prefix}reginfoeduorg_site_subsections",
-                            array('content' => $content),
-                            array('id' => $section->id),
-                            array('%s'),
-                            array('%d')
-                        );
-
-                        if ($post_id && $content) {
-                            $post = array(
-                                'ID' => $post_id,
-                                'post_content' => $content,
-                            );
-                            wp_update_post($post);
-                        }
-                    }
-
-                    // Выводим сообщение об успешном сохранении изменений
-                    echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Изменения сохранены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
-                }
-
-
-
-                
-
-                // Получаем список подразделов из базы данных
-                global $wpdb;
-                $sections = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_site_subsections");
-
-                // Выводим верстку
-                echo '<div class="wrap">';
-                echo '<h1>Изменение содержания подразделов:</h1>';
-                echo '<form method="post" action="" enctype="multipart/form-data">';
-                echo '<table class="form-table">';
-                if (is_array($sections)) {
-                    foreach ($sections as $key => $section) {                
-                        if ($access_settings[$section->name]['read'] == 1) { 
-                            if ($access_settings[$section->name]['edit'] == 1) {
-                                echo '<tr><th><label for="section-'.$key.'">'.esc_attr($section->name).':</label></th><td>';
-                                $post = get_page_by_title($section->name);
-                                $content = $post ? $post->post_content : '';
-                                $editor_id = 'section-' . $key;
-                                $settings = array(
-                                    'textarea_name' => 'reginfoeduorg_subsections['.$key.']',
-                                    'editor_height' => 200,
-                                    'media_buttons' => true,
-                                );
-                                wp_editor($content, $editor_id, $settings);
-                            } 
-                            else {
-                                echo '<tr><th><label for="section-'.$key.'">'.esc_attr($section->name).':</label></th><td>';
-                                $post = get_page_by_title($section->name);
-                                $content = $post ? $post->post_content : '';
-                                echo '<p>'.$content.'<p>';
-                            }
-                        }      
-                    }
-                }
-                echo '</table>';
-                echo '<p><input type="submit" name="reginfoeduorg_save_changes" class="button-primary" value="Сохранить изменения"></p>';
-                
-                
-                echo '<table class="form-table">';
-                echo '<tr>';
-                echo '<th><label for="import-file">Загрузить XML файл:</label></th>';
-                echo '<td><input type="file" name="import_file" id="import-file" /></td>';
-                echo '</tr>';
-                echo '</table>';
-                echo '<p><input type="submit" class="button-primary" name="import_file_submit" value="Импортировать данные"></p>';
-                
-                echo '</form>';
-                echo '</div>'; 
-            }
-        }
-
-
-
-        
-    }
-    
     //Настройка отображения подразделов сайта
     function submenu_page() 
     {
@@ -1811,7 +1185,7 @@ class RegInfoEduOrg
                     $visible_subsections[] = $visible_subsection->name;
                 }
 
-                            ?>
+?>
 <div class="wrap">
     <h1>Отображение подразделов сайта:</h1>
     <form method="post" action="">
@@ -1903,7 +1277,6 @@ class RegInfoEduOrg
             }
         }
     }
-
 
     //Настройка ролей
     function my_plugin_roles_page() {
@@ -2694,20 +2067,6 @@ class RegInfoEduOrg
         } 
     }
     
-    function reginfoeduorg_create_post_type() {
-        $args = array(
-            'labels' => array(
-                'name' => __( 'Сотрудники' ),
-                'singular_name' => __( 'Сотрудник' )
-            ),
-            'public' => true,
-            'has_archive' => true,
-            'rewrite' => array('slug' => 'сотрудники'),
-            'show_in_rest' => true,
-     
-        );
-        register_post_type( 'сотрудник', $args );
-    }
 
     function reginfoeduorg_display_section_data() {
         global $wpdb;
@@ -2715,14 +2074,23 @@ class RegInfoEduOrg
         $matches = array();
         preg_match('/reginfoeduorg_subsection_(\d+)/', $url, $matches);
         $subsection_id = isset($matches[1]) ? intval($matches[1]) : 0;
-        $subsection_name = $wpdb->get_var($wpdb->prepare("SELECT name FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = %d", $subsection_id));
-        switch ($subsection_id)
-        {
-            case 1:
-                if ( isset( $_POST['import_file_submit'] ) && isset( $_FILES['import_file'] ) ) {
-                    if ($_FILES['import_file']['error'] === UPLOAD_ERR_OK) {
-                        $xml = simplexml_load_file($_FILES['import_file']['tmp_name']);
+        
+        if (!$subsection_id) {
+            // handle the error here
+            return;
+        }
 
+        $subsection_name = $wpdb->get_var($wpdb->prepare("SELECT name FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = %d", $subsection_id));
+
+        if ( isset( $_POST['import_file_submit'] ) && isset( $_FILES['import_file'] ) ) {
+            if ($_FILES['import_file']['error'] === UPLOAD_ERR_OK) {
+                
+                $xml = simplexml_load_file($_FILES['import_file']['tmp_name']);
+                
+
+                switch ($subsection_id)
+                {
+                    case 1:
                         // Находим секцию "Основные сведения"
                         $section_content = $xml->xpath('//section[section_title="Основные сведения"]/section_content/general_information')[0];
 
@@ -2754,19 +2122,8 @@ class RegInfoEduOrg
                             $wpdb->insert($table_name, $data);
                         }
 
-                        // Выводим сообщение об успешном импорте данных
-                        echo "<div class='notice notice-success is-dismissible'><p>Данные успешно импортированы из файла.</p></div>";
-                    } else {
-                        // Выводим сообщение об ошибке при загрузке файла
-                        echo "<div class='notice notice-error is-dismissible'><p>Ошибка при загрузке файла: " . $_FILES['import_file']['error'] . "</p></div>";
-                    }
-                }
-                break;
-            case 3:
-                if ( isset( $_POST['import_file_submit'] ) && isset( $_FILES['import_file'] ) ) {
-                    if ($_FILES['import_file']['error'] === UPLOAD_ERR_OK) {
-                        $xml = simplexml_load_file($_FILES['import_file']['tmp_name']);
-
+                        break;
+                    case 3:
                         // Находим секцию "Документы"
                         $documents = $xml->xpath('//reginfoeduorg/section[section_title="Документы"]/section_content/documents')[0];
 
@@ -2796,20 +2153,8 @@ class RegInfoEduOrg
                                 }
                             }
                         }
-
-                        // Выводим сообщение об успешном импорте данных
-                        echo "<div class='notice notice-success is-dismissible'><p>Данные успешно импортированы из файла.</p></div>";
-                    } else {
-                        // Выводим сообщение об ошибке при загрузке файла
-                        echo "<div class='notice notice-error is-dismissible'><p>Ошибка при загрузке файла: " . $_FILES['import_file']['error'] . "</p></div>";
-                    }
-                }
-                break;
-            case 9:
-                if ( isset( $_POST['import_file_submit'] ) && isset( $_FILES['import_file'] ) ) {
-                    if ($_FILES['import_file']['error'] === UPLOAD_ERR_OK) {
-                        $xml = simplexml_load_file($_FILES['import_file']['tmp_name']);
-
+                        break;
+                    case 9:               
                         // Находим секцию "Документы"
                         $documents = $xml->xpath('//reginfoeduorg/section[section_title="Платные образовательные услуги"]/section_content/paid_services_info')[0];
 
@@ -2840,20 +2185,11 @@ class RegInfoEduOrg
                             }
                         }
 
-                        // Выводим сообщение об успешном импорте данных
-                        echo "<div class='notice notice-success is-dismissible'><p>Данные успешно импортированы из файла.</p></div>";
-                    } else {
-                        // Выводим сообщение об ошибке при загрузке файла
-                        echo "<div class='notice notice-error is-dismissible'><p>Ошибка при загрузке файла: " . $_FILES['import_file']['error'] . "</p></div>";
-                    }
-                }
-                break;
+                        break;
 
 
-            case 6:                
-                if (isset($_POST['import_file_submit']) && isset($_FILES['import_file'])) {
-                    if ($_FILES['import_file']['error'] === UPLOAD_ERR_OK) {
-                        $xml = simplexml_load_file($_FILES['import_file']['tmp_name']);
+                    case 6:                
+                        
                         // Находим секцию "Руководство. Педагогический (научно-педагогический) состав"
                         $section_content = $xml->xpath('//section[section_title="Руководство. Педагогический (научно-педагогический) состав"]/section_content')[0];
                         // Объединяем всех сотрудников в одном массиве
@@ -2951,76 +2287,45 @@ class RegInfoEduOrg
                                 'specialization_experience' => (string)$staff_member->specialization_experience,
                         ), array('id' => $staff_member_id));
                         }
-                        // Выводим сообщение об успешном импорте данных
-                        echo "<div class='notice notice-success is-dismissible'><p>Данные успешно импортированы из файла.</p></div>";
-                    }
-                    else 
-                    {
-                        // Выводим сообщение об ошибке при загрузке файла
-                        echo "<div class='notice notice-error is-dismissible'><p>Ошибка при загрузке файла: " . $_FILES['import_file']['error'] . "</p></div>";
-                    }
+
+                        break;
                 }
-                break;
-        }
-
-        global $wpdb;
-        $url = $_SERVER['REQUEST_URI'];
-        $matches = array();
-        preg_match('/reginfoeduorg_subsection_(\d+)/', $url, $matches);
-        $subsection_id = isset($matches[1]) ? intval($matches[1]) : 0;
-        $subsection_name = $wpdb->get_var($wpdb->prepare("SELECT name FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = %d", $subsection_id));
-        // Проверяем, была ли кнопка "Сохранить изменения" нажата
-        if (isset($_POST['save_changes'])) {
-            $post_id = get_page_by_title($subsection_name)->ID;
-            $content = htmlspecialchars_decode($_POST['reginfoeduorg_content']);
-            $css_styles = $_POST['css_styles'];
-            $css_styles = str_replace(' ', '', $css_styles);
-            $css_styles = preg_replace("/\r|\n/", "", $css_styles);
-            
-            // Объедините стили с HTML кодом
-            $content_with_styles = '<style>' . $css_styles . '</style>'.$content;
-
-            // Обновляем контент в таблице reginfoeduorg_site_subsections
-            $wpdb->update(
-                "{$wpdb->prefix}reginfoeduorg_site_subsections",
-                array('content' => $content_with_styles),
-                array('id' => $subsection_id),
-                array('%s'),
-                array('%d')
-            );
-
-            if ($post_id && $content_with_styles) {
-
-                $post = array(
-                    'ID' => $post_id,
-                    'post_content' => $content_with_styles,
-                );
-                wp_update_post($post);
-
+                echo "<div class='notice notice-success is-dismissible'><p>Данные успешно импортированы из файла.</p></div>";
             }
-
-
-            // Выводим сообщение об успешном сохранении изменений
-            echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Изменения сохранены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
+            else {
+                // Выводим сообщение об ошибке при загрузке файла
+                echo "<div class='notice notice-error is-dismissible'><p>Ошибка при загрузке файла: " . $_FILES['import_file']['error'] . "</p></div>";
+            }
         }
+        
+        
 
 
-
+        
 
         if (isset($_POST['save_table_changes'])) {
-            $data_to_update = $_POST['data'];
-            $data_keys = array_keys($data_to_update);
-            $data_values = array_values($data_to_update);
+            switch ($subsection_id)
+            {
+                case 1:
+                    $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_general_information");
+                    $data_to_update = $_POST['data'];
+                    $data_keys = array_keys($data_to_update);
+                    $data_values = array_values($data_to_update);
 
-            for ($i = 0; $i < count($data_to_update); $i++) {
-                $wpdb->update(
-                    "{$wpdb->prefix}reginfoeduorg_general_information",
-                    array($data_keys[$i] => $data_values[$i]),
-                    array('id' => 1),
-                    array('%s'),
-                    array('%d')
-                );
+                    for ($i = 0; $i < count($data_to_update); $i++) {
+                        $wpdb->update(
+                            "{$wpdb->prefix}reginfoeduorg_general_information",
+                            array($data_keys[$i] => $data_values[$i]),
+                            array('id' => $id),
+                            array('%s'),
+                            array('%d')
+                        );
+                    }
+                break;
+            	default:
             }
+            
+            
 
             echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Данные таблицы обновлены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
         }
@@ -3039,27 +2344,12 @@ class RegInfoEduOrg
 
         echo '<form method="post" action="" enctype="multipart/form-data">';
         echo '<h1>' . $subsection_name . '</h1>';
-        echo '<h3>Контент на странице</h3>';
-        $editor_id = 'reginfoeduorg_content_editor';
-        $settings = array(
-            'textarea_name' => 'reginfoeduorg_content',
-            'editor_height' => 200,
-            'media_buttons' => true,
-            'wpautop' => false, 
-            'tadv_noautop' => true 
-        );
-        wp_editor($subsection_content, $editor_id, $settings);
-        echo '<p>';
-        echo '<label for="css_styles">CSS стили:</label>';
-        echo '<textarea id="css_styles" name="css_styles" style="width: 100%; height: 150px;">' . esc_textarea($css_styles) . '</textarea>';
-        
-        echo '<input type="submit" name="save_changes" value="Сохранить изменения на сайте" class="button-primary">';
-        echo '</p>';
+
         echo '<h3>Таблица данных подраздела</h3>';
 
         if (isset($_POST['apply_styles'])) {
             $xslt_code = isset($_POST['reginfoeduorg_xslt_code']) ? stripslashes($_POST['reginfoeduorg_xslt_code']) : '';
-
+            
             // Сохраняем XSLT стиль в базу данных
             $wpdb->update(
                 "{$wpdb->prefix}reginfoeduorg_site_subsections",
@@ -3069,26 +2359,7 @@ class RegInfoEduOrg
                 array('%d')
             );
             $xml = new DOMDocument();
-            $xml = $this->generate_xml($subsection_id);
-            // Применяем XSLT-код к данным подраздела
-            $content = $this->apply_xslt($xml, $xslt_code);
-
-            // Извлекаем CSS стили и удаляем их из содержимого
-            $css_styles = '';
-            if (preg_match('/<style>(.*?)<\/style>/s', $content, $matches)) {
-                $css_styles = $matches[1];
-                $content = str_replace($matches[0], '', $content);
-            }
-
-            echo '<script>
-            jQuery(document).ready(function() {
-                var new_content = ' . json_encode($content) . ';
-                var new_css_styles = ' . json_encode($css_styles) . ';
-                var editor = tinyMCE.get("' . $editor_id . '");
-                editor.setContent(new_content);
-                jQuery("#css_styles").val(new_css_styles);
-            });
-            </script>';
+            $xml = $this->generate_shortcode($subsection_id);
 
             switch ($subsection_id) {
                 case 6:
@@ -3210,12 +2481,14 @@ class RegInfoEduOrg
                     foreach ($data as $row) {
                         echo '<tr>';
                         echo '<td class="column-name">' . $row['document_type'] . '</td>';
-                        echo '<td class="column-value">' . $row['document_link'] . '</td>';
+                        echo '<td class="column-value"><input type="text" name="data[' . $row['document_link'] . ']" value="' . $row[$field_key] . '"></td>';
                         echo '</tr>';
                     }
 
                     echo '</tbody>';
                     echo '</table>';
+                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
+
                 } else {
                     echo '<p>Данные отсутствуют.</p>';
                 }
@@ -3402,223 +2675,6 @@ class RegInfoEduOrg
         echo '</p>';
         echo '</form>';
         echo '</div>';
-    }
-
-
-    function apply_xslt($data, $xslt_code) {
-        // Создаем экземпляр XSLTProcessor
-        $xslt_processor = new XSLTProcessor();
-
-        // Создаем экземпляр DOMDocument для XSLT-кода и загружаем его
-        $xslt = new DOMDocument();
-        $xslt->loadXML($xslt_code);
-
-        // Импортируем XSLT-стили в XSLTProcessor
-        $xslt_processor->importStylesheet($xslt);
-        
-        // Применяем XSLT-код к XML-данным
-        $transformed_data = $xslt_processor->transformToXml($data);
-
-
-        return $transformed_data;
-    }
-
-
-    function generate_xml($subsection_id) {
-        global $wpdb;
-        switch ($subsection_id)
-        {
-            case 1:
-                // Выбираем данные из таблицы reginfoeduorg_general_information
-                $general_information = $wpdb->get_row("SELECT * FROM {$wpdb->prefix}reginfoeduorg_general_information", ARRAY_A);
-
-                // Выбираем пустую структуру XML для подраздела "Основные сведения" из базы данных
-                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Основные сведения'");
-
-                // Загружаем пустую структуру XML и дополняем ее данными
-                $xml = new DOMDocument('1.0', 'UTF-8');
-                $xml->formatOutput = true;
-                $xml->loadXML($subsection_xml);
-                // Находим элемент section_content для подраздела "Основные сведения"
-                $section_content = $xml->getElementsByTagName('section_content')->item(0);
-
-                // Удаляем имеющиеся элементы с данными
-                while ($section_content->hasChildNodes()) {
-                    $section_content->removeChild($section_content->firstChild);
-                }
-
-                // Создаем элемент general_information
-                $general_information_node = $xml->createElement('general_information');
-                $section_content->appendChild($general_information_node);
-
-                // Создаем элементы для каждого поля из таблицы и добавляем их в general_information
-                foreach ($general_information as $key => $value) {
-                    $element = $xml->createElement($key, htmlspecialchars($value));
-                    $general_information_node->appendChild($element);
-                }
-                break;
-            case 3:
-                // Выбираем данные из таблицы reginfoeduorg_documents
-                $documents_data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_documents", ARRAY_A);
-
-                // Выбираем пустую структуру XML для подраздела "Документы" из базы данных
-                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Документы'");
-
-                // Загружаем пустую структуру XML и дополняем ее данными
-                $xml = new DOMDocument('1.0', 'UTF-8');
-                $xml->formatOutput = true;
-                $xml->loadXML($subsection_xml);
-                // Находим элемент section_content для подраздела "Документы"
-                $section_content = $xml->getElementsByTagName('section_content')->item(0);
-
-                // Удаляем имеющиеся элементы с данными
-                while ($section_content->hasChildNodes()) {
-                    $section_content->removeChild($section_content->firstChild);
-                }
-
-                // Создаем элемент documents
-                $documents_node = $xml->createElement('documents');
-                $section_content->appendChild($documents_node);
-
-                // Проходимся по всем документам из таблицы и добавляем их в documents
-                foreach ($documents_data as $document) {
-                    // Создаем элемент document
-                    $document_node = $xml->createElement('document');
-                    $documents_node->appendChild($document_node);
-
-                    // Создаем элементы name и link для каждого документа
-                    $name = $xml->createElement('name', htmlspecialchars($document['document_type']));
-                    $link = $xml->createElement('link', htmlspecialchars($document['document_link']));
-                    $document_node->appendChild($name);
-                    $document_node->appendChild($link);
-                }
-                break;
-            case 9:
-                // Выбираем данные из таблицы reginfoeduorg_paid_services
-                $documents_data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_paid_services", ARRAY_A);
-
-                // Выбираем пустую структуру XML для подраздела "Платные образовательные услуги" из базы данных
-                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Платные образовательные услуги'");
-
-                // Загружаем пустую структуру XML и дополняем ее данными
-                $xml = new DOMDocument('1.0', 'UTF-8');
-                $xml->formatOutput = true;
-                $xml->loadXML($subsection_xml);
-                // Находим элемент section_content для подраздела "Платные образовательные услуги"
-                $section_content = $xml->getElementsByTagName('section_content')->item(0);
-
-                // Удаляем имеющиеся элементы с данными
-                while ($section_content->hasChildNodes()) {
-                    $section_content->removeChild($section_content->firstChild);
-                }
-
-                // Создаем элемент paid_services_info
-                $documents_node = $xml->createElement('paid_services_info');
-                $section_content->appendChild($documents_node);
-
-                // Проходимся по всем документам из таблицы и добавляем их в documents
-                foreach ($documents_data as $document) {
-                    // Создаем элемент document
-                    $document_node = $xml->createElement('document');
-                    $documents_node->appendChild($document_node);
-
-                    // Создаем элементы name и link для каждого документа
-                    $name = $xml->createElement('name', htmlspecialchars($document['document_type']));
-                    $link = $xml->createElement('link', htmlspecialchars($document['document_link']));
-                    $document_node->appendChild($name);
-                    $document_node->appendChild($link);
-                }
-                break;
-            case 6:
-                // Выбираем данные о сотрудниках
-                $staff_members = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_staff", ARRAY_A);
-
-                // Выбираем пустую структуру XML для подраздела "Сотрудники" из базы данных
-                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id=$subsection_id");
-
-                // Загружаем пустую структуру XML и дополняем ее данными
-                $xml = new DOMDocument('1.0', 'UTF-8');
-                $xml->formatOutput = true;
-                $xml->loadXML($subsection_xml);
-                // Находим элемент section_content для подраздела "Сотрудники"
-                $section_content = $xml->getElementsByTagName('section_content')->item(0);
-
-                // Удаляем имеющиеся элементы с данными
-                while ($section_content->hasChildNodes()) {
-                    $section_content->removeChild($section_content->firstChild);
-                }
-
-                // Создаем элемент staff_members
-                $staff_members_node = $xml->createElement('staff_members');
-                $section_content->appendChild($staff_members_node);
-
-                // Для каждого сотрудника создаем элемент staff и добавляем его в staff_members
-                foreach ($staff_members as $staff) {
-                    $staff_node = $xml->createElement('staff');
-                    $staff_members_node->appendChild($staff_node);
-
-                    // Создаем элементы для каждого поля из таблицы сотрудников и добавляем их в staff
-                    foreach ($staff as $key => $value) {
-                        $element = $xml->createElement($key, htmlspecialchars($value));
-                        $staff_node->appendChild($element);
-                    }
-                    
-                    // Добавляем данные из связанных таблиц
-                    $staff_id = $staff['id'];
-                    $related_tables = [
-                        'reginfoeduorg_disciplines',
-                        'reginfoeduorg_education',
-                        'reginfoeduorg_qualification_improvement',
-                        'reginfoeduorg_career'
-                    ];
-
-                    foreach ($related_tables as $table) {
-                        $related_data = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}{$table} WHERE staff_id = %d", $staff_id), ARRAY_A);
-                        
-                        // Создаем элемент для связанных данных
-                        $related_data_node = $xml->createElement($table);
-                        $staff_node->appendChild($related_data_node);
-
-                        // Добавляем элементы для каждого поля из связанных таблиц
-                        foreach ($related_data as $related_item) {
-                            $item_node = $xml->createElement('item');
-                            $related_data_node->appendChild($item_node);
-                            
-                            foreach ($related_item as $key => $value) {
-                                $element = $xml->createElement($key, htmlspecialchars($value));
-                                $item_node->appendChild($element);
-                            }
-                        }
-                    }
-                }
-                break;
-        	default:
-        }
-        
-        
-
-        // Возвращаем готовый XML документ
-        return $xml;
-    }
-
-
-    function generate_staff_page_content($staff) {
-        // Здесь вы можете использовать XSLT для форматирования данных сотрудника и создания HTML для страницы сотрудника
-        // Верните сгенерированный HTML как строку
-        // Этот код будет зависеть от того, как вы хотите форматировать страницу сотрудника
-    }
-
-    function create_staff_post_type() {
-        register_post_type('staff',
-            array(
-                'labels' => array(
-                    'name' => __('Staff'),
-                    'singular_name' => __('Staff')
-                ),
-                'public' => true,
-                'has_archive' => true,
-            )
-        );
     }
 
 }
