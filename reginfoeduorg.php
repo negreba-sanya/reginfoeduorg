@@ -39,11 +39,11 @@ class RegInfoEduOrg
 
         // Извлекаем ID из атрибутов шорткода
         $id = $atts['id'];
-
+        
         $subsection_id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = '$subsection_name'");
-
+        
         $xml = $this->generate_xml($subsection_id);
-
+        
         if (!$xml) {
             return null;
         }
@@ -84,7 +84,6 @@ class RegInfoEduOrg
         return $transformed_data;
     }
 
-
     function generate_xml($subsection_id) {
         global $wpdb;
         switch ($subsection_id)
@@ -122,7 +121,53 @@ class RegInfoEduOrg
                 }
                 break;
 
-            case 3:
+            case 9:
+                // Выбираем данные из таблицы reginfoeduorg_paid_services
+                $documents_data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_paid_services", ARRAY_A);
+                if (!$documents_data) {
+                    return null;
+                }
+                // Выбираем пустую структуру XML для подраздела "Платные образовательные услуги" из базы данных
+                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Платные образовательные услуги'");
+                
+                // Загружаем пустую структуру XML и дополняем ее данными
+                $xml = new DOMDocument('1.0', 'UTF-8');
+                $xml->formatOutput = true;
+                $xml->loadXML($subsection_xml);
+                // Находим элемент section_content для подраздела "Платные образовательные услуги"
+                $section_content = $xml->getElementsByTagName('section_content')->item(0);
+
+                // Удаляем имеющиеся элементы с данными
+                while ($section_content->hasChildNodes()) {
+                    $section_content->removeChild($section_content->firstChild);
+                }
+
+                // Создаем элемент documents
+                $documents_node = $xml->createElement('paid_services_info');
+                $section_content->appendChild($documents_node);
+
+                // Проходимся по всем документам из таблицы и добавляем их в documents
+                foreach ($documents_data as $document) {
+                    // Создаем элемент document
+                    $document_node = $xml->createElement('document');
+                    $documents_node->appendChild($document_node);
+
+                    // Получаем тип документа
+                    $document_type_id = $document['document_type'];
+                    $document_type = $wpdb->get_var("SELECT document_type FROM {$wpdb->prefix}reginfoeduorg_paid_services_types WHERE id = $document_type_id");
+
+                    // Создаем элементы type, name и link для каждого документа
+                    $type = $xml->createElement('type', htmlspecialchars($document_type));
+                    $name = $xml->createElement('name', htmlspecialchars($document['document_name']));
+                    $link = $xml->createElement('link', htmlspecialchars($document['document_link']));
+                    $document_node->appendChild($type);
+                    $document_node->appendChild($name);
+                    $document_node->appendChild($link);
+
+                }
+                break;
+
+                case 3:
                 // Выбираем данные из таблицы reginfoeduorg_documents
                 $documents_data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_documents", ARRAY_A);
                 if (!$documents_data) {
@@ -155,7 +200,7 @@ class RegInfoEduOrg
 
                     // Получаем тип документа
                     $document_type_id = $document['document_type'];
-                    $document_type = $wpdb->get_var("SELECT document_type FROM {$wpdb->prefix}reginfoeduorg_documents_types WHERE id = $document_type_id");
+                    $document_type = $wpdb->get_var("SELECT document_type FROM {$wpdb->prefix}reginfoeduorg_documents_types  WHERE id = $document_type_id");
 
                     // Создаем элементы type, name и link для каждого документа
                     $type = $xml->createElement('type', htmlspecialchars($document_type));
@@ -208,6 +253,7 @@ class RegInfoEduOrg
         $table_dormitories = $wpdb->prefix . 'reginfoeduorg_dormitories';
         $table_employment = $wpdb->prefix . 'reginfoeduorg_employment';
         $table_paid_services = $wpdb->prefix . 'reginfoeduorg_paid_services';
+        $table_paid_services_types = $wpdb->prefix . 'reginfoeduorg_paid_services_types';
         $table_funding_sources = $wpdb->prefix . 'reginfoeduorg_funding_sources';
         $table_financial_report = $wpdb->prefix . 'reginfoeduorg_financial_report';
         $table_vacancies = $wpdb->prefix . 'reginfoeduorg_vacancies';
@@ -411,10 +457,17 @@ class RegInfoEduOrg
               employment_info TEXT
             )$charset_collate;
 
+            CREATE TABLE $table_paid_services_types (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                document_type VARCHAR(255)
+            )$charset_collate;
+
             CREATE TABLE $table_paid_services (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              document_type VARCHAR(255),
-              document_link VARCHAR(255)
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                document_name VARCHAR(255),
+                document_type INT(11) NOT NULL,
+                FOREIGN KEY (document_type) REFERENCES $table_paid_services_types(id) ON DELETE CASCADE,
+                document_link VARCHAR(255)
             )$charset_collate;
 
             CREATE TABLE $table_funding_sources (
@@ -779,6 +832,7 @@ class RegInfoEduOrg
 			<paid_services_info>
 				<document>
 					<name></name>
+					<type></type>
 					<link></link>
 				</document>				
 			</paid_services_info>
@@ -2122,138 +2176,76 @@ class RegInfoEduOrg
                 break;
 
             case 9:               
-                // Находим секцию "Документы"
+                // Находим секцию "Платные образовательные услуги"
                 $documents = $xml->xpath('//reginfoeduorg/section[section_title="Платные образовательные услуги"]/section_content/paid_services_info')[0];
 
-                // Очищаем таблицу перед импортом
+                // Очищаем таблицы перед импортом
                 global $wpdb;
-                $table_name = "{$wpdb->prefix}reginfoeduorg_paid_services";
-                $wpdb->query("TRUNCATE TABLE $table_name");
+                $table_documents_types = "{$wpdb->prefix}reginfoeduorg_paid_services_types";
+                $table_documents = "{$wpdb->prefix}reginfoeduorg_paid_services";
+
+                $wpdb->query("TRUNCATE TABLE $table_documents");
+                $wpdb->query("TRUNCATE TABLE $table_documents_types");
+
+                // Массив для хранения идентификаторов типов документов
+                $document_types_ids = array();
 
                 // Проходимся по всем документам
                 foreach ($documents->document as $document) {
-                    // Получаем название документа и ссылку
+                    // Получаем данные
                     $document_name = (string)$document->name;
                     $document_link = (string)$document->link;
+                    $document_type = (string)$document->type;
+                    
+                    
+                    // Если тип документа еще не импортирован, проверяем его наличие в базе данных
+                    if (!array_key_exists($document_type, $document_types_ids)) {
+                        // Проверяем, существует ли тип документа в базе данных
+                        $existing_type_id = $wpdb->get_var($wpdb->prepare(
+                            "SELECT id FROM $table_documents_types WHERE document_type = %s",
+                            $document_type
+                        ));
 
+                        // Если тип документа уже существует, используем его id, иначе добавляем новый тип
+                        if ($existing_type_id !== null) {
+                            $document_types_ids[$document_type] = $existing_type_id;
+                        } else {
+                            $data_type = array(
+                                'document_type' => $document_type
+                            );
+                            
+                            // Вставляем тип документа в таблицу и сохраняем ID
+                            if ($wpdb->insert($table_documents_types, $data_type) !== false) {
+                                $document_types_ids[$document_type] = $wpdb->insert_id;
+                            } else {
+                                // Выводим сообщение об ошибке при вставке данных
+                                echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке типа документа в таблицу: " . $wpdb->last_error . "</p></div>";
+                                break;
+                            }
+                        }
+                    }
+
+                    // Если есть ссылка на документ
                     if (!empty($document_link)) {
-                        // Создаем массив с данными для таблицы reginfoeduorg_documents
+                        // Создаем массив с данными для таблицы documents
                         $data = array(
-                            'document_type' => $document_name,
+                            'document_name' => $document_name,
                             'document_link' => $document_link,
+                            'document_type' => $document_types_ids[$document_type],
                         );
 
-                        // Вставляем данные в таблицу reginfoeduorg_documents
-                        if ($wpdb->insert($table_name, $data) === false) {
+                        // Вставляем данные в таблицу documents
+                        if ($wpdb->insert($table_documents, $data) === false) {
                             // Выводим сообщение об ошибке при вставке данных
-                            echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке данных в таблицу: " . $wpdb->last_error . "</p></div>";
+                            echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке документа в таблицу: " . $wpdb->last_error . "</p></div>";
                             break;
                         }
                     }
                 }
-
                 break;
 
             case 6:                
                 
-                // Находим секцию "Руководство. Педагогический (научно-педагогический) состав"
-                $section_content = $xml->xpath('//section[section_title="Руководство. Педагогический (научно-педагогический) состав"]/section_content')[0];
-                // Объединяем всех сотрудников в одном массиве
-                // Объединяем всех сотрудников в одном массиве
-                $staff_data = array();
-
-                if ($section_content->management->director) {
-                    $staff_data[] = $section_content->management->director;
-                }
-
-                if ($section_content->management->deputy_directors) {
-                    foreach ($section_content->management->deputy_directors->deputy_director as $deputy_director) {
-                        $staff_data[] = $deputy_director;
-                    }
-                }
-
-                if ($section_content->management->branch_directors) {
-                    foreach ($section_content->management->branch_directors->branch_director as $branch_director) {
-                        $staff_data[] = $branch_director;
-                    }
-                }
-
-                if ($section_content->pedagogical_staff) {
-                    foreach ($section_content->pedagogical_staff->pedagogical_worker as $pedagogical_worker) {
-                        $staff_data[] = $pedagogical_worker;
-                    }
-                }
-
-
-                // Очистить таблицу staff перед добавлением новых данных
-                global $wpdb;
-                $table_staff = $wpdb->prefix . 'reginfoeduorg_staff';
-                $table_disciplines = $wpdb->prefix . 'reginfoeduorg_disciplines';
-                $table_education = $wpdb->prefix . 'reginfoeduorg_education';
-                $table_qualification_improvement = $wpdb->prefix . 'reginfoeduorg_qualification_improvement';
-                $table_career = $wpdb->prefix . 'reginfoeduorg_career';
-                $wpdb->query("DELETE FROM $table_staff");
-                // Вставляем данные о сотрудниках
-                foreach ($staff_data as $staff_member) {
-                    $staff_member_data = array(
-                        'full_name' => (string)$staff_member->full_name,
-                        'position' => (string)$staff_member->position,
-                        'email' => (string)$staff_member->email,
-                        'phone' => (string)$staff_member->phone,
-                        );
-                    // Вставляем основные данные сотрудника и получаем ID вставленного сотрудника
-                    $wpdb->insert($table_staff, $staff_member_data);
-                    $staff_member_id = $wpdb->insert_id;
-
-                    // Вставляем дисциплины
-                    if (isset($staff_member->disciplines)) {
-                        foreach ($staff_member->disciplines as $discipline) {
-                            $wpdb->insert($table_disciplines, array(
-                                'staff_id' => $staff_member_id,
-                                'discipline' => (string)$discipline,
-                            ));
-                        }
-                    }
-
-                    // Вставляем данные об образовании
-                    if (isset($staff_member->education)) {
-                        foreach ($staff_member->education as $education) {
-                            $wpdb->insert($table_education, array(
-                                'staff_id' => $staff_member_id,
-                                'education_info' => (string)$education
-                            ));
-                        }
-                    }
-
-                    // Вставляем данные о повышении квалификации
-                    if (isset($staff_member->qualification_improvement)) {
-                        foreach ($staff_member->qualification_improvement as $improvement) {
-                            $wpdb->insert($table_qualification_improvement, array(
-                                'staff_id' => $staff_member_id,
-                                'improvement_info' => (string)$improvement,
-                            ));
-                        }
-                    }
-
-
-                    // Вставляем данные о карьере
-                    if (isset($staff_member->career)) {
-                        foreach ($staff_member->career as $career) {
-                            $career_info = (string)$career;
-                            $wpdb->insert($table_career, array(
-                                'staff_id' => $staff_member_id,
-                                'career_info' => $career_info,
-                            ));
-                        }
-                    }
-
-                    // Вставляем данные об опыте работы
-                    $wpdb->update($table_staff, array(
-                        'overall_experience' => (string)$staff_member->overall_experience,
-                        'specialization_experience' => (string)$staff_member->specialization_experience,
-                ), array('id' => $staff_member_id));
-                }
-
                 break;
         }    
     }
@@ -2293,6 +2285,33 @@ class RegInfoEduOrg
                     // Обновляем данные в базе данных
                     $wpdb->update(
                         "{$wpdb->prefix}reginfoeduorg_documents", // Название таблицы
+                        array(
+                            'document_name' => $new_name, 
+                            'document_type' => $new_type, 
+                            'document_link' => $new_link
+                        ), // Данные для обновления
+                        array('id' => $id), // Условие WHERE
+                        array('%s', '%d', '%s'), // Формат данных для обновления
+                        array('%d')  // Формат данных в условии WHERE
+                    );
+                }
+                break;
+
+            case 9:
+                $data = $wpdb->get_results("SELECT d.id, d.document_name, dt.document_type, d.document_link 
+                                 FROM {$wpdb->prefix}reginfoeduorg_paid_services as d
+                                 JOIN {$wpdb->prefix}reginfoeduorg_paid_services_types as dt
+                                 ON d.document_type = dt.id", ARRAY_A);
+                
+                foreach ($data as $row) {
+                    $id = $row['id']; // Получаем ID документа
+                    $new_name = $_POST['document_name'][$id]; // Получаем новое название из формы
+                    $new_type = $_POST['document_type'][$id]; // Получаем новый тип из формы
+                    $new_link = $_POST['document_link'][$id]; // Получаем новую ссылку из формы
+                    
+                    // Обновляем данные в базе данных
+                    $wpdb->update(
+                        "{$wpdb->prefix}reginfoeduorg_paid_services", // Название таблицы
                         array(
                             'document_name' => $new_name, 
                             'document_type' => $new_type, 
@@ -2420,10 +2439,18 @@ class RegInfoEduOrg
                 break;
 
             case 9:
-                $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_paid_services", ARRAY_A);
+                $data = $wpdb->get_results("SELECT d.id, d.document_name, dt.id as document_type_id, dt.document_type, d.document_link 
+                             FROM {$wpdb->prefix}reginfoeduorg_paid_services as d
+                             JOIN {$wpdb->prefix}reginfoeduorg_paid_services_types as dt
+                             ON d.document_type = dt.id", ARRAY_A);
+                
+                // Получаем все типы документов для создания выпадающего списка
+                $document_types = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_paid_services_types", ARRAY_A);
+                
                 if ($data) {
                     echo '<table class="wp-list-table widefat fixed striped">';
                     echo '<thead><tr>';
+                    echo '<th scope="col" class="manage-column column-name">Название документа</th>';
                     echo '<th scope="col" class="manage-column column-name">Тип документа</th>';
                     echo '<th scope="col" class="manage-column column-value">Ссылка на документ</th>';
                     echo '</tr></thead>';
@@ -2431,148 +2458,34 @@ class RegInfoEduOrg
 
                     foreach ($data as $row) {
                         echo '<tr>';
-                        echo '<td class="column-name">' . $row['document_type'] . '</td>';
-                        echo '<td class="column-value">' . $row['document_link'] . '</td>';
+                        echo '<td class="column-name"><input type="text" name="document_name[' . $row['id'] . ']" value="' . $row['document_name'] . '"></td>';
+                        echo '<td class="column-name">';
+                        
+                        // Создаем выпадающий список с типами документов
+                        echo '<select name="document_type[' . $row['id'] . ']">';
+                        foreach ($document_types as $type) {
+                            $selected = $type['id'] == $row['document_type_id'] ? ' selected' : '';
+                            echo '<option value="' . $type['id'] . '"' . $selected . '>' . $type['document_type'] . '</option>';
+                        }
+
+                        echo '</select>';
+                        echo '</td>';
+                        echo '<td class="column-value"><input type="text" name="document_link[' . $row['id'] . ']" value="' . $row['document_link'] . '"></td>';
                         echo '</tr>';
                     }
 
+
                     echo '</tbody>';
                     echo '</table>';
+                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
+
                 } else {
                     echo '<p>Данные отсутствуют.</p>';
                 }
 
                 break;
             case 6:
-                $staff_data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_staff", ARRAY_A);
-                if ($staff_data) {
-                    echo "<style>
-                      .custom-textarea {
-                          max-width: 100%;
-                          overflow-wrap: break-word;
-                          white-space: normal;
-                          resize: vertical;
-                          max-height: none;
-                          height: auto;
-                          box-sizing: border-box;
-                        }
-                    </style>";
-                    if (isset($_POST['save_table_changes'])) {
-                        // Обработка данных таблицы reginfoeduorg_staff
-                        foreach ($_POST['data'] as $id => $row_data) {
-                            $wpdb->update(
-                                "{$wpdb->prefix}reginfoeduorg_staff",
-                                $row_data,
-                                array('id' => $id),
-                                array('%s', '%s', '%s', '%s', '%d', '%d'),
-                                array('%d')
-                            );
-                        }
-
-                        // Обработка связанных данных
-                        foreach ($_POST['related_data'] as $id => $related_data) {
-                            // Удаление существующих записей для сотрудника
-                            $wpdb->delete("{$wpdb->prefix}reginfoeduorg_disciplines", array('staff_id' => $id), array('%d'));
-                            $wpdb->delete("{$wpdb->prefix}reginfoeduorg_education", array('staff_id' => $id), array('%d'));
-                            $wpdb->delete("{$wpdb->prefix}reginfoeduorg_qualification_improvement", array('staff_id' => $id), array('%d'));
-                            $wpdb->delete("{$wpdb->prefix}reginfoeduorg_career", array('staff_id' => $id), array('%d'));
-
-                            // Добавление новых записей с обновленными данными
-                            $disciplines = explode(',', $related_data['disciplines']);
-                            if (is_array($disciplines)) {
-                                foreach ($disciplines as $discipline) {
-                                    $wpdb->insert("{$wpdb->prefix}reginfoeduorg_disciplines", array('staff_id' => $id, 'discipline' => $discipline), array('%d', '%s'));
-                                }
-                            }
-
-                            $education = explode(',', $related_data['education']);
-                            if (is_array($education)) {
-                                foreach ($education as $edu) {
-                                    $wpdb->insert("{$wpdb->prefix}reginfoeduorg_education", array('staff_id' => $id, 'education_info' => $edu), array('%d', '%s'));
-                                }
-                            }
-
-                            $qualification_improvements = explode(',', $related_data['qualification_improvement']);
-                            if (is_array($qualification_improvements)) {
-                                foreach ($qualification_improvements as $improvement_info) {
-                                    $wpdb->insert("{$wpdb->prefix}reginfoeduorg_qualification_improvement", array('staff_id' => $id, 'improvement_info' => $improvement_info), array('%d', '%s'));
-                                }
-                            }
-
-                            $careers = explode(',', $related_data['career']);
-                            if (is_array($careers)) {
-                                foreach ($careers as $career_info) {
-                                    $wpdb->insert("{$wpdb->prefix}reginfoeduorg_career", array('staff_id' => $id, 'career_info' => $career_info), array('%d', '%s'));
-                                }
-                            }
-                        }
-                    }
-
-                    foreach ($staff_data as $row) {
-                        $id = $row['id'];
-                        $disciplines = $wpdb->get_results($wpdb->prepare("SELECT discipline FROM {$wpdb->prefix}reginfoeduorg_disciplines WHERE staff_id = %d", $id), ARRAY_A);
-                        $education = $wpdb->get_results($wpdb->prepare("SELECT education_info FROM {$wpdb->prefix}reginfoeduorg_education WHERE staff_id = %d", $id), ARRAY_A);
-                        $qualification_improvement = $wpdb->get_results($wpdb->prepare("SELECT improvement_info FROM {$wpdb->prefix}reginfoeduorg_qualification_improvement WHERE staff_id = %d", $id), ARRAY_A);
-                        $career = $wpdb->get_results($wpdb->prepare("SELECT career_info FROM {$wpdb->prefix}reginfoeduorg_career WHERE staff_id = %d", $id), ARRAY_A);
-                        
-                        echo '<h3>Сотрудник: ' . $row['full_name'] . '</h3>';
-
-                        echo '<table class="wp-list-table widefat fixed striped">';
-                        echo '<thead><tr><th>ФИО</th><th>Должность</th><th>Email</th><th>Телефон</th><th>Общий стаж</th><th>Стаж по специализации</th></tr></thead>';
-                        echo '<tbody>';
-                        echo '<tr>';
-                        echo '<td><textarea class="custom-textarea" name="data[' . $id . '][full_name]">' . $row['full_name'] . '</textarea></td>';
-                        echo '<td><textarea class="custom-textarea" name="data[' . $id . '][position]">' . $row['position'] . '</textarea></td>';
-                        echo '<td><textarea class="custom-textarea" name="data[' . $id . '][email]">' . $row['email'] . '</textarea></td>';
-                        echo '<td><textarea class="custom-textarea" name="data[' . $id . '][phone]">' . $row['phone'] . '</textarea></td>';
-                        echo '<td><textarea class="custom-textarea" name="data[' . $id . '][overall_experience]">' . $row['overall_experience'] . '</textarea></td>';
-                        echo '<td><textarea class="custom-textarea" name="data[' . $id . '][specialization_experience]">' . $row['specialization_experience'] . '</textarea></td>';
-                        echo '</tr>';
-                        echo '</tbody>';
-                        echo '</table>';
-                        echo '<br>';
-                        
-                        echo '<table class="wp-list-table widefat fixed striped">';
-                        echo '<thead><tr><th>Дисциплины</th></tr></thead>';
-                        echo '<tbody>';
-                        echo '<td><textarea class="custom-textarea" name="related_data[' . $id . '][disciplines]">' . implode(', ', array_column($disciplines, 'discipline')) . '</textarea></td>';
-                        echo '</tbody>';
-                        echo '</table>';
-                        echo '<br>';
-
-                        echo '<table class="wp-list-table widefat fixed striped">';
-                        echo '<thead><tr><th>Образование</th></tr></thead>';
-                        echo '<tbody>';
-                        echo '<td><textarea class="custom-textarea" name="related_data[' . $id . '][education]">' . implode(', ', array_column($education, 'education_info')) . '</textarea></td>';
-                        echo '</tbody>';
-                        echo '</table>';
-                        echo '<br>';
-
-                        echo '<table class="wp-list-table widefat fixed striped">';
-                        echo '<thead><tr><th>Повышение квалификации</th></tr></thead>';
-                        echo '<tbody>';
-                        echo '<td><textarea class="custom-textarea" name="related_data[' . $id . '][qualification_improvement]">' . implode(', ', array_column($qualification_improvement, 'improvement_info')) . '</textarea></td>';
-                        echo '</tbody>';
-                        echo '</table>';
-                        echo '<br>';
-
-                        echo '<table class="wp-list-table widefat fixed striped">';
-                        echo '<thead><tr><th>Карьера</th></tr></thead>';
-                        echo '<tbody>';
-                        echo '<td><textarea class="custom-textarea" name="related_data[' . $id . '][career]">' . implode(', ', array_column($career, 'career_info')) . '</textarea></td>';
-                        echo '</tbody>';
-                        echo '</table>';
-                        echo '<br>';
-                        echo '<hr>'; 
-                    }
-                    
-                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения" class="button-primary">';
-                    echo '<br>';
-                    
-                } 
-                else {
-                    echo '<p>Данные отсутствуют.</p>';
-                }
+                
                 break;
 
 
@@ -2603,67 +2516,7 @@ class RegInfoEduOrg
                 $shortcode = '[paid_services_info id="' . $id . '"]';
                 break;
             case 6:
-                // Выбираем данные о сотрудниках
-                $staff_members = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_staff", ARRAY_A);
-
-                // Выбираем пустую структуру XML для подраздела "Сотрудники" из базы данных
-                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id=$subsection_id");
-
-                // Загружаем пустую структуру XML и дополняем ее данными
-                $xml = new DOMDocument('1.0', 'UTF-8');
-                $xml->formatOutput = true;
-                $xml->loadXML($subsection_xml);
-                // Находим элемент section_content для подраздела "Сотрудники"
-                $section_content = $xml->getElementsByTagName('section_content')->item(0);
-
-                // Удаляем имеющиеся элементы с данными
-                while ($section_content->hasChildNodes()) {
-                    $section_content->removeChild($section_content->firstChild);
-                }
-
-                // Создаем элемент staff_members
-                $staff_members_node = $xml->createElement('staff_members');
-                $section_content->appendChild($staff_members_node);
-
-                // Для каждого сотрудника создаем элемент staff и добавляем его в staff_members
-                foreach ($staff_members as $staff) {
-                    $staff_node = $xml->createElement('staff');
-                    $staff_members_node->appendChild($staff_node);
-
-                    // Создаем элементы для каждого поля из таблицы сотрудников и добавляем их в staff
-                    foreach ($staff as $key => $value) {
-                        $element = $xml->createElement($key, htmlspecialchars($value));
-                        $staff_node->appendChild($element);
-                    }
-                    
-                    // Добавляем данные из связанных таблиц
-                    $staff_id = $staff['id'];
-                    $related_tables = [
-                        'reginfoeduorg_disciplines',
-                        'reginfoeduorg_education',
-                        'reginfoeduorg_qualification_improvement',
-                        'reginfoeduorg_career'
-                    ];
-
-                    foreach ($related_tables as $table) {
-                        $related_data = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}{$table} WHERE staff_id = %d", $staff_id), ARRAY_A);
-                        
-                        // Создаем элемент для связанных данных
-                        $related_data_node = $xml->createElement($table);
-                        $staff_node->appendChild($related_data_node);
-
-                        // Добавляем элементы для каждого поля из связанных таблиц
-                        foreach ($related_data as $related_item) {
-                            $item_node = $xml->createElement('item');
-                            $related_data_node->appendChild($item_node);
-                            
-                            foreach ($related_item as $key => $value) {
-                                $element = $xml->createElement($key, htmlspecialchars($value));
-                                $item_node->appendChild($element);
-                            }
-                        }
-                    }
-                }
+                
                 break;
         	default:
         }
