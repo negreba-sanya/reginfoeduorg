@@ -34,66 +34,41 @@ class RegInfoEduOrg
     
     //-------------------------------Шорткоды-------------------------------
 
-    public function general_info_shortcode($atts) {
+    public function process_shortcode($atts, $subsection_name) {
         global $wpdb;
+
         // Извлекаем ID из атрибутов шорткода
         $id = $atts['id'];
-        
-        $subsection_id = 1;
+
+        $subsection_id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = '$subsection_name'");
+
         $xml = $this->generate_xml($subsection_id);
-        
+
         if (!$xml) {
             return null;
         }
 
-        $xslt_code = $wpdb->get_var("SELECT xslt FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Основные сведения'");
-
+        $xslt_code = $wpdb->get_var("SELECT xslt FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = '$subsection_name'");
 
         // Преобразуем XML контент в HTML с использованием вашего XSLT-преобразования
         $html_content =  $this->convert_xml_xslt_to_html($xml, $xslt_code,$subsection_id);
 
         // Возвращаем HTML-контент, который заменит шорткод на странице
         return $html_content;
+    }
+
+    public function general_info_shortcode($atts) {
+        return $this->process_shortcode($atts, 'Основные сведения');
     }
 
     public function documents_info_shortcode($atts) {
-        global $wpdb;
-        // Извлекаем ID из атрибутов шорткода
-        $id = $atts['id'];
-        $subsection_id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Документы'");
-        $xml = $this->generate_xml($subsection_id);
-        
-        if (!$xml) {
-            return null;
-        }
-
-        $xslt_code = $wpdb->get_var("SELECT xslt FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Документы'");
-
-
-        // Преобразуем XML контент в HTML с использованием вашего XSLT-преобразования
-        $html_content =  $this->convert_xml_xslt_to_html($xml, $xslt_code,$subsection_id);
-
-        // Возвращаем HTML-контент, который заменит шорткод на странице
-        return $html_content;
+        return $this->process_shortcode($atts, 'Документы');
     }
 
     public function paid_services_shortcode($atts) {
-        global $wpdb;
-        // Извлекаем ID из атрибутов шорткода
-        $id = $atts['id'];
-        $subsection_id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Платные образовательные услуги'");
-        $xml = $this->generate_xml($subsection_id);
-        
-        if (!$xml) {
-            return null;
-        }
-
-        $xslt_code = $wpdb->get_var("SELECT xslt FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Платные образовательные услуги'");
-
-
-        // Преобразуем XML контент в HTML с использованием вашего XSLT-преобразования
-        $html_content =  $this->convert_xml_xslt_to_html($xml, $xslt_code,$subsection_id);
+        return $this->process_shortcode($atts, 'Платные образовательные услуги');
     }
+
     
     //-------------------------------Шорткоды-------------------------------
 
