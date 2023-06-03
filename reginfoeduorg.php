@@ -15,7 +15,6 @@ if (!defined('ABSPATH')) {
 
 class RegInfoEduOrg
 {
-
     private $plugin_file;
     
     //Конструктор
@@ -30,11 +29,18 @@ class RegInfoEduOrg
         add_shortcode('general_info', array($this,'general_info_shortcode'));
         add_shortcode('documents_info', array($this,'documents_info_shortcode'));
         add_shortcode('paid_services_info', array($this,'paid_services_shortcode'));
+        add_shortcode('financial_activity_info', array($this,'financial_activity_shortcode'));
+        add_shortcode('vacancies_info', array($this,'vacancies_shortcode'));
+        add_shortcode('grants_support_info', array($this,'grants_support_shortcode'));
     }
     
     //-------------------------------Шорткоды-------------------------------
 
     public function process_shortcode($atts, $subsection_name) {
+        if(!$atts || !$subsection_name)
+        {
+            return;
+        }
         global $wpdb;
 
         // Извлекаем ID из атрибутов шорткода
@@ -68,12 +74,28 @@ class RegInfoEduOrg
     public function paid_services_shortcode($atts) {
         return $this->process_shortcode($atts, 'Платные образовательные услуги');
     }
+    
+    public function financial_activity_shortcode($atts) {
+        return $this->process_shortcode($atts, 'Финансово-хозяйственная деятельность');
+    }
+    
+    public function vacancies_shortcode($atts) {
+        return $this->process_shortcode($atts, 'Вакантные места для приема (перевода) обучающихся');
+    }
+    
+    public function grants_support_shortcode($atts) {
+        return $this->process_shortcode($atts, 'Стипендии и иные виды материальной поддержки');
+    }
 
     //-------------------------------Шорткоды-------------------------------
 
     //-------------------------------Обработка вывода html документов при активации шорткодов-------------------------------
     function convert_xml_xslt_to_html($xml, $xslt_code, $subsection_id) {
         // Создаем экземпляр XSLTProcessor и загружаем XSLT-код
+        if(!$xslt_code || !$xml || !$subsection_id)
+        {
+            return;
+        }
         $xslt_processor = new XSLTProcessor();
         $xslt = new DOMDocument();
         $xslt->loadXML($xslt_code);
@@ -85,6 +107,10 @@ class RegInfoEduOrg
     }
 
     function generate_xml($subsection_id) {
+        if(!$subsection_id)
+        {
+            return;
+        }
         global $wpdb;
         switch ($subsection_id)
         {
@@ -121,60 +147,20 @@ class RegInfoEduOrg
                 }
                 break;
 
-            case 9:
-                // Выбираем данные из таблицы reginfoeduorg_paid_services
-                $documents_data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_paid_services", ARRAY_A);
-                if (!$documents_data) {
-                    return null;
-                }
-                // Выбираем пустую структуру XML для подраздела "Платные образовательные услуги" из базы данных
-                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Платные образовательные услуги'");
-                
-                // Загружаем пустую структуру XML и дополняем ее данными
-                $xml = new DOMDocument('1.0', 'UTF-8');
-                $xml->formatOutput = true;
-                $xml->loadXML($subsection_xml);
-                // Находим элемент section_content для подраздела "Платные образовательные услуги"
-                $section_content = $xml->getElementsByTagName('section_content')->item(0);
-
-                // Удаляем имеющиеся элементы с данными
-                while ($section_content->hasChildNodes()) {
-                    $section_content->removeChild($section_content->firstChild);
-                }
-
-                // Создаем элемент documents
-                $documents_node = $xml->createElement('paid_services_info');
-                $section_content->appendChild($documents_node);
-
-                // Проходимся по всем документам из таблицы и добавляем их в documents
-                foreach ($documents_data as $document) {
-                    // Создаем элемент document
-                    $document_node = $xml->createElement('document');
-                    $documents_node->appendChild($document_node);
-
-                    // Получаем тип документа
-                    $document_type_id = $document['document_type'];
-                    $document_type = $wpdb->get_var("SELECT document_type FROM {$wpdb->prefix}reginfoeduorg_paid_services_types WHERE id = $document_type_id");
-
-                    // Создаем элементы type, name и link для каждого документа
-                    $type = $xml->createElement('type', htmlspecialchars($document_type));
-                    $name = $xml->createElement('name', htmlspecialchars($document['document_name']));
-                    $link = $xml->createElement('link', htmlspecialchars($document['document_link']));
-                    $document_node->appendChild($type);
-                    $document_node->appendChild($name);
-                    $document_node->appendChild($link);
-
-                }
-                break;
-
             case 3:
+            case 8:
+            case 9:
+            case 10:
+            case 11:
                 // Выбираем данные из таблицы reginfoeduorg_documents
-                $documents_data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_documents", ARRAY_A);
+                $documents_data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_documents WHERE subsection_id = '$subsection_id'", ARRAY_A);
                 if (!$documents_data) {
                     return null;
                 }
+                $subsection_name = $wpdb->get_var($wpdb->prepare("SELECT name FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = %d", $subsection_id));
+
                 // Выбираем пустую структуру XML для подраздела "Документы" из базы данных
-                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = 'Документы'");
+                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = '$subsection_name'");
                 
                 // Загружаем пустую структуру XML и дополняем ее данными
                 $xml = new DOMDocument('1.0', 'UTF-8');
@@ -244,7 +230,7 @@ class RegInfoEduOrg
         $table_founders = $wpdb->prefix . 'reginfoeduorg_founders';
         $table_meetings = $wpdb->prefix . 'reginfoeduorg_meetings';
         $table_documents = $wpdb->prefix . 'reginfoeduorg_documents';
-        $table_documents_types = $wpdb->prefix . 'reginfoeduorg_documents_types';
+        $table_document_types = $wpdb->prefix . 'reginfoeduorg_document_types';
         $table_education_programs = $wpdb->prefix . 'reginfoeduorg_education_programs';
         $table_free_education = $wpdb->prefix . 'reginfoeduorg_free_education';
         $table_property = $wpdb->prefix . 'reginfoeduorg_property';
@@ -252,8 +238,6 @@ class RegInfoEduOrg
         $table_social_support = $wpdb->prefix . 'reginfoeduorg_social_support';
         $table_dormitories = $wpdb->prefix . 'reginfoeduorg_dormitories';
         $table_employment = $wpdb->prefix . 'reginfoeduorg_employment';
-        $table_paid_services = $wpdb->prefix . 'reginfoeduorg_paid_services';
-        $table_paid_services_types = $wpdb->prefix . 'reginfoeduorg_paid_services_types';
         $table_funding_sources = $wpdb->prefix . 'reginfoeduorg_funding_sources';
         $table_financial_report = $wpdb->prefix . 'reginfoeduorg_financial_report';
         $table_vacancies = $wpdb->prefix . 'reginfoeduorg_vacancies';
@@ -402,7 +386,7 @@ class RegInfoEduOrg
               meeting_info TEXT
             )$charset_collate;
 
-             CREATE TABLE $table_documents_types (
+            CREATE TABLE $table_document_types (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 document_type VARCHAR(255)
             )$charset_collate;
@@ -411,8 +395,10 @@ class RegInfoEduOrg
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 document_name VARCHAR(255),
                 document_type INT(11) NOT NULL,
-                FOREIGN KEY (document_type) REFERENCES $table_documents_types(id) ON DELETE CASCADE,
-                document_link VARCHAR(255)
+                FOREIGN KEY (document_type) REFERENCES $table_document_types(id) ON DELETE CASCADE,
+                document_link VARCHAR(255),
+                subsection_id INT(11) NOT NULL,
+                FOREIGN KEY (subsection_id) REFERENCES $table_site_subsections(id) ON DELETE CASCADE
             )$charset_collate;
 
             CREATE TABLE $table_education_programs (
@@ -455,19 +441,6 @@ class RegInfoEduOrg
               id INT AUTO_INCREMENT PRIMARY KEY,
               employment_title VARCHAR(255),
               employment_info TEXT
-            )$charset_collate;
-
-            CREATE TABLE $table_paid_services_types (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                document_type VARCHAR(255)
-            )$charset_collate;
-
-            CREATE TABLE $table_paid_services (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                document_name VARCHAR(255),
-                document_type INT(11) NOT NULL,
-                FOREIGN KEY (document_type) REFERENCES $table_paid_services_types(id) ON DELETE CASCADE,
-                document_link VARCHAR(255)
             )$charset_collate;
 
             CREATE TABLE $table_funding_sources (
@@ -804,38 +777,13 @@ class RegInfoEduOrg
             'xml' => '<section>
 		<section_title>Стипендии и иные виды материальной поддержки</section_title>
 		<section_content>
-			<scholarships>
-				<scholarship_title>Студенческие стипендии</scholarship_title>
-				<scholarship_info>Условия предоставления стипендий для обучающихся</scholarship_info>
-			</scholarships>
-			<social_support>
-				<support_title>Меры социальной поддержки</support_title>
-				<support_info>Условия и порядок предоставления мер социальной поддержки</support_info>
-			</social_support>
-			<dormitories>
-				<dormitory_title>Общежития и интернаты</dormitory_title>
-				<dormitory_info>Информация о наличии общежитий и интернатов для иногородних обучающихся, в том числе приспособленных для использования инвалидами и лицами с ограниченными возможностями здоровья, количестве жилых помещений в общежитии, формировании платы за проживание</dormitory_info>
-			</dormitories>
-			<employment>
-				<employment_title>Трудоустройство выпускников</employment_title>
-				<employment_info>Информация о трудоустройстве выпускников</employment_info>
-			</employment>
-		</section_content>
-	</section>',
-            'xslt' => ''
-            ],
-            [ 
-            'name' =>'Платные образовательные услуги',
-            'xml' => '	<section>
-		<section_title>Платные образовательные услуги</section_title>
-		<section_content>
-			<paid_services_info>
+			<documents>
 				<document>
 					<name></name>
 					<type></type>
 					<link></link>
-				</document>				
-			</paid_services_info>
+				</document>
+			</documents>
 		</section_content>
 	</section>',
             'xslt' => '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
@@ -843,7 +791,37 @@ class RegInfoEduOrg
   <xsl:template match="/">
     <html>
       <body>
-        <xsl:apply-templates select="//paid_services_info/document" />
+        <xsl:apply-templates select="//documents/document" />
+      </body>
+    </html>
+  </xsl:template>
+  <xsl:template match="document">
+    <p>
+      <a href="{link}"><xsl:value-of select="name" /></a>
+    </p>
+  </xsl:template>
+</xsl:stylesheet>'
+            ],
+            [ 
+            'name' =>'Платные образовательные услуги',
+            'xml' => '<section>
+		<section_title>Платные образовательные услуги</section_title>
+		<section_content>
+			<documents>
+				<document>
+					<name></name>
+					<type></type>
+					<link></link>
+				</document>
+			</documents>
+		</section_content>
+	</section>',
+            'xslt' => '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:output method="html" encoding="UTF-8" indent="yes" />
+  <xsl:template match="/">
+    <html>
+      <body>
+        <xsl:apply-templates select="//documents/document" />
       </body>
     </html>
   </xsl:template>
@@ -860,39 +838,60 @@ class RegInfoEduOrg
             'xml' => '<section>
 		<section_title>Финансово-хозяйственная деятельность</section_title>
 		<section_content>
-			<funding_sources>
-				<funding_title>Источники финансирования</funding_title>
-				<funding_info>Информация об объеме образовательной деятельности, финансовое обеспечение которой осуществляется за счет бюджетных ассигнований федерального бюджета, бюджетов субъектов Российской Федерации, местных бюджетов, по договорам об образовании за счет средств физических и (или) юридических лиц</funding_info>
-			</funding_sources>
-			<financial_report>
-				<report_title>Финансовый отчет</report_title>
-				<report_info>Информация о поступлении финансовых и материальных средств и об их расходовании по итогам финансового года</report_info>
-			</financial_report>
+			<documents>
+				<document>
+					<name></name>
+					<type></type>
+					<link></link>
+				</document>
+			</documents>
 		</section_content>
 	</section>',
-            'xslt' => ''
+            'xslt' => '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:output method="html" encoding="UTF-8" indent="yes" />
+  <xsl:template match="/">
+    <html>
+      <body>
+        <xsl:apply-templates select="//documents/document" />
+      </body>
+    </html>
+  </xsl:template>
+  <xsl:template match="document">
+    <p>
+      <a href="{link}"><xsl:value-of select="name" /></a>
+    </p>
+  </xsl:template>
+</xsl:stylesheet>'
             ],
             [ 
-            'name' =>'Вакантные места для приема (перевода)',
+            'name' =>'Вакантные места для приема (перевода) обучающихся',
             'xml' => '<section>
-		<section_title>Вакантные места для приема (перевода)</section_title>
+		<section_title>Вакантные места для приема (перевода) обучающихся</section_title>
 		<section_content>
-			<vacancies_info>
-				<vacancies_title>Информация о вакантных местах</vacancies_title>
-				<vacancies_list>
-					<program>
-						<program_name>Название образовательной программы</program_name>
-						<profession>Профессия</profession>
-						<specialization>Специальность</specialization>
-						<study_direction>Направление подготовки</study_direction>
-						<budget_vacancies>Количество вакантных мест за счет бюджетных ассигнований</budget_vacancies>
-						<contract_vacancies>Количество вакантных мест по договорам об образовании</contract_vacancies>
-					</program>
-				</vacancies_list>
-			</vacancies_info>
+			<documents>
+				<document>
+					<name></name>
+					<type></type>
+					<link></link>
+				</document>
+			</documents>
 		</section_content>
 	</section>',
-            'xslt' => ''
+            'xslt' => '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:output method="html" encoding="UTF-8" indent="yes" />
+  <xsl:template match="/">
+    <html>
+      <body>
+        <xsl:apply-templates select="//documents/document" />
+      </body>
+    </html>
+  </xsl:template>
+  <xsl:template match="document">
+    <p>
+      <a href="{link}"><xsl:value-of select="name" /></a>
+    </p>
+  </xsl:template>
+</xsl:stylesheet>'
             ]             
         ];
 
@@ -1977,12 +1976,23 @@ class RegInfoEduOrg
     //-----------------------Процесс обработки и вывода данных в подпунктах меню с настройкой подразделов-------------------------------
     function import_data($subsection_id, $xml)
     {
+        if(!$subsection_id)
+        {
+            return;
+        }
         if(!$this->check_write($subsection_id))
         {
             echo "<div class='notice notice-error is-dismissible'><p>У вас нет доступа к редактированию данного подраздела</p></div>";
             return;
         }
+        if(!$xml)
+        {
+            return;
+        }
+
         global $wpdb;
+        $subsection_name = $wpdb->get_var($wpdb->prepare("SELECT name FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = %d",$subsection_id));
+        
         switch ($subsection_id)
         {
             case 1:
@@ -2018,35 +2028,34 @@ class RegInfoEduOrg
 
                 break;
             case 3:
-                // Находим секцию "Документы"
-                $documents = $xml->xpath('//reginfoeduorg/section[section_title="Документы"]/section_content/documents')[0];
-
+            case 8:
+            case 9:
+            case 10:
+            case 11:
+                // Находим нужную секцию в XML
+                $section = $xml->xpath('//reginfoeduorg/section[section_title="'.$subsection_name.'"]/section_content/documents')[0];
+                
                 // Очищаем таблицы перед импортом
                 global $wpdb;
-                $table_documents_types = "{$wpdb->prefix}reginfoeduorg_documents_types";
+                $table_documents_types = "{$wpdb->prefix}reginfoeduorg_document_types";
                 $table_documents = "{$wpdb->prefix}reginfoeduorg_documents";
 
-                $wpdb->query("TRUNCATE TABLE $table_documents");
-                $wpdb->query("TRUNCATE TABLE $table_documents_types");
+                $wpdb->query("DELETE FROM $table_documents WHERE subsection_id = $subsection_id");
 
                 // Массив для хранения идентификаторов типов документов
                 $document_types_ids = array();
 
                 // Проходимся по всем документам
-                foreach ($documents->document as $document) {
+                foreach ($section->document as $document) {
                     // Получаем данные
                     $document_name = (string)$document->name;
                     $document_link = (string)$document->link;
                     $document_type = (string)$document->type;
 
-                    
                     // Если тип документа еще не импортирован, проверяем его наличие в базе данных
                     if (!array_key_exists($document_type, $document_types_ids)) {
                         // Проверяем, существует ли тип документа в базе данных
-                        $existing_type_id = $wpdb->get_var($wpdb->prepare(
-                            "SELECT id FROM $table_documents_types WHERE document_type = %s",
-                            $document_type
-                        ));
+                        $existing_type_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table_documents_types WHERE document_type = %s",$document_type));
 
                         // Если тип документа уже существует, используем его id, иначе добавляем новый тип
                         if ($existing_type_id !== null) {
@@ -2074,6 +2083,7 @@ class RegInfoEduOrg
                             'document_name' => $document_name,
                             'document_link' => $document_link,
                             'document_type' => $document_types_ids[$document_type],
+                            'subsection_id' => $subsection_id
                         );
 
                         // Вставляем данные в таблицу documents
@@ -2085,6 +2095,7 @@ class RegInfoEduOrg
                     }
                 }
                 break;
+
 
             case 9:               
                 // Находим секцию "Платные образовательные услуги"
@@ -2160,16 +2171,29 @@ class RegInfoEduOrg
                 break;
         }  
         echo "<div class='notice notice-success is-dismissible'><p>Данные успешно импортированы из файла.</p></div>";
-
+        if($_POST['reginfoeduorg_xslt_code'])
+        {
+            $this->apply_styles($subsection_id);
+        }
+        else
+        {
+            echo "<div class='notice notice-error is-dismissible'><p>Данные импортированы, но пока не отображаются на сайте, так как не введен XSLT стиль</p></div>";
+            
+        }
     }
 
     function save_table_changes($subsection_id)
     {
+        if(!$subsection_id)
+        {
+            return;
+        }
         if(!$this->check_write($subsection_id))
         {
             echo "<div class='notice notice-error is-dismissible'><p>У вас нет доступа к редактированию данного подраздела</p></div>";
             return;
         }
+        
         global $wpdb;
         switch ($subsection_id)
         {
@@ -2190,22 +2214,27 @@ class RegInfoEduOrg
                 }
                 break;
             case 3:
-                $data = $wpdb->get_results("SELECT d.id, d.document_name, dt.document_type, d.document_link 
-                                 FROM {$wpdb->prefix}reginfoeduorg_documents as d
-                                 JOIN {$wpdb->prefix}reginfoeduorg_documents_types as dt
-                                 ON d.document_type = dt.id", ARRAY_A);
+            case 8:
+            case 9:
+            case 10:
+            case 11:
+                $data = $wpdb->get_results($wpdb->prepare("SELECT d.id, d.document_name, dt.id as dt_id, dt.document_type, d.document_link 
+                 FROM {$wpdb->prefix}reginfoeduorg_documents as d
+                 JOIN {$wpdb->prefix}reginfoeduorg_document_types as dt
+                 ON d.document_type = dt.id
+                 WHERE d.subsection_id = %d", $subsection_id), ARRAY_A);
                 foreach ($data as $row) {
                     $id = $row['id']; // Получаем ID документа
                     $new_name = $_POST['document_name'][$id]; // Получаем новое название из формы
-                    $new_type = $_POST['document_type'][$id]; // Получаем новый тип из формы
+                    $new_type_id = $_POST['document_type'][$id]; // Получаем новый тип из формы
                     $new_link = $_POST['document_link'][$id]; // Получаем новую ссылку из формы
-                    
+                   
                     // Обновляем данные в базе данных
                     $wpdb->update(
                         "{$wpdb->prefix}reginfoeduorg_documents", // Название таблицы
                         array(
                             'document_name' => $new_name, 
-                            'document_type' => $new_type, 
+                            'document_type' => $new_type_id, 
                             'document_link' => $new_link
                         ), // Данные для обновления
                         array('id' => $id), // Условие WHERE
@@ -2215,32 +2244,8 @@ class RegInfoEduOrg
                 }
                 break;
 
-            case 9:
-                $data = $wpdb->get_results("SELECT d.id, d.document_name, dt.document_type, d.document_link 
-                                 FROM {$wpdb->prefix}reginfoeduorg_paid_services as d
-                                 JOIN {$wpdb->prefix}reginfoeduorg_paid_services_types as dt
-                                 ON d.document_type = dt.id", ARRAY_A);
-                
-                foreach ($data as $row) {
-                    $id = $row['id']; // Получаем ID документа
-                    $new_name = $_POST['document_name'][$id]; // Получаем новое название из формы
-                    $new_type = $_POST['document_type'][$id]; // Получаем новый тип из формы
-                    $new_link = $_POST['document_link'][$id]; // Получаем новую ссылку из формы
-                    
-                    // Обновляем данные в базе данных
-                    $wpdb->update(
-                        "{$wpdb->prefix}reginfoeduorg_paid_services", // Название таблицы
-                        array(
-                            'document_name' => $new_name, 
-                            'document_type' => $new_type, 
-                            'document_link' => $new_link
-                        ), // Данные для обновления
-                        array('id' => $id), // Условие WHERE
-                        array('%s', '%d', '%s'), // Формат данных для обновления
-                        array('%d')  // Формат данных в условии WHERE
-                    );
-                }
-                break;
+
+            
 
             default:
         }
@@ -2250,6 +2255,10 @@ class RegInfoEduOrg
 
     function apply_styles($subsection_id)
     {
+        if(!$subsection_id)
+        {
+            return;
+        }
         if(!$this->check_write($subsection_id))
         {
             echo "<div class='notice notice-error is-dismissible'><p>У вас нет доступа к редактированию данного подраздела</p></div>";
@@ -2274,6 +2283,10 @@ class RegInfoEduOrg
 
     function table_data($subsection_id)
     {
+        if(!$subsection_id)
+        {
+            return;
+        }
         global $wpdb;
         switch ($subsection_id) {
             case 1:
@@ -2319,60 +2332,16 @@ class RegInfoEduOrg
                 }
                 break;
             case 3:
-                $data = $wpdb->get_results("SELECT d.id, d.document_name, dt.id as document_type_id, dt.document_type, d.document_link 
-                             FROM {$wpdb->prefix}reginfoeduorg_documents as d
-                             JOIN {$wpdb->prefix}reginfoeduorg_documents_types as dt
-                             ON d.document_type = dt.id", ARRAY_A);
-                
-                // Получаем все типы документов для создания выпадающего списка
-                $document_types = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_documents_types", ARRAY_A);
-                
-                if ($data) {
-                    echo '<table class="wp-list-table widefat fixed striped">';
-                    echo '<thead><tr>';
-                    echo '<th scope="col" class="manage-column column-name">Название документа</th>';
-                    echo '<th scope="col" class="manage-column column-name">Тип документа</th>';
-                    echo '<th scope="col" class="manage-column column-value">Ссылка на документ</th>';
-                    echo '</tr></thead>';
-                    echo '<tbody>';
-
-                    foreach ($data as $row) {
-                        echo '<tr>';
-                        echo '<td class="column-name"><input type="text" name="document_name[' . $row['id'] . ']" value="' . $row['document_name'] . '"></td>';
-                        echo '<td class="column-name">';
-                        
-                        // Создаем выпадающий список с типами документов
-                        echo '<select name="document_type[' . $row['doc_id'] . ']">';
-                        foreach ($document_types as $type) {
-                            $selected = $type['id'] == $row['document_type_id'] ? ' selected' : '';
-                            echo '<option value="' . $type['id'] . '"' . $selected . '>' . $type['document_type'] . '</option>';
-                        }
-
-                        echo '</select>';
-                        echo '</td>';
-                        echo '<td class="column-value"><input type="text" name="document_link[' . $row['id'] . ']" value="' . $row['document_link'] . '"></td>';
-                        echo '</tr>';
-                    }
-
-
-                    echo '</tbody>';
-                    echo '</table>';
-                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
-
-                } else {
-                    echo '<p>Данные отсутствуют.</p>';
-                }
-
-                break;
-
+            case 8:
             case 9:
-                $data = $wpdb->get_results("SELECT d.id, d.document_name, dt.id as document_type_id, dt.document_type, d.document_link 
-                             FROM {$wpdb->prefix}reginfoeduorg_paid_services as d
-                             JOIN {$wpdb->prefix}reginfoeduorg_paid_services_types as dt
-                             ON d.document_type = dt.id", ARRAY_A);
-                
-                // Получаем все типы документов для создания выпадающего списка
-                $document_types = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_paid_services_types", ARRAY_A);
+            case 10:
+            case 11:
+                $data = $wpdb->get_results($wpdb->prepare("SELECT d.id, d.document_name, dt.id as dt_id, dt.document_type, d.document_link 
+             FROM {$wpdb->prefix}reginfoeduorg_documents as d
+             JOIN {$wpdb->prefix}reginfoeduorg_document_types as dt
+             ON d.document_type = dt.id
+             WHERE d.subsection_id = %d", $subsection_id), ARRAY_A);
+                $document_types = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_document_types", ARRAY_A);
                 
                 if ($data) {
                     echo '<table class="wp-list-table widefat fixed striped">';
@@ -2384,14 +2353,16 @@ class RegInfoEduOrg
                     echo '<tbody>';
 
                     foreach ($data as $row) {
+                        
                         echo '<tr>';
                         echo '<td class="column-name"><input type="text" name="document_name[' . $row['id'] . ']" value="' . $row['document_name'] . '"></td>';
-                        echo '<td class="column-name">';
-                        
+                        echo '<td class="column-name">';                        
                         // Создаем выпадающий список с типами документов
                         echo '<select name="document_type[' . $row['id'] . ']">';
+                        
                         foreach ($document_types as $type) {
-                            $selected = $type['id'] == $row['document_type_id'] ? ' selected' : '';
+                            
+                            $selected = $type['id'] == $row['dt_id'] ? ' selected' : '';
                             echo '<option value="' . $type['id'] . '"' . $selected . '>' . $type['document_type'] . '</option>';
                         }
 
@@ -2400,7 +2371,6 @@ class RegInfoEduOrg
                         echo '<td class="column-value"><input type="text" name="document_link[' . $row['id'] . ']" value="' . $row['document_link'] . '"></td>';
                         echo '</tr>';
                     }
-
 
                     echo '</tbody>';
                     echo '</table>';
@@ -2411,10 +2381,6 @@ class RegInfoEduOrg
                 }
 
                 break;
-            case 6:
-                
-                break;
-
 
             default:
                 echo '<p>Страница находится в разработке.</p>';
@@ -2423,6 +2389,10 @@ class RegInfoEduOrg
     }
     
     function generate_shortcode($subsection_id) {
+        if(!$subsection_id)
+        {
+            return;
+        }
         if(!$this->check_write($subsection_id))
         {
             echo "<div class='notice notice-error is-dismissible'><p>У вас нет доступа к редактированию данного подраздела</p></div>";
@@ -2439,16 +2409,28 @@ class RegInfoEduOrg
                 break;
             case 3:
                 // Выбираем данные из таблицы 
-                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_documents");                
+                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_documents WHERE subsection_id = '$subsection_id'");                
                 $shortcode = '[documents_info id="' . $id . '"]';
+                break;
+            case 8:
+                // Выбираем данные из таблицы 
+                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_documents WHERE subsection_id = '$subsection_id'");                
+                $shortcode = '[grants_support_info id="' . $id . '"]';
                 break;
             case 9:
                 // Выбираем данные из таблицы 
-                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_paid_services");                
+                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_documents WHERE subsection_id = '$subsection_id'");                
                 $shortcode = '[paid_services_info id="' . $id . '"]';
                 break;
-            case 6:
-                
+            case 10:
+                // Выбираем данные из таблицы 
+                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_documents WHERE subsection_id = '$subsection_id'");                
+                $shortcode = '[financial_activity_info id="' . $id . '"]';
+                break;
+            case 11:
+                // Выбираем данные из таблицы 
+                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_documents WHERE subsection_id = '$subsection_id'");                
+                $shortcode = '[vacancies_info id="' . $id . '"]';
                 break;
         	default:
         }
@@ -2481,12 +2463,15 @@ class RegInfoEduOrg
 
         // Выводим сообщение об успешном сохранении изменений
         echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Изменения сохранены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
-        
-        return $xml;
+
     }
 
     function check_write($subsection_id)
     {
+        if(!$subsection_id)
+        {
+            return;
+        }
         global $wpdb;
         // Получаем текущего пользователя
         $current_user = wp_get_current_user();
