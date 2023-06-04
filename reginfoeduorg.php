@@ -26,18 +26,23 @@ class RegInfoEduOrg
         add_action('init', array($this, 'my_plugin_add_sections'));
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_menu', array($this, 'add_menu_pages'));
+        add_action('init', array($this,'create_staff_post_type'));
+        //Шорткоды
         add_shortcode('general_info', array($this,'general_info_shortcode'));
         add_shortcode('documents_info', array($this,'documents_info_shortcode'));
-        add_shortcode('paid_services_info', array($this,'paid_services_shortcode'));
-        add_shortcode('financial_activity_info', array($this,'financial_activity_shortcode'));
-        add_shortcode('vacancies_info', array($this,'vacancies_shortcode'));
-        add_shortcode('grants_support_info', array($this,'grants_support_shortcode'));
+        add_shortcode('paid_services_info', array($this,'paid_services_info_shortcode'));
+        add_shortcode('financial_activity_info', array($this,'financial_activity_info_shortcode'));
+        add_shortcode('vacancies_info', array($this,'vacancies_info_shortcode'));
+        add_shortcode('grants_support_info', array($this,'grants_support_info_shortcode'));
+        add_shortcode('employees_info', array($this,'employees_info_shortcode'));
+        add_shortcode('staff_info', array($this,'staff_info_shortcode'));
+
     }
     
     //-------------------------------Шорткоды-------------------------------
 
-    public function process_shortcode($atts, $subsection_name) {
-        if(!$atts || !$subsection_name)
+    public function process_shortcode($atts, $subsection_name, $style_type, $shortcode) {
+        if(!$atts || !$subsection_name || !$style_type || !$shortcode)
         {
             return;
         }
@@ -48,13 +53,13 @@ class RegInfoEduOrg
         
         $subsection_id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = '$subsection_name'");
         
-        $xml = $this->generate_xml($subsection_id);
+        $xml = $this->generate_xml($subsection_id, $shortcode, $id);
         
         if (!$xml) {
             return null;
         }
 
-        $xslt_code = $wpdb->get_var("SELECT xslt FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = '$subsection_name'");
+        $xslt_code = $wpdb->get_var("SELECT xslt FROM {$wpdb->prefix}reginfoeduorg_site_subsection_styles WHERE subsection_id = '$subsection_id' and style_type = '$style_type'");
 
         // Преобразуем XML контент в HTML с использованием вашего XSLT-преобразования
         $html_content =  $this->convert_xml_xslt_to_html($xml, $xslt_code,$subsection_id);
@@ -62,29 +67,39 @@ class RegInfoEduOrg
         // Возвращаем HTML-контент, который заменит шорткод на странице
         return $html_content;
     }
+    
+
 
     public function general_info_shortcode($atts) {
-        return $this->process_shortcode($atts, 'Основные сведения');
+        return $this->process_shortcode($atts, 'Основные сведения', 'overview', 'general_info');
     }
 
     public function documents_info_shortcode($atts) {
-        return $this->process_shortcode($atts, 'Документы');
+        return $this->process_shortcode($atts, 'Документы', 'overview', 'documents_info');
     }
 
-    public function paid_services_shortcode($atts) {
-        return $this->process_shortcode($atts, 'Платные образовательные услуги');
+    public function paid_services_info_shortcode($atts) {
+        return $this->process_shortcode($atts, 'Платные образовательные услуги', 'overview', 'paid_services_info');
     }
     
-    public function financial_activity_shortcode($atts) {
-        return $this->process_shortcode($atts, 'Финансово-хозяйственная деятельность');
+    public function financial_activity_info_shortcode($atts) {
+        return $this->process_shortcode($atts, 'Финансово-хозяйственная деятельность', 'overview', 'financial_activity_info');
     }
     
-    public function vacancies_shortcode($atts) {
-        return $this->process_shortcode($atts, 'Вакантные места для приема (перевода) обучающихся');
+    public function vacancies_info_shortcode($atts) {
+        return $this->process_shortcode($atts, 'Вакантные места для приема (перевода) обучающихся', 'overview', 'vacancies_info');
     }
     
-    public function grants_support_shortcode($atts) {
-        return $this->process_shortcode($atts, 'Стипендии и иные виды материальной поддержки');
+    public function grants_support_info_shortcode($atts) {
+        return $this->process_shortcode($atts, 'Стипендии и иные виды материальной поддержки', 'overview', 'grants_support_info');
+    } 
+
+    public function employees_info_shortcode($atts) {
+        return $this->process_shortcode($atts, 'Руководство. Педагогический (научно-педагогический) состав', 'overview', 'employees_info');
+    } 
+
+    public function staff_info_shortcode($atts) {
+        return $this->process_shortcode($atts, 'Руководство. Педагогический (научно-педагогический) состав', 'detail', 'staff_info');
     }
 
     //-------------------------------Шорткоды-------------------------------
@@ -106,7 +121,7 @@ class RegInfoEduOrg
         return $transformed_data;
     }
 
-    function generate_xml($subsection_id) {
+    function generate_xml($subsection_id, $shortcode, $id) {
         if(!$subsection_id)
         {
             return;
@@ -198,12 +213,71 @@ class RegInfoEduOrg
 
                 }
                 break;
+            case 6:  // номер подраздела для страницы сотрудников
+                // Выбираем данные из таблицы wp_reginfoeduorg_staff
+                if ($shortcode == 'employees_info') {
+                    $staff_information = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_staff", ARRAY_A);
+                }  
+                if ($shortcode == 'staff_info') {
+                    $staff_information = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_staff WHERE id = '$id'", ARRAY_A);
+                }
+
+                if (!$staff_information) {
+                    return null;
+                }
+                
+                // Выбираем пустую структуру XML для подраздела "Сотрудники" из базы данных
+                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = '$subsection_id'");
+                // Загружаем пустую структуру XML и дополняем ее данными
+                $xml = new DOMDocument('1.0', 'UTF-8');
+                $xml->formatOutput = true;
+                $xml->loadXML($subsection_xml);
+                
+                // Находим элемент section_content для подраздела "Сотрудники"
+                $section_content_node = $xml->getElementsByTagName('section_content')->item(0);
+                
+                // Удаляем шаблонный элемент staff
+                $old_staff_node = $xml->getElementsByTagName('staff')->item(0);
+                $section_content_node->removeChild($old_staff_node);
+
+                // Добавляем элементы для каждого сотрудника из таблицы
+                foreach ($staff_information as $staff) {
+                    // Создаем новый элемент staff и добавляем его в section_content
+                    $staff_node = $xml->createElement('staff');
+                    $section_content_node->appendChild($staff_node);
+
+                    // Добавляем атрибут id к элементу staff
+                    $staff_node->setAttribute('id', $staff['id']);
+
+                    // Создаем элементы для каждого поля сотрудника и обновляем их в staff
+                    foreach ($staff as $key => $value) {
+                        $element = $xml->createElement($key, htmlspecialchars($value));
+                        $staff_node->appendChild($element);
+                    }
+                }
+                break;
+
 
             default:
         }
         return $xml;
     }
     //-------------------------------Обработка вывода html документов при активации шорткодов-------------------------------
+    
+    //Создание post_type для вывода страниц сотрудников 
+    function create_staff_post_type() {
+        register_post_type('staff',
+            array(
+                'labels' => array(
+                    'name' => 'Сотрудники', // Название типа записи во множественном числе
+                    'singular_name' => 'Сотрудник', // Название типа записи в единственном числе
+                ),
+                'public' => true,
+                'has_archive' => true,
+                'rewrite' => array('slug' => 'staff'),
+            )
+        );
+    }
 
     //Создание таблиц для базы данных
     function create_custom_tables() {
@@ -242,7 +316,7 @@ class RegInfoEduOrg
         $table_financial_report = $wpdb->prefix . 'reginfoeduorg_financial_report';
         $table_vacancies = $wpdb->prefix . 'reginfoeduorg_vacancies';
         $table_educational_standards = $wpdb->prefix . 'reginfoeduorg_educational_standards';
-
+        $table_styles = $wpdb->prefix.'reginfoeduorg_site_subsection_styles';
 
         $sql = "CREATE TABLE $table_general_information (
                 id INT(11) NOT NULL AUTO_INCREMENT,
@@ -279,11 +353,19 @@ class RegInfoEduOrg
                 id INT(11) NOT NULL AUTO_INCREMENT,
                 name TEXT NOT NULL,
                 content LONGTEXT NOT NULL,
-                xslt LONGTEXT NOT NULL,
                 xml LONGTEXT NOT NULL,
                 visible BOOLEAN NOT NULL,
                 PRIMARY KEY (id)
             ) $charset_collate;
+
+            CREATE TABLE $table_styles (
+                id INT(11) NOT NULL AUTO_INCREMENT,
+                subsection_id INT(11) NOT NULL,
+                style_type VARCHAR(255) NOT NULL,
+                xslt TEXT NOT NULL,
+                PRIMARY KEY (id),
+                FOREIGN KEY (subsection_id) REFERENCES $table_site_subsections(id)
+            );
 
 
             CREATE TABLE $table_menu_items (
@@ -501,7 +583,8 @@ class RegInfoEduOrg
 </general_information>
   </xsl:template>
 </xsl:stylesheet>
-'
+',
+            'xslt_detail' => ''
             ],
             [ 
             'name' =>'Структура и органы управления образовательной организацией',
@@ -534,7 +617,8 @@ class RegInfoEduOrg
 			</management_structure>
 		</section_content>
 	</section>',
-            'xslt' => ''
+            'xslt' => '',
+            'xslt_detail' => ''
             ],
             [ 
             'name' =>'Документы',
@@ -571,7 +655,8 @@ class RegInfoEduOrg
   
 </xsl:stylesheet>
 
-'
+',
+            'xslt_detail' => ''
             ],
             [ 
             'name' =>'Образование',
@@ -601,7 +686,8 @@ class RegInfoEduOrg
 			</educational_documents>
 		</section_content>
 	</section>',
-            'xslt' => ''
+            'xslt' => '',
+            'xslt_detail' => ''
             ],
             [ 
             'name' =>'Образовательные стандарты',
@@ -620,7 +706,8 @@ class RegInfoEduOrg
 			</educational_standards>
 		</section_content>
 	</section>',
-            'xslt' => ''
+            'xslt' => '',
+            'xslt_detail' => ''
             ],
             [ 
             'name' =>'Руководство. Педагогический (научно-педагогический) состав',
@@ -642,7 +729,78 @@ class RegInfoEduOrg
 		</staff>
 	</section_content>
 </section>',
-            'xslt' => ''
+            'xslt' => '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:output method="html" />
+<xsl:template match="/">
+
+  <style type="text/css">
+    .employee-cards {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+    .employee-card {
+      flex: 0 0 calc(33% - 20px);
+      width: 205px;
+      height: 330px;
+      border: 1px solid #ccc;
+      margin: 10px;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    .employee-card img {
+      width: 151px;
+      height: 200px;
+    }
+    .employee-card .name {
+      font-size: 16px;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    .employee-card .position {
+      font-size: 14px;
+      color: #666;
+    }
+  </style>
+
+  <div class="employee-cards">
+    <xsl:for-each select="//staff">
+      <div class="employee-card">
+        <!-- Используем id сотрудника для создания ссылки -->
+        <a href="http://example/?staff={id}">
+          <img src="{photo}" alt="{full_name}" />
+          <div class="name">
+            <xsl:value-of select="full_name" />
+          </div>
+          <div class="position">
+            <xsl:value-of select="position" />
+          </div>
+        </a>
+      </div>
+    </xsl:for-each>
+  </div>
+
+</xsl:template>
+</xsl:stylesheet>
+',
+            'xslt_detail' => '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:output method="html"/>
+<xsl:template match="/">
+    <xsl:for-each select="section/section_content/staff">
+        <div class="employee">
+            <p><strong>Должность:</strong> <xsl:value-of select="position"/></p>
+            <p><strong>Дисциплины:</strong> <xsl:value-of select="disciplines"/></p>
+            <p><strong>Образование:</strong> <xsl:value-of select="education"/></p>
+            <p><strong>Специальность:</strong> <xsl:value-of select="specialization"/></p>
+            <p><strong>Повышение квалификации:</strong> <xsl:value-of select="qualification_improvement"/></p>
+            <p><strong>Общий стаж (лет):</strong> <xsl:value-of select="overall_experience"/></p>
+            <p><strong>Стаж по специальности (лет):</strong> <xsl:value-of select="specialization_experience"/></p>
+        </div>
+    </xsl:for-each>
+
+</xsl:template>
+</xsl:stylesheet>
+'
             ],
             [ 
             'name' =>'Материально-техническое обеспечение и оснащенность образовательного процесса',
@@ -697,7 +855,8 @@ class RegInfoEduOrg
 			</technical_equipment>
 		</section_content>
 	</section>',
-            'xslt' => ''
+            'xslt' => '',
+            'xslt_detail' => ''
             ],
             [ 
             'name' =>'Стипендии и иные виды материальной поддержки',
@@ -727,7 +886,8 @@ class RegInfoEduOrg
       <a href="{link}"><xsl:value-of select="name" /></a>
     </p>
   </xsl:template>
-</xsl:stylesheet>'
+</xsl:stylesheet>',
+            'xslt_detail' => ''
             ],
             [ 
             'name' =>'Платные образовательные услуги',
@@ -758,7 +918,8 @@ class RegInfoEduOrg
     </p>
   </xsl:template>
 </xsl:stylesheet>
-'
+',
+            'xslt_detail' => ''
             ],
             [ 
             'name' =>'Финансово-хозяйственная деятельность',
@@ -788,7 +949,8 @@ class RegInfoEduOrg
       <a href="{link}"><xsl:value-of select="name" /></a>
     </p>
   </xsl:template>
-</xsl:stylesheet>'
+</xsl:stylesheet>',
+            'xslt_detail' => ''
             ],
             [ 
             'name' =>'Вакантные места для приема (перевода) обучающихся',
@@ -818,7 +980,8 @@ class RegInfoEduOrg
       <a href="{link}"><xsl:value-of select="name" /></a>
     </p>
   </xsl:template>
-</xsl:stylesheet>'
+</xsl:stylesheet>',
+            'xslt_detail' => ''
             ]             
         ];
 
@@ -832,17 +995,29 @@ class RegInfoEduOrg
         
 
         foreach ($site_subsections_data as $subsection) {
-            
             $existing_subsection = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_site_subsections WHERE name = %s", $subsection['name']));
             if ($existing_subsection == 0) {
                 $wpdb->insert($table_site_subsections, array(
                     'name' => $subsection['name'],
                     'xml' => $subsection['xml'],
-                    'xslt' => $subsection['xslt'],
                     'visible' => true
-                    ));
+                ));
+                // Get the ID of the subsection we just inserted
+                $subsection_id = $wpdb->insert_id;
+                $wpdb->insert("{$wpdb->prefix}reginfoeduorg_site_subsection_styles", array(
+                    'subsection_id' => $subsection_id,
+                    'style_type' => 'overview',
+                    'xslt' => $subsection['xslt']
+                    ));  
+                if($subsection['xslt_detail'])
+                {
+                    $wpdb->insert("{$wpdb->prefix}reginfoeduorg_site_subsection_styles", array(
+                    'subsection_id' => $subsection_id,
+                    'style_type' => 'detail',
+                    'xslt' => $subsection['xslt_detail']
+                    ));  
+                }
             }
-            
         }
         $i = 1;
         foreach ($menu_items_data as $menu_item) {
@@ -1875,14 +2050,29 @@ class RegInfoEduOrg
 
         echo '<table class="form-table">';
         echo '<tr>';
-        echo '<th><label for="xslt-styles">XSLT стили:</label></th>';
+        echo '<th><label for="xslt-styles">XSLT стиль страницы:</label></th>';
         echo '<td>';
         $subsection_data = $wpdb->get_row("SELECT * FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = {$subsection_id}", ARRAY_A);
-        $saved_xslt_code = isset($subsection_data['xslt']) ? $subsection_data['xslt'] : '';
+        $xslt_code = $wpdb->get_var("SELECT xslt FROM {$wpdb->prefix}reginfoeduorg_site_subsection_styles WHERE subsection_id = '$subsection_id' and style_type = 'overview'");
+        $saved_xslt_code = isset($xslt_code) ? $xslt_code : '';
         echo '<textarea name="reginfoeduorg_xslt_code" id="reginfoeduorg_xslt_code" rows="10" style="width: 100%;">' . esc_textarea($saved_xslt_code) . '</textarea>';
-        echo '</td>';
+       echo '</td>';
         echo '</tr>';
         echo '</table>';
+
+        if($subsection_id == 6)
+        {
+            echo '<table class="form-table">';
+            echo '<tr>';
+            echo '<th><label for="xslt-styles">XSLT стиль для элемента:</label></th>';
+            echo '<td>';
+            $xslt_code_detail = $wpdb->get_var("SELECT xslt FROM {$wpdb->prefix}reginfoeduorg_site_subsection_styles WHERE subsection_id = '$subsection_id' and style_type = 'detail'");
+            $saved_xslt_code_detail = isset($xslt_code_detail) ? $xslt_code_detail : '';
+            echo '<textarea name="reginfoeduorg_xslt_code_detail" id="reginfoeduorg_xslt_code_detail" rows="10" style="width: 100%;">' . esc_textarea($saved_xslt_code_detail) . '</textarea>';
+            echo '</td>';
+            echo '</tr>';
+            echo '</table>';
+        }
         echo '<p>';
         echo '<input type="submit" name="apply_styles" value="Применить стиль" class="button">';
         echo '</p>';
@@ -1901,6 +2091,7 @@ class RegInfoEduOrg
 
 
     //-----------------------Процесс обработки и вывода данных в подпунктах меню с настройкой подразделов-------------------------------
+    //Импорт
     function import_data($subsection_id, $xml)
     {
         if(!$subsection_id)
@@ -2031,7 +2222,6 @@ class RegInfoEduOrg
                 $table_staff = "{$wpdb->prefix}reginfoeduorg_staff";
 
                 $wpdb->query("DELETE FROM $table_staff");
-
                 // Проходимся по всем сотрудникам
                 foreach ($section->staff as $staff_member) {
                     // Получаем данные
@@ -2046,7 +2236,6 @@ class RegInfoEduOrg
                     $career = (string)$staff_member->career;
                     $overall_experience = (int)$staff_member->overall_experience;
                     $specialization_experience = (int)$staff_member->specialization_experience;
-
                     // Создаем массив с данными для таблицы staff
                     $data_staff = array(
                         'full_name' => $full_name,
@@ -2082,7 +2271,7 @@ class RegInfoEduOrg
             
         }
     }
-
+    //Сохранение изменений в таблице
     function save_table_changes($subsection_id)
     {
         if(!$subsection_id)
@@ -2159,7 +2348,7 @@ class RegInfoEduOrg
                     $new_career = stripslashes($_POST['career'][$id]); // Получаем новую информацию о карьере из формы
                     $new_disciplines = stripslashes($_POST['disciplines'][$id]); // Получаем новую дисциплину из формы
                     $new_qualification_improvement = stripslashes($_POST['qualification_improvement'][$id]); // Получаем новую информацию о повышении квалификации из формы
-     
+                    
                     // Обновляем данные в базе данных
                     $wpdb->update(
                         "{$wpdb->prefix}reginfoeduorg_staff", // Название таблицы
@@ -2193,7 +2382,7 @@ class RegInfoEduOrg
         echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Данные таблицы обновлены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
 
     }
-
+    //Применение стиля
     function apply_styles($subsection_id)
     {
         if(!$subsection_id)
@@ -2207,21 +2396,75 @@ class RegInfoEduOrg
         }
         global $wpdb;
         $xslt_code = isset($_POST['reginfoeduorg_xslt_code']) ? stripslashes($_POST['reginfoeduorg_xslt_code']) : '';
-        
-        // Сохраняем XSLT стиль в базу данных
-        $wpdb->update(
-            "{$wpdb->prefix}reginfoeduorg_site_subsections",
-            array('xslt' => $xslt_code),
-            array('id' => $subsection_id),
-            array('%s'),
-            array('%d')
-        );
+        $xslt_code_detail = isset($_POST['reginfoeduorg_xslt_code_detail']) ? stripslashes($_POST['reginfoeduorg_xslt_code_detail']) : '';
+
+        // Проверяем наличие обзорного стиля в базе данных
+        $existing_overview_style = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}reginfoeduorg_site_subsection_styles WHERE subsection_id = %d AND style_type = %s",
+            $subsection_id, 'overview'
+        ));
+
+        // Если обзорный стиль существует, обновляем его. В противном случае, вставляем новую запись.
+        if ($existing_overview_style > 0) {
+            $wpdb->update(
+                "{$wpdb->prefix}reginfoeduorg_site_subsection_styles",
+                array('xslt' => $xslt_code),
+                array(
+                    'subsection_id' => $subsection_id,
+                    'style_type' => 'overview'
+                ),
+                array('%s'),
+                array('%d', '%s')
+            );
+        } else {
+            $wpdb->insert(
+                "{$wpdb->prefix}reginfoeduorg_site_subsection_styles",
+                array(
+                    'subsection_id' => $subsection_id,
+                    'style_type' => 'overview',
+                    'xslt' => $xslt_code
+                ),
+                array('%d', '%s', '%s')
+            );
+        }
+
+        // Проверяем наличие детального стиля в базе данных
+        $existing_detail_style = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}reginfoeduorg_site_subsection_styles WHERE subsection_id = %d AND style_type = %s",
+            $subsection_id, 'detail'
+        ));
+
+        // Если детальный стиль существует, обновляем его. В противном случае, вставляем новую запись.
+        if ($existing_detail_style > 0) {
+            $wpdb->update(
+                "{$wpdb->prefix}reginfoeduorg_site_subsection_styles",
+                array('xslt' => $xslt_code_detail),
+                array(
+                    'subsection_id' => $subsection_id,
+                    'style_type' => 'detail'
+                ),
+                array('%s'),
+                array('%d', '%s')
+            );
+        } else {
+            $wpdb->insert(
+                "{$wpdb->prefix}reginfoeduorg_site_subsection_styles",
+                array(
+                    'subsection_id' => $subsection_id,
+                    'style_type' => 'detail',
+                    'xslt' => $xslt_code_detail
+                ),
+                array('%d', '%s', '%s')
+            );
+        }
+
+
         $xml = new DOMDocument();
         $xml = $this->generate_shortcode($subsection_id);
         echo '<div id="message" class="updated notice notice-success is-dismissible"><p>XSLT стиль применен.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
 
     }
-
+    //Вывод данных в таблицу
     function table_data($subsection_id)
     {
         if(!$subsection_id)
@@ -2380,7 +2623,7 @@ class RegInfoEduOrg
                 break;
         }
     }
-    
+    //Генерация шорткодов
     function generate_shortcode($subsection_id) {
         if(!$subsection_id)
         {
@@ -2404,6 +2647,27 @@ class RegInfoEduOrg
                 // Выбираем данные из таблицы 
                 $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_documents WHERE subsection_id = '$subsection_id'");                
                 $shortcode = '[documents_info id="' . $id . '"]';
+                break;
+            case 6:
+                // Выбираем данные из таблицы 
+                $employees = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_staff", ARRAY_A);
+                $this->delete_existing_staff();
+                foreach ($employees as $employee) {
+                    $employee_id = $employee['id'];
+                    $shortcode = '[staff_info id="' . $employee_id . '"]';                    
+                    // Используйте функцию create_staff_page для создания страницы для сотрудника
+                    $employee_page_id = $this->create_staff_page($employee);
+                    if ($employee_page_id && $shortcode) {
+                        $post = array(
+                            'ID' => $employee_page_id,
+                            'post_content' => $shortcode,
+                        );
+                        wp_update_post($post);
+                    }
+                }
+                // Выбираем данные из таблицы 
+                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_staff");                
+                $shortcode = '[employees_info id="' . $id . '"]';
                 break;
             case 8:
                 // Выбираем данные из таблицы 
@@ -2455,10 +2719,44 @@ class RegInfoEduOrg
         }
 
         // Выводим сообщение об успешном сохранении изменений
-        echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Изменения сохранены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
+        echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Шорткод создан.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
 
     }
+    //Создание новых записей в post_type
+    function create_staff_page($staff_data) {
+        
+        // Создаем объект страницы
+        $page = array(
+               'post_type' => 'staff',
+               'post_content' => '',
+               'post_author' => 1,
+               'post_status' => 'publish',
+               'post_title' => $staff_data['full_name'],
+               'post_name' => $staff_data['id']  // Это добавит id сотрудника в URL
+           );
 
+        // Создаем страницу и получаем ее id
+        $page_id = wp_insert_post($page);
+        return $page_id;
+    }
+    //Очистка post_type
+    function delete_existing_staff() {
+        // Получаем все записи типа 'staff'
+        $staff_pages = get_posts(
+            array(
+                'post_type' => 'staff',
+                'post_status' => 'publish',
+                'numberposts' => -1
+            )
+        );
+        if($staff_pages){
+        // Удаляем каждую запись
+        foreach($staff_pages as $page) {
+            wp_delete_post($page->ID, true);
+        }
+        }
+    }
+    //Проверка на доступ к редактированию данных подраздела
     function check_write($subsection_id)
     {
         if(!$subsection_id)
