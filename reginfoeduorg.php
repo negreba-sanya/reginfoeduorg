@@ -38,7 +38,7 @@ class RegInfoEduOrg
         add_shortcode('staff_info', array($this,'staff_info_shortcode'));
         add_shortcode('education_programs_info', array($this,'education_programs_info_shortcode'));
         add_shortcode('management_structure_info', array($this,'management_structure_info_shortcode'));
-
+        add_shortcode('resources_info', array($this,'resources_info_shortcode'));
     }
     
     //-------------------------------Шорткоды-------------------------------
@@ -110,6 +110,10 @@ class RegInfoEduOrg
     
     public function management_structure_info_shortcode($atts) {
         return $this->process_shortcode($atts, 'Структура и органы управления образовательной организацией', 'overview', 'management_structure_info');
+    }  
+    
+    public function resources_info_shortcode($atts) {
+        return $this->process_shortcode($atts, 'Материально-техническое обеспечение и оснащенность образовательного процесса', 'overview', 'resources_info');
     } 
 
     
@@ -364,9 +368,66 @@ class RegInfoEduOrg
                     }
                 }
                 break;
+            case 7:
+                // Выбираем данные из таблицы reginfoeduorg_resources
+                $resources_data = $wpdb->get_results("SELECT resources.resource_name, resource_types.type_name, resources.details FROM {$wpdb->prefix}reginfoeduorg_resources resources LEFT JOIN {$wpdb->prefix}reginfoeduorg_resource_types resource_types ON resources.resource_type = resource_types.id", ARRAY_A);
+                // Выбираем данные из таблицы reginfoeduorg_documents
+                $documents_data = $wpdb->get_results("SELECT d.document_name, dt.document_type, d.document_link FROM {$wpdb->prefix}reginfoeduorg_documents d JOIN {$wpdb->prefix}reginfoeduorg_document_types dt ON d.document_type = dt.id WHERE subsection_id = '$subsection_id'", ARRAY_A);
+
+                // Загружаем пустую структуру XML и дополняем ее данными
+                $xml = new DOMDocument('1.0', 'UTF-8');
+                $xml->formatOutput = true;
+
+                // Создаем корневой элемент
+                $root = $xml->createElement('section');
+                $xml->appendChild($root);
+
+                // Создаем элементы section_title и section_content
+                $section_title = $xml->createElement('section_title', 'Материально-техническое обеспечение и оснащенность образовательного процесса');
+                $section_content = $xml->createElement('section_content');
+                $root->appendChild($section_title);
+                $root->appendChild($section_content);
+
+                // Создаем элемент technical_equipment и добавляем его в section_content
+                $technical_equipment = $xml->createElement('technical_equipment');
+                $section_content->appendChild($technical_equipment);
+
+                // Проходимся по всем ресурсам из таблицы и добавляем их в technical_equipment
+                foreach ($resources_data as $resource) {
+                    $equipment_node = $xml->createElement('equipment');
+                    $technical_equipment->appendChild($equipment_node);
+
+                    $resource_type = $xml->createElement('resource_type', htmlspecialchars($resource['type_name']));
+                    $name = $xml->createElement('name', htmlspecialchars($resource['resource_name']));
+                    $details = $xml->createElement('details', htmlspecialchars($resource['details']));
+
+                    $equipment_node->appendChild($resource_type);
+                    $equipment_node->appendChild($name);
+                    $equipment_node->appendChild($details);
+                }
+
+                // Создаем элемент documents и добавляем его в section_content
+                $documents = $xml->createElement('documents');
+                $section_content->appendChild($documents);
+
+                // Проходимся по всем документам из таблицы и добавляем их в documents
+                foreach ($documents_data as $document) {
+                    $document_node = $xml->createElement('document');
+                    $documents->appendChild($document_node);
+
+                    $name = $xml->createElement('name', htmlspecialchars($document['document_name']));
+                    $document_type = $xml->createElement('document_type', htmlspecialchars($document['document_type']));
+                    $link = $xml->createElement('link', htmlspecialchars($document['document_link']));
+
+                    $document_node->appendChild($name);
+                    $document_node->appendChild($document_type);
+                    $document_node->appendChild($link);
+                }
+                break;
 
 
             default:
+                break;
         }
         return $xml;
     }
@@ -408,6 +469,9 @@ class RegInfoEduOrg
         $table_education_programs = $wpdb->prefix . 'reginfoeduorg_education_programs';
         $table_styles = $wpdb->prefix.'reginfoeduorg_site_subsection_styles';
         $table_management_structure = $wpdb->prefix.'reginfoeduorg_management_structure';
+        $table_resource_types = $wpdb->prefix.'reginfoeduorg_resource_types';
+        $table_resources = $wpdb->prefix.'reginfoeduorg_resources'; 
+        $table_international_cooperation = $wpdb->prefix.'reginfoeduorg_international_cooperation'; 
         $sql = "CREATE TABLE $table_general_information (
                 id INT(11) NOT NULL AUTO_INCREMENT,
                 full_name TEXT NOT NULL,
@@ -531,6 +595,26 @@ class RegInfoEduOrg
                 subsection_id INT(11) NOT NULL,
                 FOREIGN KEY (subsection_id) REFERENCES $table_site_subsections(id) ON DELETE CASCADE
             )$charset_collate;
+
+            CREATE TABLE $table_resource_types (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                type_name VARCHAR(255)
+            )$charset_collate;
+
+            CREATE TABLE $table_resources (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                resource_name VARCHAR(255),
+                resource_type INT,
+                details TEXT,
+                FOREIGN KEY (resource_type) REFERENCES $table_resource_types(id) ON DELETE CASCADE
+            )$charset_collate;
+
+            CREATE TABLE $table_international_cooperation (
+              id INT PRIMARY KEY,
+              info TEXT,
+              value TEXT
+            )$charset_collate;
+
 
             CREATE TABLE $table_education_programs (
                id INT AUTO_INCREMENT PRIMARY KEY,
@@ -853,56 +937,24 @@ class RegInfoEduOrg
             [ 
             'name' =>'Материально-техническое обеспечение и оснащенность образовательного процесса',
             'xml' => '<section>
-		<section_title>Материально-техническое обеспечение и оснащенность образовательного процесса</section_title>
-		<section_content>
-			<technical_equipment>
-				<classrooms>
-					<classroom>
-						<name>Наименование учебного кабинета</name>
-						<type>Тип учебного кабинета</type>
-						<equipment>Список оборудования в кабинете</equipment>
-						<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
-					</classroom>
-				</classrooms>
-				<training_objects>
-					<training_object>
-						<name>Наименование объекта для практических занятий</name>
-						<type>Тип объекта</type>
-						<equipment>Список оборудования на объекте</equipment>
-						<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
-					</training_object>
-				</training_objects>
-				<library>
-					<name>Название библиотеки</name>
-					<collection>Описание коллекции книг и других материалов в библиотеке</collection>
-					<services>Описание услуг, предоставляемых библиотекой</services>
-					<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
-				</library>
-				<sports_facilities>
-					<sports_facility>
-						<name>Наименование объекта спорта</name>
-						<type>Тип объекта</type>
-						<equipment>Список оборудования на объекте</equipment>
-						<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
-					</sports_facility>
-				</sports_facilities>
-				<learning_resources>
-					<resource>
-						<name>Наименование средства обучения и воспитания</name>
-						<type>Тип средства</type>
-						<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
-					</resource>
-				</learning_resources>
-				<facilities_for_disabled>
-					<facility>
-						<name>Наименование объекта, оборудованного для использования инвалидами и лицами с ограниченными возможностями здоровья</name>
-						<type>Тип объекта</type>
-						<equipment>Список оборудования на объекте</equipment>
-					</facility>
-				</facilities_for_disabled>
-			</technical_equipment>
-		</section_content>
-	</section>',
+    <section_title>Материально-техническое обеспечение и оснащенность образовательного процесса</section_title>
+    <section_content>
+        <technical_equipment>
+		<equipment>
+            <resource_type></resource_type>
+            <name></name>
+            <details></details>
+        </equipment>
+		</technical_equipment>
+        <documents>
+            <document>
+                <name></name>
+                <document_type></document_type>
+                <link></link>
+            </document>
+        </documents>
+    </section_content>
+</section>',
             'xslt' => '',
             'xslt_detail' => ''
             ],
@@ -1030,7 +1082,41 @@ class RegInfoEduOrg
   </xsl:template>
 </xsl:stylesheet>',
             'xslt_detail' => ''
-            ]             
+            ],
+            [ 
+            'name' =>'Доступная среда',
+            'xml' => '<section>
+		<section_title>Доступная среда</section_title>
+		<section_content>
+			<documents>
+				<document>
+					<name></name>
+					<type></type>
+					<link></link>
+				</document>
+			</documents>
+		</section_content>
+	</section>',
+            'xslt' => '',
+            'xslt_detail' => ''
+            ],
+            [ 
+            'name' =>'Международное сотрудничество',
+            'xml' => '<section>
+		<section_title>Международное сотрудничество</section_title>
+		<section_content>
+			<documents>
+				<document>
+					<name></name>
+					<type></type>
+					<link></link>
+				</document>
+			</documents>
+		</section_content>
+	</section>',
+            'xslt' => '',
+            'xslt_detail' => ''
+            ] 
         ];
 
         $menu_items_data = [
@@ -2402,6 +2488,103 @@ class RegInfoEduOrg
                     }
                 }
                 break;
+            case 7:
+                // Находим нужную секцию в XML
+                $section = $xml->xpath('//reginfoeduorg/section[section_title="'.$subsection_name.'"]/section_content')[0];
+                
+                // Очищаем таблицы перед импортом
+                global $wpdb;
+                $table_resource_types = "{$wpdb->prefix}reginfoeduorg_resource_types";
+                $table_resources = "{$wpdb->prefix}reginfoeduorg_resources";
+                $table_document_types = "{$wpdb->prefix}reginfoeduorg_document_types";
+                $table_documents = "{$wpdb->prefix}reginfoeduorg_documents";
+
+                $wpdb->query("DELETE FROM $table_resources");
+                $wpdb->query("DELETE FROM $table_documents WHERE subsection_id = $subsection_id");
+
+                // Массивы для хранения идентификаторов типов ресурсов и документов
+                $resource_types_ids = array();
+                $document_types_ids = array();
+                
+                // Проходимся по всем ресурсам
+                foreach ($section->technical_equipment->equipment as $resource) {
+                    
+                    $resource_type = (string)$resource->resource_type;
+                    $resource_name = (string)$resource->name;
+                    $resource_details = (string)$resource->details;
+
+                    if (!array_key_exists($resource_type, $resource_types_ids)) {
+                        $existing_type_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table_resource_types WHERE type_name = %s", $resource_type));
+                        
+                        if ($existing_type_id !== null) {
+                            $resource_types_ids[$resource_type] = $existing_type_id;
+                        } else {
+                            $data_type = array(
+                                'type_name' => $resource_type
+                            );
+
+                            if ($wpdb->insert($table_resource_types, $data_type) !== false) {
+                                $resource_types_ids[$resource_type] = $wpdb->insert_id;
+                            } else {
+                                echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке типа ресурса в таблицу: " . $wpdb->last_error . "</p></div>";
+                                break;
+                            }
+                        }
+                    }
+
+                    $data = array(
+                        'resource_name' => $resource_name,
+                        'resource_type' => $resource_types_ids[$resource_type],
+                        'details' => $resource_details
+                    );
+
+                    if ($wpdb->insert($table_resources, $data) === false) {
+                        echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке ресурса в таблицу: " . $wpdb->last_error . "</p></div>";
+                        break;
+                    }
+                }
+
+                // Проходимся по всем документам
+                foreach ($section->documents->document as $document) {
+                    $document_name = (string)$document->name;
+                    $document_link = (string)$document->link;
+                    $document_type = (string)$document->document_type;
+
+                    if (!array_key_exists($document_type, $document_types_ids)) {
+                        $existing_type_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table_document_types WHERE document_type = %s", $document_type));
+
+                        if ($existing_type_id !== null) {
+                            $document_types_ids[$document_type] = $existing_type_id;
+                        } else {
+                            $data_type = array(
+                                'document_type' => $document_type
+                            );
+
+                            if ($wpdb->insert($table_document_types, $data_type) !== false) {
+                                $document_types_ids[$document_type] = $wpdb->insert_id;
+                            } else {
+                                echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке типа документа в таблицу: " . $wpdb->last_error . "</p></div>";
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!empty($document_link)) {
+                        $data = array(
+                            'document_name' => $document_name,
+                            'document_link' => $document_link,
+                            'document_type' => $document_types_ids[$document_type],
+                            'subsection_id' => $subsection_id
+                        );
+
+                        if ($wpdb->insert($table_documents, $data) === false) {
+                            echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке документа в таблицу: " . $wpdb->last_error . "</p></div>";
+                            break;
+                        }
+                    }
+                }
+
+                break;
         }  
         echo "<div class='notice notice-success is-dismissible'><p>Данные успешно импортированы из файла.</p></div>";
         if($_POST['reginfoeduorg_xslt_code'])
@@ -2593,15 +2776,54 @@ class RegInfoEduOrg
                         array('%d')  // Формат данных в условии WHERE
                     );
                 }
+                break;            
+            case 7:
+                // Сохранение изменений для ресурсов
+                $data_resources = $wpdb->get_results("SELECT resources.id FROM {$wpdb->prefix}reginfoeduorg_resources resources", ARRAY_A);
+                foreach ($data_resources as $row) {
+                    $id = $row['id']; // Получаем ID ресурса
+                    $new_name = $_POST['resource_name'][$id]; // Получаем новое название из формы
+                    $new_type = $_POST['resource_type'][$id]; // Получаем новый тип из формы
+                    $new_details = $_POST['details'][$id]; // Получаем новые детали из формы
+                    
+                    // Обновляем данные в базе данных
+                    $wpdb->update(
+                        "{$wpdb->prefix}reginfoeduorg_resources", // Название таблицы
+                        array(
+                            'resource_name' => $new_name,
+                            'resource_type' => $new_type,
+                            'details' => $new_details
+                        ), // Данные для обновления
+                        array('id' => $id), // Условие WHERE
+                        array('%s', '%s', '%s'), // Формат данных для обновления
+                        array('%d')  // Формат данных в условии WHERE
+                    );
+                }
+
+                // Сохранение изменений для документов
+                $data_documents = $wpdb->get_results($wpdb->prepare("SELECT d.id FROM {$wpdb->prefix}reginfoeduorg_documents as d WHERE d.subsection_id = %d", $subsection_id), ARRAY_A);
+                foreach ($data_documents as $row) {
+                    $id = $row['id']; // Получаем ID документа
+                    $new_name = $_POST['document_name'][$id]; // Получаем новое название из формы
+                    $new_type_id = $_POST['document_type'][$id]; // Получаем новый тип из формы
+                    $new_link = $_POST['document_link'][$id]; // Получаем новую ссылку из формы
+                    
+                    // Обновляем данные в базе данных
+                    $wpdb->update(
+                        "{$wpdb->prefix}reginfoeduorg_documents", // Название таблицы
+                        array(
+                            'document_name' => $new_name, 
+                            'document_type' => $new_type_id, 
+                            'document_link' => $new_link
+                        ), // Данные для обновления
+                        array('id' => $id), // Условие WHERE
+                        array('%s', '%d', '%s'), // Формат данных для обновления
+                        array('%d')  // Формат данных в условии WHERE
+                    );
+                }
                 break;
-
-
-
-
-
-            
-
             default:
+                break;
         }
         echo '<div id="message" class="updated notice notice-success is-dismissible"><p>Данные таблицы обновлены.</p><button type="button" class="notice-dismiss"><span class="screen-reader-text">Скрыть это уведомление.</span></button></div>';
 
@@ -2886,8 +3108,92 @@ class RegInfoEduOrg
                     echo '<p>Данные отсутствуют.</p>';
                 }
                 break;
+            case 7:
+                // Запрос на получение данных из таблицы resources с JOIN для типа ресурса
+                $data_resources = $wpdb->get_results("SELECT resources.id, resources.resource_name, resource_types.type_name, resources.details FROM {$wpdb->prefix}reginfoeduorg_resources resources LEFT JOIN {$wpdb->prefix}reginfoeduorg_resource_types resource_types ON resources.resource_type = resource_types.id", ARRAY_A);
+
+                // Запрос на получение данных из таблицы documents
+                $data_documents = $wpdb->get_results($wpdb->prepare("SELECT d.id, d.document_name, dt.id as dt_id, dt.document_type, d.document_link 
+             FROM {$wpdb->prefix}reginfoeduorg_documents as d
+             JOIN {$wpdb->prefix}reginfoeduorg_document_types as dt
+             ON d.document_type = dt.id
+             WHERE d.subsection_id = %d", $subsection_id), ARRAY_A);
+                $resource_types = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_resource_types", ARRAY_A);
+
+                $document_types = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_document_types", ARRAY_A);
+                // Вывод данных из таблицы resources
+                if ($data_resources) {
+                    echo '<table class="wp-list-table widefat fixed striped">';
+                    echo '<thead><tr>';
+                    echo '<th>Название ресурса</th>';
+                    echo '<th>Тип ресурса</th>';
+                    echo '<th>Детали</th>';
+                    echo '</tr></thead>';
+                    echo '<tbody>';
+
+                    foreach ($data_resources as $row) {
+                        echo '<tr>';
+                        echo '<td><input type="text" name="resource_name[' . $row['id'] . ']" value="' . $row['resource_name'] . '"></td>';
+                        echo '<td>';                        
+                        // Создаем выпадающий список с типами ресурсов
+                        echo '<select name="resource_type[' . $row['id'] . ']">';
+                        foreach ($resource_types as $type) {
+                            $selected = $type['id'] == $row['resource_type'] ? ' selected' : '';
+                            echo '<option value="' . $type['id'] . '"' . $selected . '>' . $type['type_name'] . '</option>';
+                        }
+                        echo '</select>';
+                        echo '</td>';
+                        echo '<td><textarea name="details[' . $row['id'] . ']">' . $row['details'] . '</textarea></td>';
+                        echo '</tr>';
+                    }
 
 
+                    echo '</tbody>';
+                    echo '</table>';
+                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
+                    echo '<br>';
+                } else {
+                    echo '<p>Нет данных в таблице ресурсов.</p>';
+                }
+
+                // Вывод данных из таблицы documents
+                if ($data_documents) {
+                    echo '<table class="wp-list-table widefat fixed striped">';
+                    echo '<thead><tr>';
+                    echo '<th>Название документа</th>';
+                    echo '<th>Тип документа</th>';
+                    echo '<th>Ссылка на документ</th>';
+                    echo '</tr></thead>';
+                    echo '<tbody>';
+
+                    foreach ($data_documents as $row) {
+                        
+                        echo '<tr>';
+                        echo '<td class="column-name"><input type="text" name="document_name[' . $row['id'] . ']" value="' . $row['document_name'] . '"></td>';
+                        echo '<td class="column-name">';                        
+                        // Создаем выпадающий список с типами документов
+                        echo '<select name="document_type[' . $row['id'] . ']">';
+                        
+                        foreach ($document_types as $type) {
+                            
+                            $selected = $type['id'] == $row['dt_id'] ? ' selected' : '';
+                            echo '<option value="' . $type['id'] . '"' . $selected . '>' . $type['document_type'] . '</option>';
+                        }
+
+                        echo '</select>';
+                        echo '</td>';
+                        echo '<td class="column-value"><input type="text" name="document_link[' . $row['id'] . ']" value="' . $row['document_link'] . '"></td>';
+                        echo '</tr>';
+                    }
+
+                    echo '</tbody>';
+                    echo '</table>';
+                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
+                } else {
+                    echo '<p>Нет данных в таблице документов.</p>';
+                }
+
+                break;
             case 3:
             case 8:
             case 9:
@@ -2998,6 +3304,10 @@ class RegInfoEduOrg
                 // Выбираем данные из таблицы 
                 $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_staff");                
                 $shortcode = '[employees_info id="' . $id . '"]';
+                break;
+            case 7:
+                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_resources");                
+                $shortcode = '[resources_info id="' . $id . '"]';
                 break;
             case 8:
                 // Выбираем данные из таблицы 
