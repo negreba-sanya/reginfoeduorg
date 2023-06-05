@@ -612,7 +612,68 @@ class RegInfoEduOrg
             </educational_programs>
 		</section_content>
 	</section>',
-            'xslt' => '',
+            'xslt' => '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:output method="html" />
+<xsl:key name="groups" match="program" use="major_group" />
+
+<xsl:template match="/education_programs">
+    <table>
+        <style>
+           table {
+                border-collapse: collapse;
+                width: 100%;
+            }
+            td {
+                padding: 8px;
+                border: 1px solid silver;
+            }
+            tr:first-child td, tr:nth-child(2) td {
+                font-weight: bold;
+            }
+        </style>
+        <tbody>
+            <tr>
+                <td rowspan="2">Укрупненная группа специальностей</td>
+                <td rowspan="2">Программа обучения</td>
+                <td rowspan="2">Уровень обучения</td>
+                <td rowspan="2">Квалификация</td>
+                <td rowspan="2">Форма обучения</td>
+                <td colspan="2">Срок получения среднего профессионального образования</td>
+                <td rowspan="2">Префикс учебной группы</td>
+            </tr>
+            <tr>
+                <td>на базе 9 кл.</td>
+                <td>на базе 11 кл.</td>
+            </tr>
+            <xsl:for-each select="program[generate-id() = generate-id(key(\'groups\', major_group)[1])]">
+                <xsl:variable name="current-group" select="major_group" />
+                <xsl:variable name="rowspan" select="count(key(\'groups\', $current-group))" />
+                <xsl:apply-templates select="key(\'groups\', $current-group)[1]" />
+                <xsl:apply-templates select="key(\'groups\', $current-group)[position() > 1]" />
+            </xsl:for-each>
+        </tbody>
+    </table>
+</xsl:template>
+
+<xsl:template match="program">
+    <tr>
+        <xsl:if test="generate-id() = generate-id(key(\'groups\', major_group)[1])">
+            <td rowspan="{count(key(\'groups\', major_group))}">
+                <xsl:value-of select="major_group" />
+            </td>
+        </xsl:if>
+        <td><xsl:value-of select="training_program" /></td>
+        <td><xsl:value-of select="level_of_training" /></td>
+        <td><xsl:value-of select="qualification" /></td>
+        <td><xsl:value-of select="form_of_education" /></td>
+        <td><xsl:value-of select="term_based_on_9_class" /></td>
+        <td><xsl:value-of select="term_based_on_11_class" /></td>
+        <td><xsl:value-of select="study_group_prefix" /></td>
+    </tr>
+</xsl:template>
+
+</xsl:stylesheet>
+',
             'xslt_detail' => ''
             ],
             [ 
@@ -2526,10 +2587,10 @@ class RegInfoEduOrg
 
                     foreach ($data as $row) {
                         echo '<tr>';
-                        echo '<td><input type="text" name="major_group[' . $row['id'] . ']" value="' . $row['major_group'] . '"></td>';
-                        echo '<td><input type="text" name="training_program[' . $row['id'] . ']" value="' . $row['training_program'] . '"></td>';
+                        echo '<td><textarea name="major_group[' . $row['id'] . ']">'.$row['major_group'].'</textarea></td>';
+                        echo '<td><textarea name="training_program[' . $row['id'] . ']">'.$row['training_program'].'</textarea></td>';
                         echo '<td><input type="text" name="level_of_training[' . $row['id'] . ']" value="' . $row['level_of_training'] . '"></td>';
-                        echo '<td><input type="text" name="qualification[' . $row['id'] . ']" value="' . $row['qualification'] . '"></td>';
+                        echo '<td><textarea name="qualification[' . $row['id'] . ']">'.$row['qualification'].'</textarea></td>';
                         echo '<td><input type="text" name="form_of_education[' . $row['id'] . ']" value="' . $row['form_of_education'] . '"></td>';
                         echo '<td><input type="text" name="term_based_on_9_class[' . $row['id'] . ']" value="' . $row['term_based_on_9_class'] . '"></td>';
                         echo '<td><input type="text" name="term_based_on_11_class[' . $row['id'] . ']" value="' . $row['term_based_on_11_class'] . '"></td>';
