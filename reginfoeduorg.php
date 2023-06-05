@@ -37,6 +37,7 @@ class RegInfoEduOrg
         add_shortcode('employees_info', array($this,'employees_info_shortcode'));
         add_shortcode('staff_info', array($this,'staff_info_shortcode'));
         add_shortcode('education_programs_info', array($this,'education_programs_info_shortcode'));
+        add_shortcode('management_structure_info', array($this,'management_structure_info_shortcode'));
 
     }
     
@@ -99,13 +100,19 @@ class RegInfoEduOrg
         return $this->process_shortcode($atts, 'Руководство. Педагогический (научно-педагогический) состав', 'overview', 'employees_info');
     }  
     
-    public function education_programs_info_shortcode($atts) {
-        return $this->process_shortcode($atts, 'Образовательные программы', 'overview', 'education_programs_info');
-    } 
-
     public function staff_info_shortcode($atts) {
         return $this->process_shortcode($atts, 'Руководство. Педагогический (научно-педагогический) состав', 'detail', 'staff_info');
     }
+    
+    public function education_programs_info_shortcode($atts) {
+        return $this->process_shortcode($atts, 'Образовательные программы', 'overview', 'education_programs_info');
+    } 
+    
+    public function management_structure_info_shortcode($atts) {
+        return $this->process_shortcode($atts, 'Структура и органы управления образовательной организацией', 'overview', 'management_structure_info');
+    } 
+
+    
 
     //-------------------------------Шорткоды-------------------------------
 
@@ -164,6 +171,59 @@ class RegInfoEduOrg
                         $element = $xml->createElement($key, htmlspecialchars($value));
                         $general_information_node->appendChild($element);
                     }
+                }
+                break;
+            case 2:
+                // Выбираем данные из таблицы управления и персонала
+                $management_data = $wpdb->get_results("
+        SELECT ms.id, s.full_name, s.position, ms.start_date, ms.basis_document, ms.document_date, ms.document_number, ms.structure_image_url 
+        FROM {$wpdb->prefix}reginfoeduorg_management_structure ms 
+        INNER JOIN {$wpdb->prefix}reginfoeduorg_staff s 
+        ON ms.staff_id = s.id", 
+                ARRAY_A);
+                
+                if (!$management_data) {
+                    return null;
+                }
+                $subsection_name = $wpdb->get_var($wpdb->prepare("SELECT name FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE id = %d", $subsection_id));
+
+                // Выбираем пустую структуру XML для подраздела "Документы" из базы данных
+                $subsection_xml = $wpdb->get_var("SELECT xml FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = '$subsection_name'");
+                // Загружаем пустую структуру XML и дополняем ее данными
+                $xml = new DOMDocument('1.0', 'UTF-8');
+                $xml->formatOutput = true;
+                $xml->loadXML($subsection_xml);
+                // Находим элемент section_content для подраздела "Управление структурой"
+                $section_content = $xml->getElementsByTagName('section_content')->item(0);
+
+                // Удаляем имеющиеся элементы с данными
+                while ($section_content->hasChildNodes()) {
+                    $section_content->removeChild($section_content->firstChild);
+                }
+
+                
+
+                // Проходимся по всему управлению из таблицы и добавляем их в management_structure
+                foreach ($management_data as $management) {
+                    // Создаем элемент management_structure
+                    $management_node = $xml->createElement('management_structure');
+                    $section_content->appendChild($management_node);
+
+                    // Создаем элементы full_name, position, start_date, basis_document, document_date, document_number, structure_image_url для каждого manager
+                    $full_name = $xml->createElement('full_name', htmlspecialchars($management['full_name']));
+                    $position = $xml->createElement('position', htmlspecialchars($management['position']));
+                    $start_date = $xml->createElement('start_date', htmlspecialchars($management['start_date']));
+                    $basis_document = $xml->createElement('basis_document', htmlspecialchars($management['basis_document']));
+                    $document_date = $xml->createElement('document_date', htmlspecialchars($management['document_date']));
+                    $document_number = $xml->createElement('document_number', htmlspecialchars($management['document_number']));
+                    $structure_image_url = $xml->createElement('structure_image_url', htmlspecialchars($management['structure_image_url']));
+                    $management_node->appendChild($full_name);
+                    $management_node->appendChild($position);
+                    $management_node->appendChild($start_date);
+                    $management_node->appendChild($basis_document);
+                    $management_node->appendChild($document_date);
+                    $management_node->appendChild($document_number);
+                    $management_node->appendChild($structure_image_url);
                 }
                 break;
 
@@ -347,7 +407,7 @@ class RegInfoEduOrg
         $table_document_types = $wpdb->prefix . 'reginfoeduorg_document_types';
         $table_education_programs = $wpdb->prefix . 'reginfoeduorg_education_programs';
         $table_styles = $wpdb->prefix.'reginfoeduorg_site_subsection_styles';
-
+        $table_management_structure = $wpdb->prefix.'reginfoeduorg_management_structure';
         $sql = "CREATE TABLE $table_general_information (
                 id INT(11) NOT NULL AUTO_INCREMENT,
                 full_name TEXT NOT NULL,
@@ -377,6 +437,18 @@ class RegInfoEduOrg
                 specialization_experience INT NOT NULL,
                 PRIMARY KEY (id)
             ) $charset_collate;
+
+            
+            CREATE TABLE $table_management_structure(
+                id INT PRIMARY KEY,
+                staff_id INT,
+                start_date DATE,
+                basis_document VARCHAR(255),
+                document_date DATE,
+                document_number VARCHAR(50),
+                structure_image_url VARCHAR(255),
+                FOREIGN KEY (staff_id) REFERENCES $table_staff(id) 
+            );
 
 
             CREATE TABLE $table_site_subsections (
@@ -538,10 +610,19 @@ class RegInfoEduOrg
             [ 
             'name' =>'Структура и органы управления образовательной организацией',
             'xml' => '<section>
-		<section_title>Структура и органы управления образовательной организацией</section_title>
-		<section_content>
-		</section_content>
-	</section>',
+            <section_title>Структура и органы управления образовательной организацией</section_title>
+            <section_content>
+                    <management_structure>
+                        <full_name></full_name>
+                        <position></position>
+                        <start_date></start_date>
+                        <basis_document></basis_document>
+                        <document_date></document_date>
+                        <document_number></document_number>
+                        <structure_image_url></structure_image_url>
+                    </management_structure>
+                </section_content>
+            </section>',
             'xslt' => '',
             'xslt_detail' => ''
             ],
@@ -2112,6 +2193,58 @@ class RegInfoEduOrg
                 }
 
                 break;
+            case 2:
+                // Находим нужную секцию в XML
+                $sections = $xml->xpath('//reginfoeduorg/section[section_title="'.$subsection_name.'"]/section_content');
+
+                // Очищаем таблицу перед импортом
+                global $wpdb;
+                $table_staff = "{$wpdb->prefix}reginfoeduorg_staff";
+                $table_management_structure = "{$wpdb->prefix}reginfoeduorg_management_structure";
+
+                $wpdb->query("DELETE FROM $table_management_structure WHERE subsection_id = $subsection_id");
+
+                // Проходимся по всем секциям
+                foreach ($sections as $section) {
+                    // Получаем данные
+                    $full_name = (string)$section->management_structure->full_name;
+                    $position = (string)$section->management_structure->position;
+                    $start_date = (string)$section->management_structure->start_date;
+                    $basis_document = (string)$section->management_structure->basis_document;
+                    $document_date = (string)$section->management_structure->document_date;
+                    $document_number = (string)$section->management_structure->document_number;
+                    $structure_image_url = (string)$section->management_structure->structure_image_url;
+
+                    // Проверяем, существует ли такой сотрудник в базе данных
+                    $existing_staff_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table_staff WHERE full_name = %s AND position = %s",$full_name, $position));
+
+                    // Если сотрудник не существует, добавляем его
+                    if ($existing_staff_id === null) {
+                       // Выводим сообщение об ошибке при вставке данных
+                       echo "<div class='notice notice-error is-dismissible'><p>Данный сотрудник отсутствует в базе. Сначала сделайте импорт сотрудников.</p></div>";
+                       break;                       
+                    }
+
+                    // Создаем массив с данными для таблицы management_structure
+                    $data_management = array(
+                        'staff_id' => $existing_staff_id,
+                        'start_date' => $start_date,
+                        'basis_document' => $basis_document,
+                        'document_date' => $document_date,
+                        'document_number' => $document_number,
+                        'structure_image_url' => $structure_image_url
+                    );
+
+                    // Вставляем данные в таблицу management_structure
+                    if ($wpdb->insert($table_management_structure, $data_management) === false) {
+                        // Выводим сообщение об ошибке при вставке данных
+                        echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке данных в таблицу управления: " . $wpdb->last_error . "</p></div>";
+                        break;
+                    }
+                }
+                break;
+
+
             case 3:
             case 8:
             case 9:
@@ -2313,6 +2446,54 @@ class RegInfoEduOrg
                     );
                 }
                 break;
+            case 2:
+                // Получаем данные из формы
+                $new_full_names = $_POST['full_name'];
+                $new_positions = $_POST['position'];
+                $new_start_dates = $_POST['start_date'];
+                $new_basis_documents = $_POST['basis_document'];
+                $new_document_dates = $_POST['document_date'];
+                $new_document_numbers = $_POST['document_number'];
+                $new_structure_image_urls = $_POST['structure_image_url'];
+
+                // Обновляем данные в таблице staff и management_structure
+                foreach ($new_full_names as $id => $new_full_name) {
+                    $new_position = $new_positions[$id];
+                    $new_start_date = $new_start_dates[$id];
+                    $new_basis_document = $new_basis_documents[$id];
+                    $new_document_date = $new_document_dates[$id];
+                    $new_document_number = $new_document_numbers[$id];
+                    $new_structure_image_url = $new_structure_image_urls[$id];
+
+                    // Получаем ID сотрудника из таблицы management_structure
+                    $staff_id = $wpdb->get_var($wpdb->prepare("SELECT staff_id FROM {$wpdb->prefix}reginfoeduorg_management_structure WHERE id = %d", $id));
+
+                    // Обновляем запись в таблице staff
+                    $wpdb->update(
+                        "{$wpdb->prefix}reginfoeduorg_staff",
+                        array('full_name' => $new_full_name, 'position' => $new_position),
+                        array('id' => $staff_id),
+                        array('%s', '%s'),
+                        array('%d')
+                    );
+
+                    // Обновляем запись в таблице management_structure
+                    $wpdb->update(
+                        "{$wpdb->prefix}reginfoeduorg_management_structure",
+                        array(
+                            'start_date' => $new_start_date,
+                            'basis_document' => $new_basis_document,
+                            'document_date' => $new_document_date,
+                            'document_number' => $new_document_number,
+                            'structure_image_url' => $new_structure_image_url
+                        ),
+                        array('id' => $id),
+                        array('%s', '%s', '%s', '%s', '%s'),
+                        array('%d')
+                    );
+                }
+                break;
+
             case 3:
             case 8:
             case 9:
@@ -2376,7 +2557,6 @@ class RegInfoEduOrg
                     );
                 }
                 break;
-
             case 6:
                 $data = $wpdb->get_results($wpdb->prepare("SELECT id, full_name, position, email, phone, disciplines, education, specialization, qualification_improvement, career, overall_experience, specialization_experience FROM {$wpdb->prefix}reginfoeduorg_staff"), ARRAY_A);
                 
@@ -2559,6 +2739,56 @@ class RegInfoEduOrg
                     echo '<p>Данные отсутствуют.</p>';
                 }
                 break;
+            case 2:
+                echo '<style>
+                    .wp-list-table input, .wp-list-table textarea {
+                        width: 100%;
+                        box-sizing: border-box;
+                    }
+                </style>
+                ';
+
+                // Получаем данные из таблицы структуры управления и персонала
+                $data = $wpdb->get_results("
+    SELECT ms.id, s.full_name, s.position, ms.start_date, ms.basis_document, ms.document_date, ms.document_number, ms.structure_image_url 
+    FROM {$wpdb->prefix}reginfoeduorg_management_structure ms 
+    INNER JOIN {$wpdb->prefix}reginfoeduorg_staff s 
+    ON ms.staff_id = s.id", 
+                ARRAY_A);
+
+                if ($data) {
+                    echo '<table class="wp-list-table widefat fixed striped">';
+                    echo '<thead><tr>';
+                    echo '<th>ФИО</th>';
+                    echo '<th>Должность</th>';
+                    echo '<th>Дата начала</th>';
+                    echo '<th>Основание (документ)</th>';
+                    echo '<th>Дата документа</th>';
+                    echo '<th>Номер документа</th>';
+                    echo '<th>URL изображения структуры</th>';
+                    echo '</tr></thead>';
+                    echo '<tbody>';
+
+                    foreach ($data as $row) {
+                        echo '<tr>';
+                        echo '<td><textarea name="full_name[' . $row['id'] . ']">'.$row['full_name'].'</textarea></td>';
+                        echo '<td><textarea name="position[' . $row['id'] . ']">'.$row['position'].'</textarea></td>';
+                        echo '<td><input type="text" name="start_date[' . $row['id'] . ']" value="' . $row['start_date'] . '"></td>';
+                        echo '<td><textarea name="basis_document[' . $row['id'] . ']">'.$row['basis_document'].'</textarea></td>';
+                        echo '<td><input type="text" name="document_date[' . $row['id'] . ']" value="' . $row['document_date'] . '"></td>';
+                        echo '<td><input type="text" name="document_number[' . $row['id'] . ']" value="' . $row['document_number'] . '"></td>';
+                        echo '<td><input type="text" name="structure_image_url[' . $row['id'] . ']" value="' . $row['structure_image_url'] . '"></td>';
+                        echo '</tr>';
+                    }
+
+                    echo '</tbody>';
+                    echo '</table>';
+                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
+                } else {
+                    echo '<p>Данные отсутствуют.</p>';
+                }
+                break;
+
             case 5:
                 echo '<style>
         .wp-list-table input, .wp-list-table textarea {
@@ -2731,8 +2961,12 @@ class RegInfoEduOrg
             case 1:
                 // Выбираем данные из таблицы 
                 $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_general_information");
-                $shortcode = '[general_info id="' . $id . '"]';                
-                
+                $shortcode = '[general_info id="' . $id . '"]';                 
+                break;
+            case 2:
+                // Выбираем данные из таблицы 
+                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_management_structure");
+                $shortcode = '[management_structure_info id="' . $id . '"]';   
                 break;
             case 3:
                 // Выбираем данные из таблицы 
