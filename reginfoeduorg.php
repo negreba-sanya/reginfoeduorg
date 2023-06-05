@@ -36,6 +36,7 @@ class RegInfoEduOrg
         add_shortcode('grants_support_info', array($this,'grants_support_info_shortcode'));
         add_shortcode('employees_info', array($this,'employees_info_shortcode'));
         add_shortcode('staff_info', array($this,'staff_info_shortcode'));
+        add_shortcode('education_programs_info', array($this,'education_programs_info_shortcode'));
 
     }
     
@@ -54,7 +55,7 @@ class RegInfoEduOrg
         $subsection_id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_site_subsections WHERE name = '$subsection_name'");
         
         $xml = $this->generate_xml($subsection_id, $shortcode, $id);
-        
+       
         if (!$xml) {
             return null;
         }
@@ -96,6 +97,10 @@ class RegInfoEduOrg
 
     public function employees_info_shortcode($atts) {
         return $this->process_shortcode($atts, 'Руководство. Педагогический (научно-педагогический) состав', 'overview', 'employees_info');
+    }  
+    
+    public function education_programs_info_shortcode($atts) {
+        return $this->process_shortcode($atts, 'Образовательные программы', 'overview', 'education_programs_info');
     } 
 
     public function staff_info_shortcode($atts) {
@@ -213,6 +218,49 @@ class RegInfoEduOrg
 
                 }
                 break;
+            case 5:
+                // Выбираем данные из таблицы reginfoeduorg_education_programs
+                $education_programs_data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_education_programs", ARRAY_A);
+                
+                if (!$education_programs_data) {
+                    return null;
+                }
+
+                // Загружаем пустую структуру XML и дополняем ее данными
+                $xml = new DOMDocument('1.0', 'UTF-8');
+                $xml->formatOutput = true;
+
+                // Создаем корневой элемент
+                $root = $xml->createElement('education_programs');
+                $xml->appendChild($root);
+
+                // Проходимся по всем программам из таблицы и добавляем их в education_programs
+                foreach ($education_programs_data as $program) {
+                    
+                    // Создаем элемент program
+                    $program_node = $xml->createElement('program');
+                    $root->appendChild($program_node);
+
+                    // Создаем элементы major_group, training_program, level_of_training и другие для каждой программы
+                    $major_group = $xml->createElement('major_group', htmlspecialchars($program['major_group']));
+                    $training_program = $xml->createElement('training_program', htmlspecialchars($program['training_program']));
+                    $level_of_training = $xml->createElement('level_of_training', htmlspecialchars($program['level_of_training']));
+                    $qualification = $xml->createElement('qualification', htmlspecialchars($program['qualification']));
+                    $form_of_education = $xml->createElement('form_of_education', htmlspecialchars($program['form_of_education']));
+                    $term_based_on_9_class = $xml->createElement('term_based_on_9_class', htmlspecialchars($program['term_based_on_9_class']));
+                    $term_based_on_11_class = $xml->createElement('term_based_on_11_class', htmlspecialchars($program['term_based_on_11_class']));
+                    $study_group_prefix = $xml->createElement('study_group_prefix', htmlspecialchars($program['study_group_prefix']));
+                    
+                    $program_node->appendChild($major_group);
+                    $program_node->appendChild($training_program);
+                    $program_node->appendChild($level_of_training);
+                    $program_node->appendChild($qualification);
+                    $program_node->appendChild($form_of_education);
+                    $program_node->appendChild($term_based_on_9_class);
+                    $program_node->appendChild($term_based_on_11_class);
+                    $program_node->appendChild($study_group_prefix);
+                }
+                break;
             case 6:  // номер подраздела для страницы сотрудников
                 // Выбираем данные из таблицы wp_reginfoeduorg_staff
                 if ($shortcode == 'employees_info') {
@@ -295,27 +343,9 @@ class RegInfoEduOrg
         $table_site_subsections = $wpdb->prefix . 'reginfoeduorg_site_subsections';
         $table_menu_items = $wpdb->prefix . 'reginfoeduorg_menu_items';
         $table_staff = $wpdb->prefix.'reginfoeduorg_staff';
-        $table_disciplines = $wpdb->prefix.'reginfoeduorg_disciplines';
-        $table_education = $wpdb->prefix.'reginfoeduorg_education';
-        $table_qualification_improvement = $wpdb->prefix.'reginfoeduorg_qualification_improvement';
-        $table_career = $wpdb->prefix.'reginfoeduorg_career';
-        $table_management_structure = $wpdb->prefix . 'reginfoeduorg_management_structure';
-        $table_management = $wpdb->prefix . 'reginfoeduorg_management';
-        $table_founders = $wpdb->prefix . 'reginfoeduorg_founders';
-        $table_meetings = $wpdb->prefix . 'reginfoeduorg_meetings';
         $table_documents = $wpdb->prefix . 'reginfoeduorg_documents';
         $table_document_types = $wpdb->prefix . 'reginfoeduorg_document_types';
         $table_education_programs = $wpdb->prefix . 'reginfoeduorg_education_programs';
-        $table_free_education = $wpdb->prefix . 'reginfoeduorg_free_education';
-        $table_property = $wpdb->prefix . 'reginfoeduorg_property';
-        $table_scholarships = $wpdb->prefix . 'reginfoeduorg_scholarships';
-        $table_social_support = $wpdb->prefix . 'reginfoeduorg_social_support';
-        $table_dormitories = $wpdb->prefix . 'reginfoeduorg_dormitories';
-        $table_employment = $wpdb->prefix . 'reginfoeduorg_employment';
-        $table_funding_sources = $wpdb->prefix . 'reginfoeduorg_funding_sources';
-        $table_financial_report = $wpdb->prefix . 'reginfoeduorg_financial_report';
-        $table_vacancies = $wpdb->prefix . 'reginfoeduorg_vacancies';
-        $table_educational_standards = $wpdb->prefix . 'reginfoeduorg_educational_standards';
         $table_styles = $wpdb->prefix.'reginfoeduorg_site_subsection_styles';
 
         $sql = "CREATE TABLE $table_general_information (
@@ -367,7 +397,6 @@ class RegInfoEduOrg
                 FOREIGN KEY (subsection_id) REFERENCES $table_site_subsections(id)
             );
 
-
             CREATE TABLE $table_menu_items (
                 id INT(11) NOT NULL AUTO_INCREMENT,
                 name TEXT NOT NULL,
@@ -416,32 +445,6 @@ class RegInfoEduOrg
                 FOREIGN KEY (role_id) REFERENCES $table_roles(id) ON DELETE CASCADE
             ) $charset_collate;
 
-            CREATE TABLE $table_management_structure (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              management_title VARCHAR(255),
-              management_info TEXT
-            )$charset_collate;
-
-            CREATE TABLE $table_management (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              management_post VARCHAR(255),
-              management_fullname VARCHAR(255),
-              management_reassignment VARCHAR(255),
-              management_biography TEXT
-            )$charset_collate;
-
-            CREATE TABLE $table_founders (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              founders_title VARCHAR(255),
-              founders_info TEXT
-            )$charset_collate;
-
-            CREATE TABLE $table_meetings (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              meeting_title VARCHAR(255),
-              meeting_info TEXT
-            )$charset_collate;
-
             CREATE TABLE $table_document_types (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 document_type VARCHAR(255)
@@ -458,69 +461,15 @@ class RegInfoEduOrg
             )$charset_collate;
 
             CREATE TABLE $table_education_programs (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              program_title VARCHAR(255),
-              program_info TEXT
-            )$charset_collate;
-
-            CREATE TABLE $table_free_education (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              free_education_title VARCHAR(255),
-              free_education_info TEXT
-            )$charset_collate;
-
-            CREATE TABLE $table_property (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              property_title VARCHAR(255),
-              property_info TEXT
-            )$charset_collate;
-
-            CREATE TABLE $table_scholarships (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              scholarship_title VARCHAR(255),
-              scholarship_info TEXT
-            )$charset_collate;
-
-            CREATE TABLE $table_social_support (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              support_title VARCHAR(255),
-              support_info TEXT
-            )$charset_collate;
-
-            CREATE TABLE $table_dormitories (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              dormitory_title VARCHAR(255),
-              dormitory_info TEXT
-            )$charset_collate;
-
-            CREATE TABLE $table_employment (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              employment_title VARCHAR(255),
-              employment_info TEXT
-            )$charset_collate;
-
-            CREATE TABLE $table_funding_sources (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              funding_title VARCHAR(255),
-              funding_info TEXT
-            )$charset_collate;
-
-            CREATE TABLE $table_financial_report (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              report_title VARCHAR(255),
-              report_info TEXT
-            )$charset_collate;
-
-            CREATE TABLE $table_vacancies (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              vacancies_info TEXT
-            )$charset_collate;
-
-            CREATE TABLE $table_educational_standards (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              standard_title VARCHAR(255),
-              standard_info TEXT,
-              standard_file VARCHAR(255)
+               id INT AUTO_INCREMENT PRIMARY KEY,
+               major_group varchar(255) NOT NULL,
+               training_program varchar(255) NOT NULL,
+               level_of_training varchar(255) NOT NULL,
+               qualification varchar(255) NOT NULL,
+               form_of_education varchar(255) NOT NULL,
+               term_based_on_9_class varchar(255),
+               term_based_on_11_class varchar(255),
+               study_group_prefix varchar(255)
             )$charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -591,30 +540,6 @@ class RegInfoEduOrg
             'xml' => '<section>
 		<section_title>Структура и органы управления образовательной организацией</section_title>
 		<section_content>
-			<management_structure>
-				<structural_units>
-					<structural_unit>
-						<name>Наименование структурного подразделения</name>
-						<leader>ФИО руководителя структурного подразделения</leader>
-						<position>Должность руководителя структурного подразделения</position>
-						<location>Местонахождение структурного подразделения</location>
-						<official_website>Адрес официального сайта структурного подразделения</official_website>
-						<email>Адрес электронной почты структурного подразделения</email>
-						<regulations>Сведения о положении о структурном подразделении (об органе управления) с приложением копии указанного положения</regulations>
-					</structural_unit>
-				</structural_units>
-				<management_bodies>
-					<management_body>
-						<name>Наименование органа управления</name>
-						<leader>ФИО руководителя органа управления</leader>
-						<position>Должность руководителя органа управления</position>
-						<location>Местонахождение органа управления</location>
-						<official_website>Адрес официального сайта органа управления</official_website>
-						<email>Адрес электронной почты органа управления</email>
-						<regulations>Сведения о положении об органе управления с приложением копии указанного положения</regulations>
-					</management_body>
-				</management_bodies>
-			</management_structure>
 		</section_content>
 	</section>',
             'xslt' => '',
@@ -662,48 +587,29 @@ class RegInfoEduOrg
             'name' =>'Образование',
             'xml' => '<section>
 		<section_title>Образование</section_title>
-		<section_content>
-			<education_levels>
-				<level_title>Уровни образования</level_title>
-				<level_info>Информация о реализуемых уровнях образования (начальное, основное, среднее), нормативных сроках обучения и формах обучения</level_info>
-			</education_levels>
-			<educational_programs>
-				<program_title>Образовательные программы</program_title>
-				<program_info>Информация о реализуемых образовательных программах, в том числе адаптированных, с указанием учебных предметов, курсов, дисциплин, практики, предусмотренных образовательной программой, а также о языках, на которых осуществляется обучение</program_info>
-				<program_attachment>Приложение с копией образовательной программы</program_attachment>
-			</educational_programs>
-			<educational_plan>
-				<plan_title>Учебный план</plan_title>
-				<plan_info>Информация об учебном плане, его копия</plan_info>
-			</educational_plan>
-			<educational_schedule>
-				<schedule_title>Календарный учебный график</schedule_title>
-				<schedule_info>Информация о календарном учебном графике, его копия</schedule_info>
-			</educational_schedule>
-			<educational_documents>
-				<documents_title>Документы для обеспечения образовательного процесса</documents_title>
-				<documents_info>Информация о методических и иных документах, разработанных образовательной организацией для обеспечения образовательного процесса</documents_info>
-			</educational_documents>
+		<section_content>			
 		</section_content>
 	</section>',
             'xslt' => '',
             'xslt_detail' => ''
             ],
             [ 
-            'name' =>'Образовательные стандарты',
+            'name' =>'Образовательные программы',
             'xml' => '<section>
-		<section_title>Образовательные стандарты</section_title>
+		<section_title>Образовательные программы</section_title>
 		<section_content>
-			<federal_standards>
-				<standard_title>Федеральные государственные образовательные стандарты</standard_title>
-				<standard_info>Информация о ФГОС</standard_info>
-				<standard_copy>Копия ФГОС</standard_copy>
-			</federal_standards>
-			<educational_standards>
-				<standard_title>Образовательные стандарты</standard_title>
-				<standard_info>Информация об образовательных стандартах</standard_info>
-				<standard_copy>Копия образовательных стандартов</standard_copy>
-			</educational_standards>
+			<educational_programs>
+                <program>
+                    <major_group></major_group>
+                    <training_program></training_program>
+                    <level_of_training></level_of_training>
+                    <qualification></qualification>
+                    <form_of_education></form_of_education>
+                    <term_based_on_9_class></term_based_on_9_class>
+                    <term_based_on_11_class></term_based_on_11_class>
+                    <study_group_prefix></study_group_prefix>
+                </program>
+            </educational_programs>
 		</section_content>
 	</section>',
             'xslt' => '',
@@ -2056,7 +1962,7 @@ class RegInfoEduOrg
         $xslt_code = $wpdb->get_var("SELECT xslt FROM {$wpdb->prefix}reginfoeduorg_site_subsection_styles WHERE subsection_id = '$subsection_id' and style_type = 'overview'");
         $saved_xslt_code = isset($xslt_code) ? $xslt_code : '';
         echo '<textarea name="reginfoeduorg_xslt_code" id="reginfoeduorg_xslt_code" rows="10" style="width: 100%;">' . esc_textarea($saved_xslt_code) . '</textarea>';
-       echo '</td>';
+        echo '</td>';
         echo '</tr>';
         echo '</table>';
 
@@ -2213,6 +2119,49 @@ class RegInfoEduOrg
                     }
                 }
                 break;
+            case 5:
+                // Находим нужную секцию в XML
+                $section = $xml->xpath('//reginfoeduorg/section[section_title="'.$subsection_name.'"]/section_content')[0];
+
+                // Очищаем таблицу перед импортом
+                global $wpdb;
+                $table_programs = "{$wpdb->prefix}reginfoeduorg_education_programs";
+
+                $wpdb->query("DELETE FROM $table_programs");
+
+                // Проходимся по всем программам
+                foreach ($section->educational_programs->program as $program) {
+                    // Получаем данные
+                    $major_group = (string)$program->major_group;
+                    $training_program = (string)$program->training_program;
+                    $level_of_training = (string)$program->level_of_training;
+                    $qualification = (string)$program->qualification;
+                    $form_of_education = (string)$program->form_of_education;
+                    $term_based_on_9_class = (string)$program->term_based_on_9_class;
+                    $term_based_on_11_class = (string)$program->term_based_on_11_class;
+                    $study_group_prefix = (string)$program->study_group_prefix;
+
+                    // Создаем массив с данными для таблицы programs
+                    $data_programs = array(
+                        'major_group' => $major_group,
+                        'training_program' => $training_program,
+                        'level_of_training' => $level_of_training,
+                        'qualification' => $qualification,
+                        'form_of_education' => $form_of_education,
+                        'term_based_on_9_class' => $term_based_on_9_class,
+                        'term_based_on_11_class' => $term_based_on_11_class,
+                        'study_group_prefix' => $study_group_prefix,
+                    );
+
+                    // Вставляем данные в таблицу programs
+                    if ($wpdb->insert($table_programs, $data_programs) === false) {
+                        // Выводим сообщение об ошибке при вставке данных
+                        echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке информации о программе в таблицу: " . $wpdb->last_error . "</p></div>";
+                        break;
+                    }
+                }
+                break;
+
             case 6:
                 // Находим нужную секцию в XML
                 $section = $xml->xpath('//reginfoeduorg/section[section_title="'.$subsection_name.'"]/section_content')[0];
@@ -2318,7 +2267,7 @@ class RegInfoEduOrg
                     $new_name = $_POST['document_name'][$id]; // Получаем новое название из формы
                     $new_type_id = $_POST['document_type'][$id]; // Получаем новый тип из формы
                     $new_link = $_POST['document_link'][$id]; // Получаем новую ссылку из формы
-                   
+                    
                     // Обновляем данные в базе данных
                     $wpdb->update(
                         "{$wpdb->prefix}reginfoeduorg_documents", // Название таблицы
@@ -2333,6 +2282,40 @@ class RegInfoEduOrg
                     );
                 }
                 break;
+            case 5:
+                $data = $wpdb->get_results($wpdb->prepare("SELECT id, major_group, training_program, level_of_training, qualification, form_of_education, term_based_on_9_class, term_based_on_11_class, study_group_prefix FROM {$wpdb->prefix}reginfoeduorg_education_programs"), ARRAY_A);
+
+                foreach ($data as $row) {
+                    $id = $row['id']; // Получаем ID программы
+                    $new_major_group = $_POST['major_group'][$id]; // Получаем новую главную группу из формы
+                    $new_training_program = $_POST['training_program'][$id]; // Получаем новую программу обучения из формы
+                    $new_level_of_training = $_POST['level_of_training'][$id]; // Получаем новый уровень обучения из формы
+                    $new_qualification = $_POST['qualification'][$id]; // Получаем новую квалификацию из формы
+                    $new_form_of_education = $_POST['form_of_education'][$id]; // Получаем новую форму обучения из формы
+                    $new_term_based_on_9_class = $_POST['term_based_on_9_class'][$id]; // Получаем новый срок на основе 9 класса из формы
+                    $new_term_based_on_11_class = $_POST['term_based_on_11_class'][$id]; // Получаем новый срок на основе 11 класса из формы
+                    $new_study_group_prefix = $_POST['study_group_prefix'][$id]; // Получаем новый префикс группы изучения из формы
+
+                    // Обновляем данные в базе данных
+                    $wpdb->update(
+                        "{$wpdb->prefix}reginfoeduorg_education_programs", // Название таблицы
+                        array(
+                            'major_group' => $new_major_group,
+                            'training_program' => $new_training_program,
+                            'level_of_training' => $new_level_of_training,
+                            'qualification' => $new_qualification,
+                            'form_of_education' => $new_form_of_education,
+                            'term_based_on_9_class' => $new_term_based_on_9_class,
+                            'term_based_on_11_class' => $new_term_based_on_11_class,
+                            'study_group_prefix' => $new_study_group_prefix,
+                        ), // Данные для обновления
+                        array('id' => $id), // Условие WHERE
+                        array('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s'), // Формат данных для обновления
+                        array('%d')  // Формат данных в условии WHERE
+                    );
+                }
+                break;
+
             case 6:
                 $data = $wpdb->get_results($wpdb->prepare("SELECT id, full_name, position, email, phone, disciplines, education, specialization, qualification_improvement, career, overall_experience, specialization_experience FROM {$wpdb->prefix}reginfoeduorg_staff"), ARRAY_A);
                 
@@ -2515,6 +2498,53 @@ class RegInfoEduOrg
                     echo '<p>Данные отсутствуют.</p>';
                 }
                 break;
+            case 5:
+                echo '<style>
+        .wp-list-table input, .wp-list-table textarea {
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+    ';
+
+                // Получаем данные из таблицы образовательных программ
+                $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_education_programs", ARRAY_A);
+
+                if ($data) {
+                    echo '<table class="wp-list-table widefat fixed striped">';
+                    echo '<thead><tr>';
+                    echo '<th>Группа направлений</th>';
+                    echo '<th>Программа обучения</th>';
+                    echo '<th>Уровень обучения</th>';
+                    echo '<th>Квалификация</th>';
+                    echo '<th>Форма обучения</th>';
+                    echo '<th>Срок обучения на основе 9 классов</th>';
+                    echo '<th>Срок обучения на основе 11 классов</th>';
+                    echo '<th>Префикс учебной группы</th>';
+                    echo '</tr></thead>';
+                    echo '<tbody>';
+
+                    foreach ($data as $row) {
+                        echo '<tr>';
+                        echo '<td><input type="text" name="major_group[' . $row['id'] . ']" value="' . $row['major_group'] . '"></td>';
+                        echo '<td><input type="text" name="training_program[' . $row['id'] . ']" value="' . $row['training_program'] . '"></td>';
+                        echo '<td><input type="text" name="level_of_training[' . $row['id'] . ']" value="' . $row['level_of_training'] . '"></td>';
+                        echo '<td><input type="text" name="qualification[' . $row['id'] . ']" value="' . $row['qualification'] . '"></td>';
+                        echo '<td><input type="text" name="form_of_education[' . $row['id'] . ']" value="' . $row['form_of_education'] . '"></td>';
+                        echo '<td><input type="text" name="term_based_on_9_class[' . $row['id'] . ']" value="' . $row['term_based_on_9_class'] . '"></td>';
+                        echo '<td><input type="text" name="term_based_on_11_class[' . $row['id'] . ']" value="' . $row['term_based_on_11_class'] . '"></td>';
+                        echo '<td><input type="text" name="study_group_prefix[' . $row['id'] . ']" value="' . $row['study_group_prefix'] . '"></td>';
+                        echo '</tr>';
+                    }
+
+                    echo '</tbody>';
+                    echo '</table>';
+                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
+                } else {
+                    echo '<p>Данные отсутствуют.</p>';
+                }
+                break;
+
             case 6:
                 echo '<style>
                     .wp-list-table input, .wp-list-table textarea {
@@ -2648,6 +2678,11 @@ class RegInfoEduOrg
                 $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_documents WHERE subsection_id = '$subsection_id'");                
                 $shortcode = '[documents_info id="' . $id . '"]';
                 break;
+            case 5:
+                // Выбираем данные из таблицы 
+                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_education_programs");                
+                $shortcode = '[education_programs_info id="' . $id . '"]';
+                break;
             case 6:
                 // Выбираем данные из таблицы 
                 $employees = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_staff", ARRAY_A);
@@ -2750,10 +2785,10 @@ class RegInfoEduOrg
             )
         );
         if($staff_pages){
-        // Удаляем каждую запись
-        foreach($staff_pages as $page) {
-            wp_delete_post($page->ID, true);
-        }
+            // Удаляем каждую запись
+            foreach($staff_pages as $page) {
+                wp_delete_post($page->ID, true);
+            }
         }
     }
     //Проверка на доступ к редактированию данных подраздела
