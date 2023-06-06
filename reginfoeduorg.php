@@ -36,9 +36,12 @@ class RegInfoEduOrg
         add_shortcode('grants_support_info', array($this,'grants_support_info_shortcode'));
         add_shortcode('employees_info', array($this,'employees_info_shortcode'));
         add_shortcode('staff_info', array($this,'staff_info_shortcode'));
-        add_shortcode('education_programs_info', array($this,'education_programs_info_shortcode'));
+        add_shortcode('education_info', array($this,'education_info_shortcode'));
         add_shortcode('management_structure_info', array($this,'management_structure_info_shortcode'));
         add_shortcode('resources_info', array($this,'resources_info_shortcode'));
+        add_shortcode('international_cooperation_info', array($this,'international_cooperation_info_shortcode'));
+        add_shortcode('special_conditions_info', array($this,'special_conditions_info_shortcode'));
+        add_shortcode('education_standarts_info', array($this,'education_standarts_info_shortcode'));
     }
     
     //-------------------------------Шорткоды-------------------------------
@@ -104,8 +107,8 @@ class RegInfoEduOrg
         return $this->process_shortcode($atts, 'Руководство. Педагогический (научно-педагогический) состав', 'detail', 'staff_info');
     }
     
-    public function education_programs_info_shortcode($atts) {
-        return $this->process_shortcode($atts, 'Образовательные программы', 'overview', 'education_programs_info');
+    public function education_info_shortcode($atts) {
+        return $this->process_shortcode($atts, 'Образование', 'overview', 'education_info');
     } 
     
     public function management_structure_info_shortcode($atts) {
@@ -114,6 +117,18 @@ class RegInfoEduOrg
     
     public function resources_info_shortcode($atts) {
         return $this->process_shortcode($atts, 'Материально-техническое обеспечение и оснащенность образовательного процесса', 'overview', 'resources_info');
+    } 
+    
+    public function international_cooperation_info_shortcode($atts) {
+        return $this->process_shortcode($atts, 'Международное сотрудничество', 'overview', 'international_cooperation_info');
+    } 
+    
+    public function special_conditions_info_shortcode($atts) {
+        return $this->process_shortcode($atts, 'Доступная среда', 'overview', 'special_conditions_info');
+    } 
+
+    public function education_standarts_info_shortcode($atts) {
+        return $this->process_shortcode($atts, 'Образовательные стандарты и требования', 'overview', 'education_standarts_info');
     } 
 
     
@@ -232,6 +247,7 @@ class RegInfoEduOrg
                 break;
 
             case 3:
+            case 4:
             case 8:
             case 9:
             case 10:
@@ -283,48 +299,64 @@ class RegInfoEduOrg
                 }
                 break;
             case 5:
-                // Выбираем данные из таблицы reginfoeduorg_education_programs
+                // Выбираем данные из различных таблиц
                 $education_programs_data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_education_programs", ARRAY_A);
-                
-                if (!$education_programs_data) {
-                    return null;
-                }
+                $accreditation_data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_accreditation", ARRAY_A);
+                $scientific_data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_directions_results_scientific", ARRAY_A);
+                $contingent_data = $wpdb->get_results("SELECT contingent.*, te.type_education FROM {$wpdb->prefix}reginfoeduorg_contingent contingent JOIN {$wpdb->prefix}reginfoeduorg_type_education te ON contingent.type_education = te.id", ARRAY_A);
 
                 // Загружаем пустую структуру XML и дополняем ее данными
                 $xml = new DOMDocument('1.0', 'UTF-8');
                 $xml->formatOutput = true;
 
                 // Создаем корневой элемент
-                $root = $xml->createElement('education_programs');
+                $root = $xml->createElement('section_content');
                 $xml->appendChild($root);
+
+                // Создаем подразделы для каждого типа данных
+                $education_programs_node = $xml->createElement('educational_programs');
+                $accreditation_node = $xml->createElement('accreditation');
+                $scientific_node = $xml->createElement('scientific_activity');
+                $contingent_node = $xml->createElement('contingent');
+                
+                // Присоединяем подразделы к корневому элементу
+                $root->appendChild($education_programs_node);
+                $root->appendChild($accreditation_node);
+                $root->appendChild($scientific_node);
+                $root->appendChild($contingent_node);
 
                 // Проходимся по всем программам из таблицы и добавляем их в education_programs
                 foreach ($education_programs_data as $program) {
-                    
                     // Создаем элемент program
                     $program_node = $xml->createElement('program');
-                    $root->appendChild($program_node);
+                    $education_programs_node->appendChild($program_node);
 
                     // Создаем элементы major_group, training_program, level_of_training и другие для каждой программы
-                    $major_group = $xml->createElement('major_group', htmlspecialchars($program['major_group']));
-                    $training_program = $xml->createElement('training_program', htmlspecialchars($program['training_program']));
-                    $level_of_training = $xml->createElement('level_of_training', htmlspecialchars($program['level_of_training']));
-                    $qualification = $xml->createElement('qualification', htmlspecialchars($program['qualification']));
-                    $form_of_education = $xml->createElement('form_of_education', htmlspecialchars($program['form_of_education']));
-                    $term_based_on_9_class = $xml->createElement('term_based_on_9_class', htmlspecialchars($program['term_based_on_9_class']));
-                    $term_based_on_11_class = $xml->createElement('term_based_on_11_class', htmlspecialchars($program['term_based_on_11_class']));
-                    $study_group_prefix = $xml->createElement('study_group_prefix', htmlspecialchars($program['study_group_prefix']));
-                    
-                    $program_node->appendChild($major_group);
-                    $program_node->appendChild($training_program);
-                    $program_node->appendChild($level_of_training);
-                    $program_node->appendChild($qualification);
-                    $program_node->appendChild($form_of_education);
-                    $program_node->appendChild($term_based_on_9_class);
-                    $program_node->appendChild($term_based_on_11_class);
-                    $program_node->appendChild($study_group_prefix);
+                    foreach ($program as $key => $value) {
+                        $program_item = $xml->createElement($key, htmlspecialchars($value));
+                        $program_node->appendChild($program_item);
+                    }
                 }
+
+                // Массивы данных и узлов
+                $data_array = [$accreditation_data, $scientific_data, $contingent_data];
+                $node_array = [$accreditation_node, $scientific_node, $contingent_node];
+
+                // Перебираем данные и узлы
+                for ($i = 0; $i < count($data_array); $i++) {
+                    foreach ($data_array[$i] as $item) {
+                        $item_node = $xml->createElement('program');
+                        $node_array[$i]->appendChild($item_node);
+
+                        foreach ($item as $key => $value) {
+                            $item_element = $xml->createElement($key, htmlspecialchars($value));
+                            $item_node->appendChild($item_element);
+                        }
+                    }
+                }
+
                 break;
+
             case 6:  // номер подраздела для страницы сотрудников
                 // Выбираем данные из таблицы wp_reginfoeduorg_staff
                 if ($shortcode == 'employees_info') {
@@ -424,6 +456,103 @@ class RegInfoEduOrg
                     $document_node->appendChild($link);
                 }
                 break;
+            case 12:
+                // Выбираем данные из таблицы reginfoeduorg_documents
+                $documents_data = $wpdb->get_results("SELECT d.document_name, dt.document_type, d.document_link FROM {$wpdb->prefix}reginfoeduorg_documents d JOIN {$wpdb->prefix}reginfoeduorg_document_types dt ON d.document_type = dt.id WHERE subsection_id = '$subsection_id'", ARRAY_A);
+
+                // Выбираем данные из таблицы reginfoeduorg_special_conditions
+                $conditions_data = $wpdb->get_results("SELECT conditions.info, conditions.value FROM {$wpdb->prefix}reginfoeduorg_special_conditions conditions", ARRAY_A);
+
+                // Загружаем пустую структуру XML и дополняем ее данными
+                $xml = new DOMDocument('1.0', 'UTF-8');
+                $xml->formatOutput = true;
+
+                // Создаем корневой элемент
+                $root = $xml->createElement('section');
+                $xml->appendChild($root);
+
+                // Создаем элементы section_title и section_content
+                $section_title = $xml->createElement('section_title', 'Доступная среда');
+                $section_content = $xml->createElement('section_content');
+                $root->appendChild($section_title);
+                $root->appendChild($section_content);
+
+                $accessible_environment= $xml->createElement('accessible_environment');
+                $section_content->appendChild($accessible_environment);
+
+                // Создаем элемент documents и добавляем его в section_content
+                $documents = $xml->createElement('documents');
+                $accessible_environment->appendChild($documents);
+
+                // Проходимся по всем документам из таблицы и добавляем их в documents
+                foreach ($documents_data as $document) {
+                    $document_node = $xml->createElement('document');
+                    $documents->appendChild($document_node);
+
+                    $name = $xml->createElement('name', htmlspecialchars($document['document_name']));
+                    $document_type = $xml->createElement('document_type', htmlspecialchars($document['document_type']));
+                    $link = $xml->createElement('link', htmlspecialchars($document['document_link']));
+
+                    $document_node->appendChild($name);
+                    $document_node->appendChild($document_type);
+                    $document_node->appendChild($link);
+                }
+                
+                // Создаем элемент special_conditions и добавляем его в accessible_environment
+                $special_conditions = $xml->createElement('special_conditions');
+                $accessible_environment->appendChild($special_conditions);
+
+                // Проходимся по всем условиям из таблицы и добавляем их в special_conditions
+                foreach ($conditions_data as $condition) {
+                    $condition_node = $xml->createElement('option_condition'); // Изменили 'condition' на 'option_condition'
+                    $special_conditions->appendChild($condition_node);
+
+                    $info = $xml->createElement('info', htmlspecialchars($condition['info']));
+                    $value = $xml->createElement('value', htmlspecialchars($condition['value']));
+
+                    $condition_node->appendChild($info);
+                    $condition_node->appendChild($value);
+                }
+
+
+                
+                break;
+
+            case 13: // Измените номер дела по своему усмотрению
+                // Выбираем данные из таблицы reginfoeduorg_international_cooperation
+                $cooperation_data = $wpdb->get_results("SELECT info, value FROM {$wpdb->prefix}reginfoeduorg_international_cooperation", ARRAY_A);
+
+                // Загружаем пустую структуру XML и дополняем ее данными
+                $xml = new DOMDocument('1.0', 'UTF-8');
+                $xml->formatOutput = true;
+
+                // Создаем корневой элемент
+                $root = $xml->createElement('section');
+                $xml->appendChild($root);
+
+                // Создаем элементы section_title и section_content
+                $section_title = $xml->createElement('section_title', 'Международное сотрудничество');
+                $section_content = $xml->createElement('section_content');
+                $root->appendChild($section_title);
+                $root->appendChild($section_content);
+
+                // Создаем элемент international_cooperation и добавляем его в section_content
+                $international_cooperation = $xml->createElement('international_cooperation');
+                $section_content->appendChild($international_cooperation);
+
+                // Проходимся по всем элементам из таблицы и добавляем их в international_cooperation
+                foreach ($cooperation_data as $cooperation) {
+                    $option_cooperation_node = $xml->createElement('option_cooperation');
+                    $international_cooperation->appendChild($option_cooperation_node);
+
+                    $info = $xml->createElement('info', htmlspecialchars($cooperation['info']));
+                    $value = $xml->createElement('value', htmlspecialchars($cooperation['value']));
+
+                    $option_cooperation_node->appendChild($info);
+                    $option_cooperation_node->appendChild($value);
+                }
+                break;
+
 
 
             default:
@@ -471,7 +600,13 @@ class RegInfoEduOrg
         $table_management_structure = $wpdb->prefix.'reginfoeduorg_management_structure';
         $table_resource_types = $wpdb->prefix.'reginfoeduorg_resource_types';
         $table_resources = $wpdb->prefix.'reginfoeduorg_resources'; 
-        $table_international_cooperation = $wpdb->prefix.'reginfoeduorg_international_cooperation'; 
+        $table_international_cooperation = $wpdb->prefix.'reginfoeduorg_international_cooperation';
+        $table_special_conditions = $wpdb->prefix.'reginfoeduorg_special_conditions';
+        $table_contingent = $wpdb->prefix.'reginfoeduorg_contingent';
+        $table_type_education = $wpdb->prefix.'reginfoeduorg_type_education';
+        $table_accreditation = $wpdb->prefix.'reginfoeduorg_accreditation';
+        $table_directions_results_scientific = $wpdb->prefix.'reginfoeduorg_directions_results_scientific';
+
         $sql = "CREATE TABLE $table_general_information (
                 id INT(11) NOT NULL AUTO_INCREMENT,
                 full_name TEXT NOT NULL,
@@ -499,6 +634,8 @@ class RegInfoEduOrg
                 career TEXT DEFAULT '',
                 overall_experience INT NOT NULL,
                 specialization_experience INT NOT NULL,
+                small_image_url VARCHAR(255),
+                big_image_url VARCHAR(255),
                 PRIMARY KEY (id)
             ) $charset_collate;
 
@@ -610,11 +747,46 @@ class RegInfoEduOrg
             )$charset_collate;
 
             CREATE TABLE $table_international_cooperation (
-              id INT PRIMARY KEY,
+              id INT AUTO_INCREMENT PRIMARY KEY,
               info TEXT,
               value TEXT
             )$charset_collate;
 
+            CREATE TABLE $table_special_conditions(
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              info TEXT,
+              value TEXT
+            )$charset_collate;
+
+            CREATE TABLE $table_type_education (
+                id INT(11) NOT NULL AUTO_INCREMENT,
+                type_education TEXT NOT NULL,
+                PRIMARY KEY (id)
+            ) $charset_collate;
+
+            CREATE TABLE $table_contingent (
+                id INT(11) NOT NULL AUTO_INCREMENT,
+                type_education INT(11) NOT NULL,
+                name TEXT NOT NULL,
+                budget INT(11) NOT NULL,
+                contract INT(11) NOT NULL,
+                foreigners INT(11) NOT NULL,
+                PRIMARY KEY (id),
+                FOREIGN KEY (type_education) REFERENCES $table_type_education(id) ON DELETE CASCADE
+            ) $charset_collate;
+
+            CREATE TABLE $table_accreditation (
+                id INT(11) NOT NULL AUTO_INCREMENT,
+                date_end DATE NOT NULL,
+                detail TEXT NOT NULL,
+                PRIMARY KEY (id)
+            ) $charset_collate;
+
+            CREATE TABLE $table_directions_results_scientific (
+                id INT(11) NOT NULL AUTO_INCREMENT,
+                detail TEXT NOT NULL,
+                PRIMARY KEY (id)
+            ) $charset_collate;
 
             CREATE TABLE $table_education_programs (
                id INT AUTO_INCREMENT PRIMARY KEY,
@@ -707,7 +879,38 @@ class RegInfoEduOrg
                     </management_structure>
                 </section_content>
             </section>',
-            'xslt' => '',
+            'xslt' => '<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+
+<xsl:template match="/">
+  <html>
+  <body>
+    <xsl:for-each select="section/section_content/management_structure">
+      <p>
+        <xsl:text>С </xsl:text>
+        <xsl:value-of select="start_date"/>
+        <xsl:text> директором учебного заведения является </xsl:text>
+        <xsl:value-of select="full_name"/>
+        <xsl:text> (</xsl:text>
+        <xsl:value-of select="position"/>
+        <xsl:text>, на основании </xsl:text>
+        <xsl:value-of select="basis_document"/>
+        <xsl:text> от </xsl:text>
+        <xsl:value-of select="document_date"/>
+        <xsl:text> № </xsl:text>
+        <xsl:value-of select="document_number"/>
+        <xsl:text>).</xsl:text>
+      </p>
+      <p>
+        <img src="{structure_image_url}" alt="structure_image"/>
+      </p>
+    </xsl:for-each>
+  </body>
+  </html>
+</xsl:template>
+
+</xsl:stylesheet>
+',
             'xslt_detail' => ''
             ],
             [ 
@@ -749,39 +952,118 @@ class RegInfoEduOrg
             'xslt_detail' => ''
             ],
             [ 
-            'name' =>'Образование',
+            'name' =>'Образовательные стандарты и требования',
             'xml' => '<section>
-		<section_title>Образование</section_title>
-		<section_content>			
-		</section_content>
-	</section>',
-            'xslt' => '',
-            'xslt_detail' => ''
-            ],
-            [ 
-            'name' =>'Образовательные программы',
-            'xml' => '<section>
-		<section_title>Образовательные программы</section_title>
+		<section_title>Образовательные стандарты и требования</section_title>
 		<section_content>
-			<educational_programs>
-                <program>
-                    <major_group></major_group>
-                    <training_program></training_program>
-                    <level_of_training></level_of_training>
-                    <qualification></qualification>
-                    <form_of_education></form_of_education>
-                    <term_based_on_9_class></term_based_on_9_class>
-                    <term_based_on_11_class></term_based_on_11_class>
-                    <study_group_prefix></study_group_prefix>
-                </program>
-            </educational_programs>
+			<documents>
+				<document>
+					<name></name>
+					<type></type>
+					<link></link>
+				</document>
+			</documents>
 		</section_content>
 	</section>',
             'xslt' => '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:output method="html" encoding="UTF-8" indent="yes" />
+  
+  <xsl:key name="documents-by-type" match="document" use="type" />
+  
+  <xsl:template match="/">
+    <html>
+      <body>
+        <xsl:for-each select="//documents/document[generate-id() = generate-id(key(\'documents-by-type\', type)[1])]">
+          <xsl:sort select="type" />
+          <p><strong><xsl:value-of select="type" /></strong></p>
+          <xsl:for-each select="key(\'documents-by-type\', type)">
+            <p><a href="{link}"><xsl:value-of select="name" /></a></p>
+          </xsl:for-each>
+        </xsl:for-each>
+      </body>
+    </html>
+  </xsl:template>
+  
+</xsl:stylesheet>',
+            'xslt_detail' => ''
+            ],
+            [ 
+            'name' =>'Образование',
+            'xml' => '<section>
+    <section_title>Образование</section_title>
+    <section_content>
+        <educational_programs>
+            <program>
+                <major_group></major_group>
+                <training_program></training_program>
+                <level_of_training></level_of_training>
+                <qualification></qualification>
+                <form_of_education></form_of_education>
+                <term_based_on_9_class></term_based_on_9_class>
+                <term_based_on_11_class></term_based_on_11_class>
+                <study_group_prefix></study_group_prefix>
+            </program>
+        </educational_programs>
+        <accreditation>
+            <program>
+                <date_end></date_end>
+                <detail></detail>
+            </program>
+        </accreditation>
+        <scientific_activity>
+            <direction>
+                <detail></detail>
+            </direction>
+        </scientific_activity>
+        <contingent>
+            <program_type>                
+                <type_education></type_education>
+                <name></name><budget></budget><contract></contract><foreigners></foreigners>
+            </program_type>
+        </contingent>
+    </section_content>
+</section>',
+            'xslt' => '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 <xsl:output method="html" />
 <xsl:key name="groups" match="program" use="major_group" />
+<xsl:key name="education-groups" match="program" use="type_education" />
 
-<xsl:template match="/education_programs">
+<xsl:template match="/section_content">
+<h3>Образовательные программы</h3>    
+<p>Срок действия государственной аккредитации образовательных программ: до 
+        <xsl:value-of select="substring(accreditation/program/date_end, 9, 2)" />.<xsl:value-of select="substring(accreditation/program/date_end, 6, 2)" />.<xsl:value-of select="substring(accreditation/program/date_end, 1, 4)" />.
+    </p>
+    <p><xsl:value-of select="accreditation/program/detail" /></p>
+    
+    <xsl:apply-templates select="educational_programs"/>
+<p><strong>О направлениях и результатах научной (научно-исследовательской) деятельности (при осуществлении научной (научно-исследовательской) деятельности):</strong></p>
+    <p><xsl:value-of select="scientific_activity/program/detail" /></p>
+   <xsl:apply-templates select="contingent"/>
+</xsl:template>
+
+<xsl:template match="contingent">
+    <h3>Контингент</h3>
+<p>Численность обучающихся по реализуемым образовательным программам (федерального бюджета, бюджетов субъектов Российской Федерации, местных бюджетов и по договорам об образовании за счет средств физических и (или) юридических лиц):</p>
+<p>Всего: <xsl:value-of select="sum(program/budget) + sum(program/contract)"/></p>
+    <xsl:for-each select="program[generate-id() = generate-id(key(\'education-groups\', type_education)[1])]">
+        <xsl:variable name="current-group" select="type_education" />
+        <p>
+            <strong><xsl:value-of select="$current-group"/> 
+            (<xsl:value-of select="sum(key(\'education-groups\', $current-group)/budget) + sum(key(\'education-groups\', $current-group)/contract)"/>)</strong>
+            <xsl:for-each select="key(\'education-groups\', $current-group)">
+                <p>
+                    <xsl:value-of select="name"/> 
+                    (<xsl:value-of select="number(budget) + number(contract)"/>): 
+                    <xsl:value-of select="total_students"/><br/>
+                    - Бюджет: <xsl:value-of select="budget"/><br/>
+                    - На договорной основе: <xsl:value-of select="contract"/>
+                </p>
+            </xsl:for-each>
+        </p>
+    </xsl:for-each>
+<p>Численность обучающихся, являющихся иностранными гражданами: <xsl:value-of select="sum(program/foreigners)"/></p>
+</xsl:template>
+<xsl:template match="educational_programs">
     <table>
         <style>
            table {
@@ -870,12 +1152,12 @@ class RegInfoEduOrg
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
+      text-align: center
     }
     .employee-card {
       flex: 0 0 calc(33% - 20px);
       width: 205px;
       height: 330px;
-      border: 1px solid #ccc;
       margin: 10px;
       padding: 10px;
       box-sizing: border-box;
@@ -883,6 +1165,7 @@ class RegInfoEduOrg
     .employee-card img {
       width: 151px;
       height: 200px;
+      box-shadow: 0px 0px 23px -6px rgba(0,0,0,0.75);
     }
     .employee-card .name {
       font-size: 16px;
@@ -892,6 +1175,7 @@ class RegInfoEduOrg
     .employee-card .position {
       font-size: 14px;
       color: #666;
+      font-style: italic;
     }
   </style>
 
@@ -900,7 +1184,7 @@ class RegInfoEduOrg
       <div class="employee-card">
         <!-- Используем id сотрудника для создания ссылки -->
         <a href="http://example/?staff={id}">
-          <img src="{photo}" alt="{full_name}" />
+          <img src="{small_image_url}" alt="{full_name}" />
           <div class="name">
             <xsl:value-of select="full_name" />
           </div>
@@ -955,7 +1239,26 @@ class RegInfoEduOrg
         </documents>
     </section_content>
 </section>',
-            'xslt' => '',
+            'xslt' => '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:output method="html"/>
+  <xsl:template match="/section">
+    <html>
+      <body>
+        <xsl:for-each select="section_content/technical_equipment/equipment">
+          <h2><xsl:value-of select="name"/></h2>
+          <p><xsl:value-of select="details"/></p>
+        </xsl:for-each>
+<p></p>
+        <xsl:for-each select="section_content/documents/document">
+          <a href="{link}">
+            <xsl:value-of select="name"/>
+          </a>
+        </xsl:for-each>
+      </body>
+    </html>
+  </xsl:template>
+</xsl:stylesheet>
+',
             'xslt_detail' => ''
             ],
             [ 
@@ -1086,18 +1389,66 @@ class RegInfoEduOrg
             [ 
             'name' =>'Доступная среда',
             'xml' => '<section>
-		<section_title>Доступная среда</section_title>
-		<section_content>
-			<documents>
-				<document>
-					<name></name>
-					<type></type>
-					<link></link>
-				</document>
-			</documents>
-		</section_content>
-	</section>',
-            'xslt' => '',
+    <section_title>Доступная среда</section_title>
+    <section_content>
+        <accessible_environment>
+            <documents>
+                <document>
+                    <name></name>
+                    <type></type>
+                    <link></link>
+                </document>
+            </documents>
+            <special_conditions>
+                <option_condition>
+                    <info></info>
+                    <value></value>
+                </option_condition>
+            </special_conditions>
+        </accessible_environment>
+    </section_content>
+</section>
+',
+            'xslt' => '<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+
+<xsl:template match="/">
+  <html> 
+  <body>
+    
+      <xsl:for-each select="section/section_content/accessible_environment/documents/document">
+         <p><a href="{link}"><xsl:value-of select="name"/></a> </p>
+      </xsl:for-each>
+    
+    <p><strong>Информация о специальных условиях для обучения инвалидов и лиц с ограниченными возможностями здоровья</strong></p>
+    <table>
+<style>
+           table {
+                border-collapse: collapse;
+                width: 100%;
+            }
+            td {
+                padding: 8px;
+                border: 1px solid silver;
+            }
+        </style>
+      <tr>
+        <td><strong>Специальные условия для обучения инвалидов и лиц с ограниченными возможностями здоровья</strong></td>
+        <td><strong>Наличие/отсутствие</strong></td>
+      </tr>
+      <xsl:for-each select="section/section_content/accessible_environment/special_conditions/option_condition">
+        <tr>
+          <td><xsl:value-of select="info"/></td>
+          <td style="font-weight: bold;"><xsl:value-of select="value"/></td>
+        </tr>
+      </xsl:for-each>
+    </table>
+  </body>
+  </html>
+</xsl:template>
+
+</xsl:stylesheet>
+',
             'xslt_detail' => ''
             ],
             [ 
@@ -1105,16 +1456,30 @@ class RegInfoEduOrg
             'xml' => '<section>
 		<section_title>Международное сотрудничество</section_title>
 		<section_content>
-			<documents>
-				<document>
-					<name></name>
-					<type></type>
-					<link></link>
-				</document>
-			</documents>
+			<international_cooperation>
+				<option_cooperation>
+					<info></info>
+					<value></value>
+				</option_cooperation>
+			</international_cooperation>
 		</section_content>
 	</section>',
-            'xslt' => '',
+            'xslt' => '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+
+<xsl:template match="/">
+  <html>
+  <body>
+    <xsl:for-each select="section/section_content/international_cooperation/option_cooperation">
+      <p>
+        <xsl:value-of select="info"/>: <b><xsl:value-of select="value"/></b>.
+      </p>
+    </xsl:for-each>
+  </body>
+  </html>
+</xsl:template>
+
+</xsl:stylesheet>
+',
             'xslt_detail' => ''
             ] 
         ];
@@ -2168,7 +2533,7 @@ class RegInfoEduOrg
         echo '<h1>' . $subsection_name . '</h1>';
 
         // Данные в таблице
-        echo '<h3>Таблица данных подраздела</h3>';
+        echo '<h3>Таблицы данных подраздела</h3>';
         
         $this->table_data($subsection_id);   
         
@@ -2329,9 +2694,8 @@ class RegInfoEduOrg
                     }
                 }
                 break;
-
-
             case 3:
+            case 4:
             case 8:
             case 9:
             case 10:
@@ -2403,44 +2767,63 @@ class RegInfoEduOrg
                 // Находим нужную секцию в XML
                 $section = $xml->xpath('//reginfoeduorg/section[section_title="'.$subsection_name.'"]/section_content')[0];
 
-                // Очищаем таблицу перед импортом
+                // Очищаем таблицы перед импортом
                 global $wpdb;
                 $table_programs = "{$wpdb->prefix}reginfoeduorg_education_programs";
+                $table_accreditation = "{$wpdb->prefix}reginfoeduorg_accreditation";
+                $table_scientific = "{$wpdb->prefix}reginfoeduorg_directions_results_scientific";
+                $table_program_type = "{$wpdb->prefix}reginfoeduorg_contingent";
+                $table_type_education = "{$wpdb->prefix}reginfoeduorg_type_education";
 
                 $wpdb->query("DELETE FROM $table_programs");
+                $wpdb->query("DELETE FROM $table_accreditation");
+                $wpdb->query("DELETE FROM $table_scientific");
+                $wpdb->query("DELETE FROM $table_program_type");
+                $wpdb->query("DELETE FROM $table_type_education");
 
-                // Проходимся по всем программам
-                foreach ($section->educational_programs->program as $program) {
-                    // Получаем данные
-                    $major_group = (string)$program->major_group;
-                    $training_program = (string)$program->training_program;
-                    $level_of_training = (string)$program->level_of_training;
-                    $qualification = (string)$program->qualification;
-                    $form_of_education = (string)$program->form_of_education;
-                    $term_based_on_9_class = (string)$program->term_based_on_9_class;
-                    $term_based_on_11_class = (string)$program->term_based_on_11_class;
-                    $study_group_prefix = (string)$program->study_group_prefix;
+                // Создаем массив type_education
+                $type_education = array();
+                foreach ($section->contingent->program_type as $item) {
+                    $type_education[] = (string)$item->type_education;
+                }
 
-                    // Создаем массив с данными для таблицы programs
-                    $data_programs = array(
-                        'major_group' => $major_group,
-                        'training_program' => $training_program,
-                        'level_of_training' => $level_of_training,
-                        'qualification' => $qualification,
-                        'form_of_education' => $form_of_education,
-                        'term_based_on_9_class' => $term_based_on_9_class,
-                        'term_based_on_11_class' => $term_based_on_11_class,
-                        'study_group_prefix' => $study_group_prefix,
-                    );
+                // Удаляем повторяющиеся значения
+                $type_education = array_unique($type_education);
 
-                    // Вставляем данные в таблицу programs
-                    if ($wpdb->insert($table_programs, $data_programs) === false) {
+                // Заполняем таблицу type_education
+                foreach ($type_education as $item) {
+                    if ($wpdb->insert($table_type_education, array('type_education' => $item)) === false) {
                         // Выводим сообщение об ошибке при вставке данных
-                        echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке информации о программе в таблицу: " . $wpdb->last_error . "</p></div>";
+                        echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке информации о type_education в таблицу: " . $wpdb->last_error . "</p></div>";
                         break;
                     }
                 }
+
+                // Проходимся по всем программам, аккредитациям, направлениям и результатам научной деятельности и контингенту
+                foreach (['educational_programs' => $table_programs, 'accreditation' => $table_accreditation, 'scientific_activity' => $table_scientific, 'contingent' => $table_program_type] as $xml_part => $table) {
+                    foreach ($section->$xml_part->children() as $item) {
+                        // Получаем данные
+                        $data = [];
+                        foreach ($item->children() as $key => $value) {
+                            // Если мы импортируем данные в таблицу contingent, заменяем значение type_education на его id из таблицы type_education
+                            if ($xml_part == 'contingent' && $key == 'type_education') {
+                                $type_id = $wpdb->get_var("SELECT id FROM $table_type_education WHERE type_education = '" . ((string)$value) . "'");
+                                $data['type_education'] = $type_id;
+                            } else {
+                                $data[$key] = (string)$value;
+                            }
+                        }
+
+                        // Вставляем данные в соответствующую таблицу
+                        if ($wpdb->insert($table, $data) === false) {
+                            // Выводим сообщение об ошибке при вставке данных
+                            echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке информации о $xml_part в таблицу: " . $wpdb->last_error . "</p></div>";
+                            break;
+                        }
+                    }
+                }
                 break;
+
 
             case 6:
                 // Находим нужную секцию в XML
@@ -2465,6 +2848,8 @@ class RegInfoEduOrg
                     $career = (string)$staff_member->career;
                     $overall_experience = (int)$staff_member->overall_experience;
                     $specialization_experience = (int)$staff_member->specialization_experience;
+                    $small_image_url = (string)$staff_member->small_image_url;
+                    $big_image_url = (string)$staff_member->big_image_url;
                     // Создаем массив с данными для таблицы staff
                     $data_staff = array(
                         'full_name' => $full_name,
@@ -2478,6 +2863,8 @@ class RegInfoEduOrg
                         'career' => $career,
                         'overall_experience' => $overall_experience,
                         'specialization_experience' => $specialization_experience,
+                        'small_image_url' => $small_image_url,
+                        'big_image_url' => $big_image_url,
                     );
 
                     // Вставляем данные в таблицу staff
@@ -2583,8 +2970,115 @@ class RegInfoEduOrg
                         }
                     }
                 }
-
                 break;
+            case 12:
+                // Находим нужную секцию в XML
+                $section = $xml->xpath('//reginfoeduorg/section[section_title="'.$subsection_name.'"]/section_content/accessible_environment')[0];
+                
+                // Очищаем таблицы перед импортом
+                global $wpdb;
+                $table_documents = "{$wpdb->prefix}reginfoeduorg_documents";
+                $table_special_conditions = "{$wpdb->prefix}reginfoeduorg_special_conditions";
+                $table_document_types = "{$wpdb->prefix}reginfoeduorg_document_types";
+
+                $wpdb->query("DELETE FROM $table_documents WHERE subsection_id = $subsection_id");
+                $wpdb->query("DELETE FROM $table_special_conditions");
+
+                $document_types_ids = array();
+                // Проходимся по всем документам
+                foreach ($section->documents->document as $document) {
+                    $document_name = (string)$document->name;
+                    $document_type = (string)$document->type;
+                    $document_link = (string)$document->link;
+
+                    $data = array(
+                        'document_name' => $document_name,
+                        'document_type' => $document_type,
+                        'document_link' => $document_link,
+                        'subsection_id' => $subsection_id
+                    );
+
+                    if (!array_key_exists($document_type, $document_types_ids)) {
+                        $existing_type_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table_document_types WHERE document_type = %s", $document_type));
+
+                        if ($existing_type_id !== null) {
+                            $document_types_ids[$document_type] = $existing_type_id;
+                        } else {
+                            $data_type = array(
+                                'document_type' => $document_type
+                            );
+
+                            if ($wpdb->insert($table_document_types, $data_type) !== false) {
+                                $document_types_ids[$document_type] = $wpdb->insert_id;
+                            } else {
+                                echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке типа документа в таблицу: " . $wpdb->last_error . "</p></div>";
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!empty($document_link)) {
+                        $data = array(
+                            'document_name' => $document_name,
+                            'document_link' => $document_link,
+                            'document_type' => $document_types_ids[$document_type],
+                            'subsection_id' => $subsection_id
+                        );
+
+                        if ($wpdb->insert($table_documents, $data) === false) {
+                            echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке документа в таблицу: " . $wpdb->last_error . "</p></div>";
+                            break;
+                        }
+                    }
+                }
+
+                // Проходимся по всем специальным условиям
+                foreach ($section->special_conditions->option_condition as $condition) {
+                    $condition_info = (string)$condition->info;
+                    $condition_value = (string)$condition->value;
+
+                    $data = array(
+                        'info' => $condition_info,
+                        'value' => $condition_value
+                    );
+
+                    if ($wpdb->insert($table_special_conditions, $data) === false) {
+                        echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке специального условия в таблицу: " . $wpdb->last_error . "</p></div>";
+                        break;
+                    }
+                }
+                break;
+
+            case 13:
+                // Находим нужную секцию в XML
+                $section = $xml->xpath('//reginfoeduorg/section[section_title="'.$subsection_name.'"]/section_content')[0];
+                
+                // Очищаем таблицу перед импортом
+                global $wpdb;
+                $table_international_cooperation = "{$wpdb->prefix}reginfoeduorg_international_cooperation";
+
+                $wpdb->query("DELETE FROM $table_international_cooperation");
+                // Проходимся по всем элементам международного сотрудничества
+                foreach ($section->international_cooperation->option_cooperation as $coop_element) {
+                    // Получаем данные
+                    $info = (string)$coop_element->info;
+                    $value = (string)$coop_element->value;
+                    
+                    // Создаем массив с данными для таблицы international_cooperation
+                    $data_coop = array(
+                        'info' => $info,
+                        'value' => $value,
+                    );
+
+                    // Вставляем данные в таблицу international_cooperation
+                    if ($wpdb->insert($table_international_cooperation, $data_coop) === false) {
+                        // Выводим сообщение об ошибке при вставке данных
+                        echo "<div class='notice notice-error is-dismissible'><p>Ошибка при вставке информации о международном сотрудничестве в таблицу: " . $wpdb->last_error . "</p></div>";
+                        break;
+                    }
+                }
+                break;
+
         }  
         echo "<div class='notice notice-success is-dismissible'><p>Данные успешно импортированы из файла.</p></div>";
         if($_POST['reginfoeduorg_xslt_code'])
@@ -2739,6 +3233,72 @@ class RegInfoEduOrg
                         array('%d')  // Формат данных в условии WHERE
                     );
                 }
+                
+
+
+                $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_accreditation", ARRAY_A);
+                foreach ($data as $row) {
+                    $id = $row['id']; // Получаем ID
+
+                    $new_date_end = $_POST['date_end'][$id];
+                    $new_detail = $_POST['detail'][$id];
+
+                    // Обновляем данные в базе данных
+                    $wpdb->update(
+                        "{$wpdb->prefix}reginfoeduorg_accreditation",
+                        array(
+                            'date_end' => $new_date_end,
+                            'detail' => $new_detail,
+                        ),
+                        array('id' => $id),
+                        array('%s', '%d'),
+                        array('%d')
+                    );
+                }
+
+                $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_directions_results_scientific", ARRAY_A);
+                foreach ($data as $row) {
+                    $id = $row['id']; // Получаем ID
+
+                    $new_detail = $_POST['detail'][$id];
+
+                    // Обновляем данные в базе данных
+                    $wpdb->update(
+                        "{$wpdb->prefix}reginfoeduorg_accreditation",
+                        array(
+                            'detail' => $new_detail,
+                        ),
+                        array('id' => $id),
+                        array('%s'), // Замените на правильный формат данных
+                        array('%d')
+                    );
+                }
+                
+                $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_contingent", ARRAY_A);
+                foreach ($data as $row) {
+                    $id = $row['id']; // Получаем ID
+
+                    $new_type_education = $_POST['type_education'][$id];
+                    $new_name = $_POST['name'][$id];
+                    $new_budget = $_POST['budget'][$id];
+                    $new_contract = $_POST['contract'][$id];
+                    $new_foreigners = $_POST['foreigners'][$id];
+
+                    // Обновляем данные в базе данных
+                    $wpdb->update(
+                        "{$wpdb->prefix}reginfoeduorg_accreditation",
+                        array(
+                            'type_education' => $new_type_education,
+                            'name' => $new_name,
+                            'budget' => $new_budget,
+                            'contract' => $new_contract,
+                            'foreigners' => $new_foreigners,
+                        ),
+                        array('id' => $id),
+                        array('%d','%s','%d','%d','%d',), // Замените на правильный формат данных
+                        array('%d')
+                    );
+                }
                 break;
             case 6:
                 $data = $wpdb->get_results($wpdb->prepare("SELECT id, full_name, position, email, phone, disciplines, education, specialization, qualification_improvement, career, overall_experience, specialization_experience FROM {$wpdb->prefix}reginfoeduorg_staff"), ARRAY_A);
@@ -2755,6 +3315,8 @@ class RegInfoEduOrg
                     $new_career = stripslashes($_POST['career'][$id]); // Получаем новую информацию о карьере из формы
                     $new_disciplines = stripslashes($_POST['disciplines'][$id]); // Получаем новую дисциплину из формы
                     $new_qualification_improvement = stripslashes($_POST['qualification_improvement'][$id]); // Получаем новую информацию о повышении квалификации из формы
+                    $new_small_image_url = stripslashes($_POST['small_image_url'][$id]); // Получаем новую информацию о повышении квалификации из формы
+                    $new_big_image_url = stripslashes($_POST['big_image_url'][$id]); // Получаем новую информацию о повышении квалификации из формы
                     
                     // Обновляем данные в базе данных
                     $wpdb->update(
@@ -2769,7 +3331,9 @@ class RegInfoEduOrg
                             'education' => $new_education,
                             'career' => $new_career,
                             'disciplines' => $new_disciplines,
-                            'qualification_improvement' => $new_qualification_improvement
+                            'qualification_improvement' => $new_qualification_improvement,
+                            'small_image_url' => $new_small_image_url,
+                            'big_image_url' => $new_big_image_url
                         ), // Данные для обновления
                         array('id' => $id), // Условие WHERE
                         array('%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s'), // Формат данных для обновления
@@ -2822,6 +3386,72 @@ class RegInfoEduOrg
                     );
                 }
                 break;
+            case 12:
+                // Сохранение изменений для документов
+                $data_documents = $wpdb->get_results($wpdb->prepare("SELECT d.id FROM {$wpdb->prefix}reginfoeduorg_documents as d WHERE d.subsection_id = %d", $subsection_id), ARRAY_A);
+                foreach ($data_documents as $row) {
+                    $id = $row['id']; // Получаем ID документа
+                    $new_name = $_POST['document_name'][$id]; // Получаем новое название из формы
+                    $new_type = $_POST['document_type'][$id]; // Получаем новый тип из формы
+                    $new_link = $_POST['document_link'][$id]; // Получаем новую ссылку из формы
+
+                    // Обновляем данные в базе данных
+                    $wpdb->update(
+                        "{$wpdb->prefix}reginfoeduorg_documents", // Название таблицы
+                        array(
+                            'document_name' => $new_name, 
+                            'document_type' => $new_type, 
+                            'document_link' => $new_link
+                        ), // Данные для обновления
+                        array('id' => $id), // Условие WHERE
+                        array('%s', '%s', '%s'), // Формат данных для обновления
+                        array('%d')  // Формат данных в условии WHERE
+                    );
+                }
+
+                // Сохранение изменений для специальных условий
+                $data_conditions = $wpdb->get_results("SELECT conditions.id FROM {$wpdb->prefix}reginfoeduorg_special_conditions conditions", ARRAY_A);
+                foreach ($data_conditions as $row) {
+                    $id = $row['id']; // Получаем ID условия
+                    $new_info = $_POST['info'][$id]; // Получаем новую информацию из формы
+                    $new_value = $_POST['value'][$id]; // Получаем новое значение из формы
+
+                    // Обновляем данные в базе данных
+                    $wpdb->update(
+                        "{$wpdb->prefix}reginfoeduorg_special_conditions", // Название таблицы
+                        array(
+                            'info' => $new_info,
+                            'value' => $new_value
+                        ), // Данные для обновления
+                        array('id' => $id), // Условие WHERE
+                        array('%s', '%s'), // Формат данных для обновления
+                        array('%d')  // Формат данных в условии WHERE
+                    );
+                }
+                break;
+
+            case 13:
+                $data = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}reginfoeduorg_international_cooperation"), ARRAY_A);
+
+                foreach ($data as $row) {
+                    $id = $row['id']; // Получаем ID записи
+                    $new_info = $_POST['info'][$id]; // Получаем новую информацию из формы
+                    $new_value = $_POST['value'][$id]; // Получаем новое значение из формы
+
+                    // Обновляем данные в базе данных
+                    $wpdb->update(
+                        "{$wpdb->prefix}reginfoeduorg_international_cooperation", // Название таблицы
+                        array(
+                            'info' => $new_info,
+                            'value' => $new_value
+                        ), // Данные для обновления
+                        array('id' => $id), // Условие WHERE
+                        array('%s', '%s'), // Формат данных для обновления
+                        array('%d')  // Формат данных в условии WHERE
+                    );
+                }
+                break;
+
             default:
                 break;
         }
@@ -2958,7 +3588,7 @@ class RegInfoEduOrg
                 } 
                 else 
                 {
-                    echo '<p>Данные отсутствуют.</p>';
+                    echo '<p>Данные о образовательном учреждении отсутствуют.</p>';
                 }
                 break;
             case 2:
@@ -3007,7 +3637,7 @@ class RegInfoEduOrg
                     echo '</table>';
                     echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
                 } else {
-                    echo '<p>Данные отсутствуют.</p>';
+                    echo '<p>Данные о структуре и органах управления образовательной организацией отсутствуют.</p>';
                 }
                 break;
 
@@ -3015,10 +3645,7 @@ class RegInfoEduOrg
                 echo '<style>
         .wp-list-table input, .wp-list-table textarea {
             width: 100%;
-            box-sizing: border-box;
-        }
-    </style>
-    ';
+            box-sizing: border-box;}</style>';
 
                 // Получаем данные из таблицы образовательных программ
                 $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_education_programs", ARRAY_A);
@@ -3049,13 +3676,95 @@ class RegInfoEduOrg
                         echo '<td><input type="text" name="study_group_prefix[' . $row['id'] . ']" value="' . $row['study_group_prefix'] . '"></td>';
                         echo '</tr>';
                     }
-
                     echo '</tbody>';
                     echo '</table>';
                     echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
                 } else {
-                    echo '<p>Данные отсутствуют.</p>';
+                    echo '<p>Данные о группах отсутствуют.</p>';
                 }
+
+                // Получаем данные из таблицы reginfoeduorg_info_education_program
+                $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_accreditation", ARRAY_A);
+                if ($data) {
+                    echo '<table class="wp-list-table widefat fixed striped">';
+                    echo '<thead><tr>';
+                    echo '<th>Дата окончания аккредитации</th>';
+                    echo '<th>Дополнительное описание</th>';
+                    echo '</tr></thead>';
+                    echo '<tbody>';
+
+                    foreach ($data as $row) {
+                        echo '<tr>';
+                        echo '<td><input type="text" name="info_program_date_end[' . $row['id'] . ']" value="' . $row['date_end'] . '"></td>';
+                        echo '<td><textarea name="info_program_detail[' . $row['id'] . ']">'.$row['detail'].'</textarea></td>';
+                        echo '</tr>';
+                    }
+
+                    echo '</tbody>';
+                    echo '</table>';
+                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
+
+                } else {
+                    echo '<p>Данные об аккредитации отсутствуют.</p>';
+                }
+
+
+                // Получаем данные из таблицы reginfoeduorg_directions_results_scientific
+                $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_directions_results_scientific", ARRAY_A);
+                if ($data) {
+                    echo '<table class="wp-list-table widefat fixed striped">';
+                    echo '<thead><tr>';
+                    echo '<th>Информация</th>';
+                    echo '</tr></thead>';
+                    echo '<tbody>';
+
+                    foreach ($data as $row) {
+                        echo '<tr>';
+                        echo '<td><textarea name="detail[' . $row['id'] . ']">'.$row['detail'].'</textarea></td>';
+                        echo '</tr>';
+                    }
+
+                    echo '</tbody>';
+                    echo '</table>';
+                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
+
+                } else {
+                    echo '<p>Данные о направлениях и результатах научной (научно-исследовательской) деятельности отсутствуют.</p>';
+                }
+
+
+                // Получаем данные из таблицы reginfoeduorg_program_type, связанные с таблицей reginfoeduorg_type_education
+                $data = $wpdb->get_results("SELECT contingent.*, te.type_education FROM {$wpdb->prefix}reginfoeduorg_contingent contingent JOIN {$wpdb->prefix}reginfoeduorg_type_education te ON contingent.type_education = te.id", ARRAY_A);
+                if ($data) {
+                    echo '<table class="wp-list-table widefat fixed striped">';
+                    echo '<thead><tr>';
+                    echo '<th>Тип обучения</th>';
+                    echo '<th>Наименование</th>';
+                    echo '<th>Количество мест на бюджете</th>';
+                    echo '<th>Количество мест на договорной основе</th>';
+                    echo '<th>Количество иностранных граждан</th>';
+                    echo '</tr></thead>';
+                    echo '<tbody>';
+
+                    foreach ($data as $row) {
+                        echo '<tr>';
+                        echo '<td><textarea name="type_education[' . $row['id'] . ']">'.$row['type_education'].'</textarea></td>';
+                        echo '<td><textarea name="name [' . $row['id'] . ']">'.$row['name'].'</textarea></td>';
+                        echo '<td><input type="number" name="budget [' . $row['id'] . ']" value="' . $row['budget'] . '"></td>';
+                        echo '<td><input type="number" name="contract [' . $row['id'] . ']" value="' . $row['contract'] . '"></td>';
+                        echo '<td><input type="number" name="foreigners [' . $row['id'] . ']" value="' . $row['foreigners'] . '"></td>';
+                        echo '</tr>';
+                    }
+
+                    echo '</tbody>';
+                    echo '</table>';
+                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
+
+                } else {
+                    echo '<p>Данные о контингенте отсутствуют.</p>';
+                }
+
+
                 break;
 
             case 6:
@@ -3083,6 +3792,8 @@ class RegInfoEduOrg
                     echo '<th>Информация о карьере</th>';
                     echo '<th>Дисциплины</th>';
                     echo '<th>Повышение квалификации</th>';
+                    echo '<th>Ссылка на мелкое фото сотрудника</th>';
+                    echo '<th>Ссылка на крупное фото сотрудника</th>';
                     echo '</tr></thead>';
                     echo '<tbody>';
 
@@ -3098,6 +3809,8 @@ class RegInfoEduOrg
                         echo '<td><textarea name="career[' . $row['id'] . ']">' . $row['career'] . '</textarea></td>';
                         echo '<td><textarea name="disciplines[' . $row['id'] . ']">' . $row['disciplines'] . '</textarea></td>';
                         echo '<td><textarea name="qualification_improvement[' . $row['id'] . ']">' . $row['qualification_improvement'] . '</textarea></td>';
+                        echo '<td><input type="text" name="small_image_url[' . $row['id'] . ']" value="' . $row['small_image_url'] . '"></td>';
+                        echo '<td><input type="text" name="big_image_url[' . $row['id'] . ']" value="' . $row['big_image_url'] . '"></td>';
                         echo '</tr>';
                     }
 
@@ -3105,7 +3818,7 @@ class RegInfoEduOrg
                     echo '</table>';
                     echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
                 } else {
-                    echo '<p>Данные отсутствуют.</p>';
+                    echo '<p>Данные о сотрудниках отсутствуют.</p>';
                 }
                 break;
             case 7:
@@ -3153,7 +3866,7 @@ class RegInfoEduOrg
                     echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
                     echo '<br>';
                 } else {
-                    echo '<p>Нет данных в таблице ресурсов.</p>';
+                    echo '<p>Данные о ресурсах отсутствуют.</p>';
                 }
 
                 // Вывод данных из таблицы documents
@@ -3190,11 +3903,12 @@ class RegInfoEduOrg
                     echo '</table>';
                     echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
                 } else {
-                    echo '<p>Нет данных в таблице документов.</p>';
+                    echo '<p>Данных о документах отсутствуют.</p>';
                 }
 
                 break;
             case 3:
+            case 4:
             case 8:
             case 9:
             case 10:
@@ -3240,7 +3954,129 @@ class RegInfoEduOrg
                     echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
 
                 } else {
-                    echo '<p>Данные отсутствуют.</p>';
+                    echo '<p>Данные о документах отсутствуют.</p>';
+                }
+
+                break;
+            case 12:
+                echo '<style>
+        .wp-list-table input, .wp-list-table textarea {
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+    ';
+                // Запрос на получение данных из таблицы special_conditions
+                $data_special_conditions = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_special_conditions", ARRAY_A);
+                // Запрос на получение данных из таблицы documents
+                $data_documents = $wpdb->get_results($wpdb->prepare("SELECT d.id, d.document_name, dt.id as dt_id, dt.document_type, d.document_link 
+             FROM {$wpdb->prefix}reginfoeduorg_documents as d
+             JOIN {$wpdb->prefix}reginfoeduorg_document_types as dt
+             ON d.document_type = dt.id
+             WHERE d.subsection_id = %d", $subsection_id), ARRAY_A);
+                $resource_types = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_resource_types", ARRAY_A);
+
+                $document_types = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_document_types", ARRAY_A);
+                // Вывод данных из таблицы documents
+                if ($data_documents) {
+                    echo '<table class="wp-list-table widefat fixed striped">';
+                    echo '<thead><tr>';
+                    echo '<th>Название документа</th>';
+                    echo '<th>Тип документа</th>';
+                    echo '<th>Ссылка на документ</th>';
+                    echo '</tr></thead>';
+                    echo '<tbody>';
+
+                    foreach ($data_documents as $row) {
+                        
+                        echo '<tr>';
+                        echo '<td class="column-name"><input type="text" name="document_name[' . $row['id'] . ']" value="' . $row['document_name'] . '"></td>';
+                        echo '<td class="column-name">';                        
+                        // Создаем выпадающий список с типами документов
+                        echo '<select name="document_type[' . $row['id'] . ']">';
+                        
+                        foreach ($document_types as $type) {
+                            
+                            $selected = $type['id'] == $row['dt_id'] ? ' selected' : '';
+                            echo '<option value="' . $type['id'] . '"' . $selected . '>' . $type['document_type'] . '</option>';
+                        }
+
+                        echo '</select>';
+                        echo '</td>';
+                        echo '<td class="column-value"><input type="text" name="document_link[' . $row['id'] . ']" value="' . $row['document_link'] . '"></td>';
+                        echo '</tr>';
+                    }
+
+                    echo '</tbody>';
+                    echo '</table>';
+                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
+                } else {
+                    echo '<p>Данные о документах отсутствуют.</p>';
+                }
+                // Вывод данных из таблицы special_conditions
+                if ($data_special_conditions) {
+                    echo '<table class="wp-list-table widefat fixed striped">';
+                    echo '<thead><tr>';
+                    echo '<th>Информация</th>';
+                    echo '<th>Значение</th>';
+                    echo '</tr></thead>';
+                    echo '<tbody>';
+
+                    foreach ($data_special_conditions as $row) {
+                        echo '<tr>';
+                        echo '<td><input type="text" name="info[' . $row['id'] . ']" value="' . $row['info'] . '"></td>';
+                        echo '<td><input type="text" name="value[' . $row['id'] . ']" value="' . $row['value'] . '"></td>';
+                        echo '</tr>';
+                    }
+
+                    echo '</tbody>';
+                    echo '</table>';
+                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
+                } else {
+                    echo '<p>Данные о специальных условиях отсутствуют.</p>';
+                }
+
+                break;
+
+                break;
+            case 13:
+                $data = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}reginfoeduorg_international_cooperation"), ARRAY_A);
+
+                if ($data) {
+                    echo '<style>
+       .column-name {
+    width: 70%;
+}
+
+.column-value {
+    width: 30%;
+}
+.wp-list-table input, .wp-list-table textarea {
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+    ';
+                    echo '<table class="wp-list-table widefat fixed striped">';
+                    echo '<thead><tr>';
+                    echo '<th scope="col" class="manage-column column-name">Пункт</th>';
+                    echo '<th scope="col" class="manage-column column-value">Значение</th>';
+                    echo '</tr></thead>';
+                    echo '<tbody>';
+
+                    foreach ($data as $row) {
+                        echo '<tr>';
+                        echo '<td><textarea name="info[' . $row['id'] . ']">' . $row['info'] . '</textarea></td>';
+                        echo '<td class="column-value"><input type="text" name="value[' . $row['id'] . ']" value="' . $row['value'] . '"></td>';
+                        echo '</tr>';
+                    }
+
+                    echo '</tbody>';
+                    echo '</table>';
+                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
+
+                } else {
+                    echo '<p>Данные о международном сотрудничестве отсутствуют.</p>';
                 }
 
                 break;
@@ -3278,11 +4114,16 @@ class RegInfoEduOrg
                 // Выбираем данные из таблицы 
                 $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_documents WHERE subsection_id = '$subsection_id'");                
                 $shortcode = '[documents_info id="' . $id . '"]';
+                break; 
+            case 4:
+                // Выбираем данные из таблицы 
+                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_documents WHERE subsection_id = '$subsection_id'");                
+                $shortcode = '[education_standarts_info id="' . $id . '"]';
                 break;
             case 5:
                 // Выбираем данные из таблицы 
                 $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_education_programs");                
-                $shortcode = '[education_programs_info id="' . $id . '"]';
+                $shortcode = '[education_info id="' . $id . '"]';
                 break;
             case 6:
                 // Выбираем данные из таблицы 
@@ -3328,6 +4169,16 @@ class RegInfoEduOrg
                 // Выбираем данные из таблицы 
                 $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_documents WHERE subsection_id = '$subsection_id'");                
                 $shortcode = '[vacancies_info id="' . $id . '"]';
+                break;
+            case 12:
+                // Выбираем данные из таблицы 
+                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_special_conditions WHERE");                
+                $shortcode = '[special_conditions_info id="' . $id . '"]';
+                break;
+            case 13:
+                // Выбираем данные из таблицы 
+                $id = $wpdb->get_var("SELECT id FROM {$wpdb->prefix}reginfoeduorg_international_cooperation WHERE");                
+                $shortcode = '[international_cooperation_info id="' . $id . '"]';
                 break;
         	default:
         }
