@@ -12,6 +12,755 @@ if (!defined('ABSPATH')) {
     die;
 }
 
+if(!class_exists('WP_List_Table')){
+    require_once( ABSPATH . 'wp-admin/includes/class-wp-list-table.php' );
+}
+
+class General_Information_Table extends WP_List_Table {
+    public function __construct() {
+        parent::__construct(array(
+            'singular' => 'reginfoeduorg',
+            'plural'   => 'reginfoeduorgs',
+            'ajax'     => false
+        ));
+    }
+
+    public function get_columns() {
+        return array(
+            'cb'                => '<input type="checkbox" />',
+            'full_name'         => 'Полное название образовательной организации',
+            'short_name'        => 'Краткое название образовательной организации',
+            'creation_date'     => 'Дата создания образовательной организации',
+            'founder'           => 'Учредитель',
+            'location'          => 'Место нахождения образовательной организации',
+            'branches'          => 'Филиалы образовательной организации',
+            'working_hours'     => 'График работы',
+            'contact_phones'    => 'Контактные телефоны',
+            'email_addresses'   => 'Адреса электронной почты'
+        );
+    }  
+
+
+    public function prepare_items() {
+        global $wpdb;
+        $search = ( isset( $_REQUEST['s'] ) ) ? $_REQUEST['s'] : false;
+
+        $do_search = ( $search ) ? $wpdb->prepare(" WHERE full_name LIKE '%%%s%%'", $search) : '';
+
+        $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_general_information{$do_search}", ARRAY_A);
+        $this->items = $data;
+        $this->_column_headers = array($this->get_columns(), array(), $this->get_sortable_columns());
+    }
+
+
+    public function column_cb($item) {
+        return sprintf(
+            '<input type="checkbox" name="item[]" value="%s" />',
+            $item['id']
+        );
+    }
+
+    public function column_default($item, $column_name) {
+        // Если выбрано действие "edit", преобразуем поле вывода в поле для ввода
+        if ($this->current_action() == 'edit') {
+            return '<textarea name="data[' . $column_name. ']">'.$item[$column_name].'</textarea>';
+        } else {
+            return $item[$column_name];
+        }        
+    }
+
+    
+    public function get_sortable_columns() {
+        return array(
+            'full_name'         => 'full_name',
+            'short_name'        => 'short_name',
+            'creation_date'     => 'creation_date',
+            'founder'           => 'founder',
+            'location'          => 'location',
+            'branches'          => 'branches',
+            'working_hours'     => 'working_hours',
+            'contact_phones'    => 'contact_phones',
+            'email_addresses'   => 'email_addresses'
+        );
+    }
+    
+    public function get_bulk_actions() {
+        $actions = array(
+            'delete'    => 'Удалить'
+        );
+        return $actions;
+    }
+
+    
+}
+
+class Documents_Table extends WP_List_Table {
+    private $subsection_id;
+    public function __construct($subsection_id) {
+        parent::__construct(array(
+            'singular' => 'reginfoeduorg',
+            'plural'   => 'reginfoeduorgs',
+            'ajax'     => false
+        ));
+        $this->subsection_id = $subsection_id;
+    }
+    	
+
+    public function get_columns() {
+        return array(
+            'cb'                => '<input type="checkbox" />',
+            'document_name'     => 'Название документа',
+            'document_type'     => 'Тип документа',
+            'document_link'     => 'Ссылка на документ',
+        );
+    }  
+
+
+    public function prepare_items() {
+        global $wpdb;
+        $search = ( isset( $_REQUEST['s'] ) ) ? $_REQUEST['s'] : false;
+
+        $do_search = ( $search ) ? $wpdb->prepare(" AND d.document_name LIKE '%%%s%%'", $search) : '';
+
+        $data = $wpdb->get_results("SELECT d.id, d.document_name, dt.document_type, d.document_link 
+         FROM {$wpdb->prefix}reginfoeduorg_documents as d
+         JOIN {$wpdb->prefix}reginfoeduorg_document_types as dt
+         ON d.document_type = dt.id
+         WHERE d.subsection_id = '$this->subsection_id'{$do_search}", ARRAY_A);
+        
+        $this->items = $data;
+        $this->_column_headers = array($this->get_columns(), array(), $this->get_sortable_columns());
+    }
+
+
+    public function column_cb($item) {
+        return sprintf(
+            '<input type="checkbox" name="item[]" value="%s" />',
+            $item['id']
+        );
+    }
+
+    public function column_default($item, $column_name) {
+        // Если выбрано действие "edit", преобразуем поле вывода в поле для ввода
+        if ($this->current_action() == 'edit') {
+            return '<textarea name="data[' . $column_name. ']">'.$item[$column_name].'</textarea>';
+        } else {
+            return $item[$column_name];
+        }        
+    }
+
+    
+    public function get_sortable_columns() {
+        return array(
+            'document_name'     => 'document_name',
+            'document_type'     => 'document_type'
+        );
+    }
+    
+    public function get_bulk_actions() {
+        $actions = array(
+            'delete'    => 'Удалить'
+        );
+        return $actions;
+    }
+
+    
+}
+
+class Management_Structure_Table extends WP_List_Table {
+ 
+    public function __construct() {
+        parent::__construct(array(
+            'singular' => 'reginfoeduorg',
+            'plural'   => 'reginfoeduorgs',
+            'ajax'     => false
+        ));
+    }
+    	
+
+    public function get_columns() {
+        return array(
+
+            'cb'                => '<input type="checkbox" />',
+            'full_name'     => 'ФИО',
+            'position'     => 'Должность',
+            'start_date'     => 'Дата начала',
+            'basis_document'     => 'Основание (документ)',
+            'document_date'     => 'Дата документа',
+            'document_number'     => 'Номер документа',
+            'structure_image_url'     => 'URL изображения структуры',
+        );
+    }  
+
+
+    public function prepare_items() {
+        global $wpdb;
+        $search = ( isset( $_REQUEST['s'] ) ) ? $_REQUEST['s'] : false;
+
+        $do_search = ( $search ) ? $wpdb->prepare("WHERE d.document_name LIKE '%%%s%%'", $search) : '';
+        $data = $wpdb->get_results("
+    SELECT s.full_name, s.position, ms.start_date, ms.basis_document, ms.document_date, ms.document_number, ms.structure_image_url 
+    FROM {$wpdb->prefix}reginfoeduorg_management_structure ms 
+    INNER JOIN {$wpdb->prefix}reginfoeduorg_staff s 
+    ON ms.staff_id = s.id {$do_search}", ARRAY_A);
+        
+        $this->items = $data;
+        $this->_column_headers = array($this->get_columns(), array(), $this->get_sortable_columns());
+    }
+
+
+    public function column_cb($item) {
+        return sprintf(
+            '<input type="checkbox" name="item[]" value="%s" />',
+            $item['id']
+        );
+    }
+
+    public function column_default($item, $column_name) {
+        // Если выбрано действие "edit", преобразуем поле вывода в поле для ввода
+        if ($this->current_action() == 'edit') {
+            return '<textarea name="data[' . $column_name. ']">'.$item[$column_name].'</textarea>';
+        } else {
+            return $item[$column_name];
+        }        
+    }
+
+    
+    public function get_sortable_columns() {
+        return array(
+            'document_name'     => 'document_name',
+            'document_type'     => 'document_type'
+        );
+    }
+    
+    public function get_bulk_actions() {
+        $actions = array(
+            'delete'    => 'Удалить'
+        );
+        return $actions;
+    }
+
+    
+}
+
+class International_Cooperation_Table extends WP_List_Table {
+
+    public function __construct() {
+        parent::__construct(array(
+            'singular' => 'reginfoeduorg',
+            'plural'   => 'reginfoeduorgs',
+            'ajax'     => false
+        ));
+    }
+    	
+
+    public function get_columns() {
+        return array(
+
+            'cb'       => '<input type="checkbox" />',
+            'info'     => 'Пункт',
+            'value'    => 'Значение'
+        );
+    }  
+
+
+    public function prepare_items() {
+        global $wpdb;
+        $search = ( isset( $_REQUEST['s'] ) ) ? $_REQUEST['s'] : false;
+
+        $do_search = ( $search ) ? $wpdb->prepare("WHERE info LIKE '%%%s%%'", $search) : '';
+        $data = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}reginfoeduorg_international_cooperation {$do_search}"), ARRAY_A);
+       
+        $this->items = $data;
+        $this->_column_headers = array($this->get_columns(), array(), $this->get_sortable_columns());
+    }
+
+
+    public function column_cb($item) {
+        return sprintf(
+            '<input type="checkbox" name="item[]" value="%s" />',
+            $item['id']
+        );
+    }
+
+    public function column_default($item, $column_name) {
+        // Если выбрано действие "edit", преобразуем поле вывода в поле для ввода
+        if ($this->current_action() == 'edit') {
+            return '<textarea name="data[' . $column_name. ']">'.$item[$column_name].'</textarea>';
+        } else {
+            return $item[$column_name];
+        }        
+    }
+
+    
+    public function get_sortable_columns() {
+        return array(
+            'info'     => 'info'
+        );
+    }
+    
+    public function get_bulk_actions() {
+        $actions = array(
+            'delete'    => 'Удалить'
+        );
+        return $actions;
+    }    
+}
+
+class Staff_Table extends WP_List_Table {
+
+    public function __construct() {
+        parent::__construct(array(
+            'singular' => 'reginfoeduorg',
+            'plural'   => 'reginfoeduorgs',
+            'ajax'     => false
+        ));
+    }
+    	
+
+    public function get_columns() {
+        return array(
+            'cb'                            => '<input type="checkbox" />',
+            'full_name'                     => 'ФИО',
+            'position'                      => 'Должность',
+            'email'                         => 'Email',
+            'phone'                         => 'Телефон',
+            'specialization'                => 'Специальность',
+            'education'                     => 'Информация об образовании',
+            'career'                        => 'Информация о карьере',
+            'disciplines'                   => 'Дисциплины',
+            'qualification_improvement'     => 'Повышение квалификации',
+            'overall_experience'            => 'Общий стаж',
+            'specialization_experience'     => 'Стаж по специализации',
+            'small_image_url'               => 'Ссылка на мелкое фото сотрудника',
+            'big_image_url'                 => 'Ссылка на крупное фото сотрудника'
+        );
+    }  
+    
+
+
+    public function prepare_items() {
+        global $wpdb;
+        $search = ( isset( $_REQUEST['s'] ) ) ? $_REQUEST['s'] : false;
+
+        $do_search = ( $search ) ? $wpdb->prepare("WHERE full_name LIKE '%%%s%%'", $search) : '';
+        $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_staff {$do_search}", ARRAY_A);
+       
+        $this->items = $data;
+        $this->_column_headers = array($this->get_columns(), array(), $this->get_sortable_columns());
+    }
+
+
+    public function column_cb($item) {
+        return sprintf(
+            '<input type="checkbox" name="item[]" value="%s" />',
+            $item['id']
+        );
+    }
+
+    public function column_default($item, $column_name) {
+        // Если выбрано действие "edit", преобразуем поле вывода в поле для ввода
+        if ($this->current_action() == 'edit') {
+            return '<textarea name="data[' . $column_name. ']">'.$item[$column_name].'</textarea>';
+        } else {
+            return $item[$column_name];
+        }        
+    }
+
+    
+    public function get_sortable_columns() {
+        return array(
+            'full_name'     => 'full_name'
+        );
+    }
+    
+    public function get_bulk_actions() {
+        $actions = array(
+            'delete'    => 'Удалить'
+        );
+        return $actions;
+    }    
+}
+
+class Education_Programs_Table extends WP_List_Table {
+
+    public function __construct() {
+        parent::__construct(array(
+            'singular' => 'reginfoeduorg',
+            'plural'   => 'reginfoeduorgs',
+            'ajax'     => false
+        ));
+    }
+    	
+
+
+
+    public function get_columns() {
+        return array(
+            'cb'       => '<input type="checkbox" />',
+            'major_group'    => 'Группа направлений',
+            'training_program'  => 'Программа обучения',
+            'level_of_training'    => 'Уровень обучения',
+            'qualification' => 'Квалификация',
+            'form_of_education' => 'Форма обучения',
+            'term_based_on_9_class' => 'Срок обучения на основе 9 классов',
+            'term_based_on_11_class' => 'Срок обучения на основе 11 классов',
+            'study_group_prefix' => 'Префикс учебной группы'
+        );
+    }  
+    
+    public function prepare_items() {
+        global $wpdb;
+        $search = ( isset( $_REQUEST['s'] ) ) ? $_REQUEST['s'] : false;
+
+        $do_search = ( $search ) ? $wpdb->prepare("WHERE major_group LIKE '%%%s%%'", $search) : '';
+        $data = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}reginfoeduorg_education_programs {$do_search}"), ARRAY_A);
+       
+        $this->items = $data;
+        $this->_column_headers = array($this->get_columns(), array(), $this->get_sortable_columns());
+    }
+
+
+    public function column_cb($item) {
+        return sprintf(
+            '<input type="checkbox" name="item[]" value="%s" />',
+            $item['id']
+        );
+    }
+
+    public function column_default($item, $column_name) {
+        // Если выбрано действие "edit", преобразуем поле вывода в поле для ввода
+        if ($this->current_action() == 'edit') {
+            return '<textarea name="data[' . $column_name. ']">'.$item[$column_name].'</textarea>';
+        } else {
+            return $item[$column_name];
+        }        
+    }
+
+    
+    public function get_sortable_columns() {
+        return array(
+            'major_group'     => 'major_group'
+        );
+    }
+    
+    public function get_bulk_actions() {
+        $actions = array(
+            'delete'    => 'Удалить'
+        );
+        return $actions;
+    }    
+}
+
+class Accreditation_Table extends WP_List_Table {
+
+    public function __construct() {
+        parent::__construct(array(
+            'singular' => 'reginfoeduorg',
+            'plural'   => 'reginfoeduorgs',
+            'ajax'     => false
+        ));
+    }
+
+    public function get_columns() {
+        return array(
+            'cb'       => '<input type="checkbox" />',
+            'date_end'    => 'Дата окончания аккредитации',
+            'detail'  => 'Дополнительное описание'
+        );
+    }  
+    
+    public function prepare_items() {
+        global $wpdb;
+        $search = ( isset( $_REQUEST['s'] ) ) ? $_REQUEST['s'] : false;
+
+        $do_search = ( $search ) ? $wpdb->prepare("WHERE major_group LIKE '%%%s%%'", $search) : '';
+        $data = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}reginfoeduorg_accreditation {$do_search}"), ARRAY_A);
+        
+        $this->items = $data;
+        $this->_column_headers = array($this->get_columns(), array(), $this->get_sortable_columns());
+    }
+
+
+    public function column_cb($item) {
+        return sprintf(
+            '<input type="checkbox" name="item[]" value="%s" />',
+            $item['id']
+        );
+    }
+
+    public function column_default($item, $column_name) {
+        // Если выбрано действие "edit", преобразуем поле вывода в поле для ввода
+        if ($this->current_action() == 'edit') {
+            return '<textarea name="data[' . $column_name. ']">'.$item[$column_name].'</textarea>';
+        } else {
+            return $item[$column_name];
+        }        
+    }
+
+    
+    public function get_sortable_columns() {
+        return array(
+            'major_group'     => 'major_group'
+        );
+    }
+    
+    public function get_bulk_actions() {
+        $actions = array(
+            'delete'    => 'Удалить'
+        );
+        return $actions;
+    }    
+}
+
+class Directions_Results_Scientific_Table extends WP_List_Table {
+
+    public function __construct() {
+        parent::__construct(array(
+            'singular' => 'reginfoeduorg',
+            'plural'   => 'reginfoeduorgs',
+            'ajax'     => false
+        ));
+    }
+
+    public function get_columns() {
+        return array(
+            'cb'       => '<input type="checkbox" />',
+            'detail'    => 'Информация'
+        );
+    }  
+
+    public function prepare_items() {
+        global $wpdb;
+        $search = ( isset( $_REQUEST['s'] ) ) ? $_REQUEST['s'] : false;
+
+        $do_search = ( $search ) ? $wpdb->prepare("WHERE major_group LIKE '%%%s%%'", $search) : '';
+        $data = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}reginfoeduorg_directions_results_scientific {$do_search}"), ARRAY_A);
+        
+        $this->items = $data;
+        $this->_column_headers = array($this->get_columns(), array(), $this->get_sortable_columns());
+    }
+
+
+    public function column_cb($item) {
+        return sprintf(
+            '<input type="checkbox" name="item[]" value="%s" />',
+            $item['id']
+        );
+    }
+
+    public function column_default($item, $column_name) {
+        // Если выбрано действие "edit", преобразуем поле вывода в поле для ввода
+        if ($this->current_action() == 'edit') {
+            return '<textarea name="data[' . $column_name. ']">'.$item[$column_name].'</textarea>';
+        } else {
+            return $item[$column_name];
+        }        
+    }
+
+    
+    public function get_sortable_columns() {
+        return array(
+            'major_group'     => 'major_group'
+        );
+    }
+    
+    public function get_bulk_actions() {
+        $actions = array(
+            'delete'    => 'Удалить'
+        );
+        return $actions;
+    }    
+}
+
+class Contingent_Table extends WP_List_Table {
+
+    public function __construct() {
+        parent::__construct(array(
+            'singular' => 'reginfoeduorg',
+            'plural'   => 'reginfoeduorgs',
+            'ajax'     => false
+        ));
+    }
+
+    public function get_columns() {
+        return array(
+            'cb'       => '<input type="checkbox" />',
+            'type_education'    => 'Тип обучения',
+            'name'    => 'Наименование',
+            'budget'    => 'Количество мест на бюджете',
+            'contract'    => 'Количество мест на договорной основе',
+            'foreigners'    => 'Количество иностранных граждан'
+        );
+    }  
+
+    public function prepare_items() {
+        global $wpdb;
+        $search = ( isset( $_REQUEST['s'] ) ) ? $_REQUEST['s'] : false;
+
+        $do_search = ( $search ) ? $wpdb->prepare("WHERE name LIKE '%%%s%%'", $search) : '';
+        $data = $wpdb->get_results("SELECT contingent.*, te.type_education FROM {$wpdb->prefix}reginfoeduorg_contingent contingent JOIN {$wpdb->prefix}reginfoeduorg_type_education te ON contingent.type_education = te.id {$do_search}", ARRAY_A);
+
+        
+        $this->items = $data;
+        $this->_column_headers = array($this->get_columns(), array(), $this->get_sortable_columns());
+    }
+
+
+    public function column_cb($item) {
+        return sprintf(
+            '<input type="checkbox" name="item[]" value="%s" />',
+            $item['id']
+        );
+    }
+
+    public function column_default($item, $column_name) {
+        // Если выбрано действие "edit", преобразуем поле вывода в поле для ввода
+        if ($this->current_action() == 'edit') {
+            return '<textarea name="data[' . $column_name. ']">'.$item[$column_name].'</textarea>';
+        } else {
+            return $item[$column_name];
+        }        
+    }
+
+    
+    public function get_sortable_columns() {
+        return array(
+            'major_group'     => 'major_group'
+        );
+    }
+    
+    public function get_bulk_actions() {
+        $actions = array(
+            'delete'    => 'Удалить'
+        );
+        return $actions;
+    }    
+}
+
+class Resources_Table extends WP_List_Table {
+
+    public function __construct() {
+        parent::__construct(array(
+            'singular' => 'reginfoeduorg',
+            'plural'   => 'reginfoeduorgs',
+            'ajax'     => false
+        ));
+    }
+
+    public function get_columns() {
+        return array(
+            'cb'       => '<input type="checkbox" />',
+            'resource_name'    => 'Название ресурса',
+            'type_name'    => 'Тип ресурса',
+            'details'    => 'Детали'
+        );
+    }  
+
+    public function prepare_items() {
+        global $wpdb;
+        $search = ( isset( $_REQUEST['s'] ) ) ? $_REQUEST['s'] : false;
+
+        $do_search = ( $search ) ? $wpdb->prepare("WHERE resource_name LIKE '%%%s%%'", $search) : '';
+        $data = $wpdb->get_results("SELECT resources.id, resources.resource_name, resource_types.type_name, resources.details FROM {$wpdb->prefix}reginfoeduorg_resources resources LEFT JOIN {$wpdb->prefix}reginfoeduorg_resource_types resource_types ON resources.resource_type = resource_types.id {$do_search}", ARRAY_A);
+        $this->items = $data;
+        $this->_column_headers = array($this->get_columns(), array(), $this->get_sortable_columns());
+    }
+
+
+    public function column_cb($item) {
+        return sprintf(
+            '<input type="checkbox" name="item[]" value="%s" />',
+            $item['id']
+        );
+    }
+
+    public function column_default($item, $column_name) {
+        // Если выбрано действие "edit", преобразуем поле вывода в поле для ввода
+        if ($this->current_action() == 'edit') {
+            return '<textarea name="data[' . $column_name. ']">'.$item[$column_name].'</textarea>';
+        } else {
+            return $item[$column_name];
+        }        
+    }
+
+    
+    public function get_sortable_columns() {
+        return array(
+            'resource_name'     => 'resource_name'
+        );
+    }
+    
+    public function get_bulk_actions() {
+        $actions = array(
+            'delete'    => 'Удалить'
+        );
+        return $actions;
+    }    
+}
+
+class Special_Conditions_Table extends WP_List_Table {
+
+    public function __construct() {
+        parent::__construct(array(
+            'singular' => 'reginfoeduorg',
+            'plural'   => 'reginfoeduorgs',
+            'ajax'     => false
+        ));
+    }
+
+    public function get_columns() {
+        return array(
+            'cb'       => '<input type="checkbox" />',
+            'info'    => 'Информация',
+            'value'    => 'Значение'
+        );
+    }  
+
+    public function prepare_items() {
+        global $wpdb;
+        $search = ( isset( $_REQUEST['s'] ) ) ? $_REQUEST['s'] : false;
+
+        $do_search = ( $search ) ? $wpdb->prepare("WHERE resource_name LIKE '%%%s%%'", $search) : '';
+        
+        $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_special_conditions {$do_search}", ARRAY_A);
+
+        $this->items = $data;
+        $this->_column_headers = array($this->get_columns(), array(), $this->get_sortable_columns());
+    }
+
+
+    public function column_cb($item) {
+        return sprintf(
+            '<input type="checkbox" name="item[]" value="%s" />',
+            $item['id']
+        );
+    }
+
+    public function column_default($item, $column_name) {
+        // Если выбрано действие "edit", преобразуем поле вывода в поле для ввода
+        if ($this->current_action() == 'edit') {
+            return '<textarea name="data[' . $column_name. ']">'.$item[$column_name].'</textarea>';
+        } else {
+            return $item[$column_name];
+        }        
+    }
+
+    
+    public function get_sortable_columns() {
+        return array(
+            'resource_name'     => 'resource_name'
+        );
+    }
+    
+    public function get_bulk_actions() {
+        $actions = array(
+            'delete'    => 'Удалить'
+        );
+        return $actions;
+    }    
+}
+
 
 class RegInfoEduOrg
 {
@@ -2850,6 +3599,22 @@ class RegInfoEduOrg
                     $specialization_experience = (int)$staff_member->specialization_experience;
                     $small_image_url = (string)$staff_member->small_image_url;
                     $big_image_url = (string)$staff_member->big_image_url;
+                    
+                    // Проверяем, существуют ли уже данные для этого сотрудника в таблице
+                    $existing_staff = $wpdb->get_row(
+                        $wpdb->prepare(
+                            "SELECT * FROM $table_staff WHERE full_name = %s AND email = %s",
+                            $full_name,
+                            $email
+                        ),
+                        ARRAY_A
+                    );
+
+                    if ($existing_staff) {
+                        // Если данные уже существуют, пропускаем вставку
+                        continue;
+                    }
+                    
                     // Создаем массив с данными для таблицы staff
                     $data_staff = array(
                         'full_name' => $full_name,
@@ -3547,94 +4312,52 @@ class RegInfoEduOrg
         {
             return;
         }
+
+         echo '<style>
+            .wp-list-table input:not([type=checkbox]), .wp-list-table textarea {
+            width: 100%;
+            box-sizing: border-box;
+                }
+            </style>';
+                $s = isset($_REQUEST['s']) ? $_REQUEST['s'] : '';
+                
+                echo '<input type="hidden" name="page" value="' . $_REQUEST['page'] . '" />
+        <input type="search" id="search" name="s" value="' . $s . '" />
+        <input type="submit" name="" id="search-submit" class="button" value="Поиск">';
+
         global $wpdb;
-        switch ($subsection_id) {
+        switch ($subsection_id) {     
             case 1:
-                $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_general_information", ARRAY_A);
-                if ($data) 
-                {                   
 
-                    echo '<table class="wp-list-table widefat fixed striped">';
-                    echo '<thead><tr>';
-                    echo '<th scope="col" class="manage-column column-name">Название поля</th>';
-                    echo '<th scope="col" class="manage-column column-value">Значение</th>';
-                    echo '</tr></thead>';
-                    echo '<tbody>';
-                    $fields = array(
-                        'Полное название образовательной организации' => 'full_name',
-                        'Краткое название образовательной организации' => 'short_name',
-                        'Дата создания образовательной организации' => 'creation_date',
-                        'Учредитель' => 'founder',
-                        'Место нахождения образовательной организации' => 'location',
-                        'Филиалы образовательной организации' => 'branches',
-                        'График работы' => 'working_hours',
-                        'Контактные телефоны' => 'contact_phones',
-                        'Адреса электронной почты' => 'email_addresses',
-                    );
-
-                    foreach ($data as $row) 
-                    {
-                        foreach ($fields as $field_name => $field_key) 
-                        {
-                            echo '<tr>';
-                            echo '<td class="column-name">' . $field_name . '</td>';
-                            echo '<td class="column-value"><input type="text" name="data[' . $field_key . ']" value="' . $row[$field_key] . '"></td>';
-                            echo '</tr>';
-                        }
+                $table = new General_Information_Table();
+                if ('delete' === $table->current_action()) {
+                    foreach ($_POST['item'] as $item_id) {
+                        $wpdb->delete($wpdb->prefix.'reginfoeduorg_general_information', array('id' => $item_id));
                     }
-                    echo '</tbody>';
-                    echo '</table>';
-                    echo '<input type="submit" name="save_table_changes[' . $row['id'] . ']" value="Сохранить изменения в таблице" class="button-primary">';
-                } 
-                else 
-                {
+                }
+                $table->prepare_items();
+                
+                if (count($table->items) > 0) {
+                    $table->prepare_items();
+                    $table->display();
+                } else {
                     echo '<p>Данные о образовательном учреждении отсутствуют.</p>';
                 }
+                
                 break;
+
             case 2:
-                echo '<style>
-                    .wp-list-table input, .wp-list-table textarea {
-                        width: 100%;
-                        box-sizing: border-box;
+                $table = new Management_Structure_Table();
+                if ('delete' === $table->current_action()) {
+                    foreach ($_POST['item'] as $item_id) {
+                        $wpdb->delete($wpdb->prefix.'reginfoeduorg_management_structure', array('id' => $item_id));
                     }
-                </style>
-                ';
-
-                // Получаем данные из таблицы структуры управления и персонала
-                $data = $wpdb->get_results("
-    SELECT ms.id, s.full_name, s.position, ms.start_date, ms.basis_document, ms.document_date, ms.document_number, ms.structure_image_url 
-    FROM {$wpdb->prefix}reginfoeduorg_management_structure ms 
-    INNER JOIN {$wpdb->prefix}reginfoeduorg_staff s 
-    ON ms.staff_id = s.id", 
-                ARRAY_A);
-
-                if ($data) {
-                    echo '<table class="wp-list-table widefat fixed striped">';
-                    echo '<thead><tr>';
-                    echo '<th>ФИО</th>';
-                    echo '<th>Должность</th>';
-                    echo '<th>Дата начала</th>';
-                    echo '<th>Основание (документ)</th>';
-                    echo '<th>Дата документа</th>';
-                    echo '<th>Номер документа</th>';
-                    echo '<th>URL изображения структуры</th>';
-                    echo '</tr></thead>';
-                    echo '<tbody>';
-
-                    foreach ($data as $row) {
-                        echo '<tr>';
-                        echo '<td><textarea name="full_name[' . $row['id'] . ']">'.$row['full_name'].'</textarea></td>';
-                        echo '<td><textarea name="position[' . $row['id'] . ']">'.$row['position'].'</textarea></td>';
-                        echo '<td><input type="text" name="start_date[' . $row['id'] . ']" value="' . $row['start_date'] . '"></td>';
-                        echo '<td><textarea name="basis_document[' . $row['id'] . ']">'.$row['basis_document'].'</textarea></td>';
-                        echo '<td><input type="text" name="document_date[' . $row['id'] . ']" value="' . $row['document_date'] . '"></td>';
-                        echo '<td><input type="text" name="document_number[' . $row['id'] . ']" value="' . $row['document_number'] . '"></td>';
-                        echo '<td><input type="text" name="structure_image_url[' . $row['id'] . ']" value="' . $row['structure_image_url'] . '"></td>';
-                        echo '</tr>';
-                    }
-
-                    echo '</tbody>';
-                    echo '</table>';
+                }
+                $table->prepare_items();
+                
+                if (count($table->items) > 0) {
+                    $table->prepare_items();
+                    $table->display();
                     echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
                 } else {
                     echo '<p>Данные о структуре и органах управления образовательной организацией отсутствуют.</p>';
@@ -3642,124 +4365,65 @@ class RegInfoEduOrg
                 break;
 
             case 5:
-                echo '<style>
-        .wp-list-table input, .wp-list-table textarea {
-            width: 100%;
-            box-sizing: border-box;}</style>';
-
-                // Получаем данные из таблицы образовательных программ
-                $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_education_programs", ARRAY_A);
-
-                if ($data) {
-                    echo '<table class="wp-list-table widefat fixed striped">';
-                    echo '<thead><tr>';
-                    echo '<th>Группа направлений</th>';
-                    echo '<th>Программа обучения</th>';
-                    echo '<th>Уровень обучения</th>';
-                    echo '<th>Квалификация</th>';
-                    echo '<th>Форма обучения</th>';
-                    echo '<th>Срок обучения на основе 9 классов</th>';
-                    echo '<th>Срок обучения на основе 11 классов</th>';
-                    echo '<th>Префикс учебной группы</th>';
-                    echo '</tr></thead>';
-                    echo '<tbody>';
-
-                    foreach ($data as $row) {
-                        echo '<tr>';
-                        echo '<td><textarea name="major_group[' . $row['id'] . ']">'.$row['major_group'].'</textarea></td>';
-                        echo '<td><textarea name="training_program[' . $row['id'] . ']">'.$row['training_program'].'</textarea></td>';
-                        echo '<td><input type="text" name="level_of_training[' . $row['id'] . ']" value="' . $row['level_of_training'] . '"></td>';
-                        echo '<td><textarea name="qualification[' . $row['id'] . ']">'.$row['qualification'].'</textarea></td>';
-                        echo '<td><input type="text" name="form_of_education[' . $row['id'] . ']" value="' . $row['form_of_education'] . '"></td>';
-                        echo '<td><input type="text" name="term_based_on_9_class[' . $row['id'] . ']" value="' . $row['term_based_on_9_class'] . '"></td>';
-                        echo '<td><input type="text" name="term_based_on_11_class[' . $row['id'] . ']" value="' . $row['term_based_on_11_class'] . '"></td>';
-                        echo '<td><input type="text" name="study_group_prefix[' . $row['id'] . ']" value="' . $row['study_group_prefix'] . '"></td>';
-                        echo '</tr>';
+                $table = new Education_Programs_Table();
+                if ('delete' === $table->current_action()) {
+                    foreach ($_POST['item'] as $item_id) {
+                        $wpdb->delete($wpdb->prefix.'reginfoeduorg_education_programs', array('id' => $item_id));
                     }
-                    echo '</tbody>';
-                    echo '</table>';
-                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
+                }
+                $table->prepare_items();
+                
+                if (count($table->items) > 0) {
+                    $table->prepare_items();
+                    $table->display();
                 } else {
                     echo '<p>Данные о группах отсутствуют.</p>';
                 }
 
-                // Получаем данные из таблицы reginfoeduorg_info_education_program
-                $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_accreditation", ARRAY_A);
-                if ($data) {
-                    echo '<table class="wp-list-table widefat fixed striped">';
-                    echo '<thead><tr>';
-                    echo '<th>Дата окончания аккредитации</th>';
-                    echo '<th>Дополнительное описание</th>';
-                    echo '</tr></thead>';
-                    echo '<tbody>';
-
-                    foreach ($data as $row) {
-                        echo '<tr>';
-                        echo '<td><input type="text" name="info_program_date_end[' . $row['id'] . ']" value="' . $row['date_end'] . '"></td>';
-                        echo '<td><textarea name="info_program_detail[' . $row['id'] . ']">'.$row['detail'].'</textarea></td>';
-                        echo '</tr>';
+                
+                $table = new Accreditation_Table();
+                if ('delete' === $table->current_action()) {
+                    foreach ($_POST['item'] as $item_id) {
+                        $wpdb->delete($wpdb->prefix.'reginfoeduorg_accreditation', array('id' => $item_id));
                     }
-
-                    echo '</tbody>';
-                    echo '</table>';
-                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
-
+                }
+                $table->prepare_items();
+                
+                if (count($table->items) > 0) {
+                    $table->prepare_items();
+                    $table->display();
                 } else {
                     echo '<p>Данные об аккредитации отсутствуют.</p>';
                 }
 
 
-                // Получаем данные из таблицы reginfoeduorg_directions_results_scientific
-                $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_directions_results_scientific", ARRAY_A);
-                if ($data) {
-                    echo '<table class="wp-list-table widefat fixed striped">';
-                    echo '<thead><tr>';
-                    echo '<th>Информация</th>';
-                    echo '</tr></thead>';
-                    echo '<tbody>';
-
-                    foreach ($data as $row) {
-                        echo '<tr>';
-                        echo '<td><textarea name="detail[' . $row['id'] . ']">'.$row['detail'].'</textarea></td>';
-                        echo '</tr>';
+                $table = new Directions_Results_Scientific_Table();
+                if ('delete' === $table->current_action()) {
+                    foreach ($_POST['item'] as $item_id) {
+                        $wpdb->delete($wpdb->prefix.'reginfoeduorg_directions_results_scientific', array('id' => $item_id));
                     }
-
-                    echo '</tbody>';
-                    echo '</table>';
-                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
-
+                }
+                $table->prepare_items();
+                
+                if (count($table->items) > 0) {
+                    $table->prepare_items();
+                    $table->display();
                 } else {
                     echo '<p>Данные о направлениях и результатах научной (научно-исследовательской) деятельности отсутствуют.</p>';
                 }
 
 
-                // Получаем данные из таблицы reginfoeduorg_program_type, связанные с таблицей reginfoeduorg_type_education
-                $data = $wpdb->get_results("SELECT contingent.*, te.type_education FROM {$wpdb->prefix}reginfoeduorg_contingent contingent JOIN {$wpdb->prefix}reginfoeduorg_type_education te ON contingent.type_education = te.id", ARRAY_A);
-                if ($data) {
-                    echo '<table class="wp-list-table widefat fixed striped">';
-                    echo '<thead><tr>';
-                    echo '<th>Тип обучения</th>';
-                    echo '<th>Наименование</th>';
-                    echo '<th>Количество мест на бюджете</th>';
-                    echo '<th>Количество мест на договорной основе</th>';
-                    echo '<th>Количество иностранных граждан</th>';
-                    echo '</tr></thead>';
-                    echo '<tbody>';
-
-                    foreach ($data as $row) {
-                        echo '<tr>';
-                        echo '<td><textarea name="type_education[' . $row['id'] . ']">'.$row['type_education'].'</textarea></td>';
-                        echo '<td><textarea name="name [' . $row['id'] . ']">'.$row['name'].'</textarea></td>';
-                        echo '<td><input type="number" name="budget [' . $row['id'] . ']" value="' . $row['budget'] . '"></td>';
-                        echo '<td><input type="number" name="contract [' . $row['id'] . ']" value="' . $row['contract'] . '"></td>';
-                        echo '<td><input type="number" name="foreigners [' . $row['id'] . ']" value="' . $row['foreigners'] . '"></td>';
-                        echo '</tr>';
+               $table = new Contingent_Table();
+                if ('delete' === $table->current_action()) {
+                    foreach ($_POST['item'] as $item_id) {
+                        $wpdb->delete($wpdb->prefix.'reginfoeduorg_directions_results_scientific', array('id' => $item_id));
                     }
-
-                    echo '</tbody>';
-                    echo '</table>';
-                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
-
+                }
+                $table->prepare_items();
+                
+                if (count($table->items) > 0) {
+                    $table->prepare_items();
+                    $table->display();
                 } else {
                     echo '<p>Данные о контингенте отсутствуют.</p>';
                 }
@@ -3768,140 +4432,48 @@ class RegInfoEduOrg
                 break;
 
             case 6:
-                echo '<style>
-                    .wp-list-table input, .wp-list-table textarea {
-                        width: 100%;
-                        box-sizing: border-box;
+                $table = new Staff_Table();
+                if ('delete' === $table->current_action()) {
+                    foreach ($_POST['item'] as $item_id) {
+                        $wpdb->delete($wpdb->prefix.'reginfoeduorg_staff', array('id' => $item_id));
                     }
-                </style>
-                ';
-
-                // Получаем данные из таблицы staff
-                $data = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_staff", ARRAY_A);
-
-                if ($data) {
-                    echo '<table class="wp-list-table widefat fixed striped">';
-                    echo '<thead><tr>';
-                    echo '<th>ФИО</th>';
-                    echo '<th>Должность</th>';
-                    echo '<th>Email</th>';
-                    echo '<th>Телефон</th>';
-                    echo '<th>Общий стаж</th>';
-                    echo '<th>Стаж по специализации</th>';
-                    echo '<th>Информация об образовании</th>';
-                    echo '<th>Информация о карьере</th>';
-                    echo '<th>Дисциплины</th>';
-                    echo '<th>Повышение квалификации</th>';
-                    echo '<th>Ссылка на мелкое фото сотрудника</th>';
-                    echo '<th>Ссылка на крупное фото сотрудника</th>';
-                    echo '</tr></thead>';
-                    echo '<tbody>';
-
-                    foreach ($data as $row) {
-                        echo '<tr>';
-                        echo '<td><input type="text" name="full_name[' . $row['id'] . ']" value="' . $row['full_name'] . '"></td>';
-                        echo '<td><input type="text" name="position[' . $row['id'] . ']" value="' . $row['position'] . '"></td>';
-                        echo '<td><input type="text" name="email[' . $row['id'] . ']" value="' . $row['email'] . '"></td>';
-                        echo '<td><input type="text" name="phone[' . $row['id'] . ']" value="' . $row['phone'] . '"></td>';
-                        echo '<td><input type="number" name="overall_experience[' . $row['id'] . ']" value="' . $row['overall_experience'] . '"></td>';
-                        echo '<td><input type="number" name="specialization_experience[' . $row['id'] . ']" value="' . $row['specialization_experience'] . '"></td>';
-                        echo '<td><textarea name="education[' . $row['id'] . ']">' . $row['education'] . '</textarea></td>';
-                        echo '<td><textarea name="career[' . $row['id'] . ']">' . $row['career'] . '</textarea></td>';
-                        echo '<td><textarea name="disciplines[' . $row['id'] . ']">' . $row['disciplines'] . '</textarea></td>';
-                        echo '<td><textarea name="qualification_improvement[' . $row['id'] . ']">' . $row['qualification_improvement'] . '</textarea></td>';
-                        echo '<td><input type="text" name="small_image_url[' . $row['id'] . ']" value="' . $row['small_image_url'] . '"></td>';
-                        echo '<td><input type="text" name="big_image_url[' . $row['id'] . ']" value="' . $row['big_image_url'] . '"></td>';
-                        echo '</tr>';
-                    }
-
-                    echo '</tbody>';
-                    echo '</table>';
-                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
-                } else {
+                }
+                $table->prepare_items();
+                
+                if (count($table->items) > 0) {
+                    $table->prepare_items();
+                    $table->display();
+                 } else {
                     echo '<p>Данные о сотрудниках отсутствуют.</p>';
                 }
                 break;
-            case 7:
-                // Запрос на получение данных из таблицы resources с JOIN для типа ресурса
-                $data_resources = $wpdb->get_results("SELECT resources.id, resources.resource_name, resource_types.type_name, resources.details FROM {$wpdb->prefix}reginfoeduorg_resources resources LEFT JOIN {$wpdb->prefix}reginfoeduorg_resource_types resource_types ON resources.resource_type = resource_types.id", ARRAY_A);
-
-                // Запрос на получение данных из таблицы documents
-                $data_documents = $wpdb->get_results($wpdb->prepare("SELECT d.id, d.document_name, dt.id as dt_id, dt.document_type, d.document_link 
-             FROM {$wpdb->prefix}reginfoeduorg_documents as d
-             JOIN {$wpdb->prefix}reginfoeduorg_document_types as dt
-             ON d.document_type = dt.id
-             WHERE d.subsection_id = %d", $subsection_id), ARRAY_A);
-                $resource_types = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_resource_types", ARRAY_A);
-
-                $document_types = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_document_types", ARRAY_A);
-                // Вывод данных из таблицы resources
-                if ($data_resources) {
-                    echo '<table class="wp-list-table widefat fixed striped">';
-                    echo '<thead><tr>';
-                    echo '<th>Название ресурса</th>';
-                    echo '<th>Тип ресурса</th>';
-                    echo '<th>Детали</th>';
-                    echo '</tr></thead>';
-                    echo '<tbody>';
-
-                    foreach ($data_resources as $row) {
-                        echo '<tr>';
-                        echo '<td><input type="text" name="resource_name[' . $row['id'] . ']" value="' . $row['resource_name'] . '"></td>';
-                        echo '<td>';                        
-                        // Создаем выпадающий список с типами ресурсов
-                        echo '<select name="resource_type[' . $row['id'] . ']">';
-                        foreach ($resource_types as $type) {
-                            $selected = $type['id'] == $row['resource_type'] ? ' selected' : '';
-                            echo '<option value="' . $type['id'] . '"' . $selected . '>' . $type['type_name'] . '</option>';
-                        }
-                        echo '</select>';
-                        echo '</td>';
-                        echo '<td><textarea name="details[' . $row['id'] . ']">' . $row['details'] . '</textarea></td>';
-                        echo '</tr>';
+            case 7:                
+                $table = new Resources_Table();
+                if ('delete' === $table->current_action()) {
+                    foreach ($_POST['item'] as $item_id) {
+                        $wpdb->delete($wpdb->prefix.'reginfoeduorg_resources', array('id' => $item_id));
                     }
-
-
-                    echo '</tbody>';
-                    echo '</table>';
-                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
-                    echo '<br>';
+                }
+                $table->prepare_items();
+                
+                if (count($table->items) > 0) {
+                    $table->prepare_items();
+                    $table->display();
                 } else {
                     echo '<p>Данные о ресурсах отсутствуют.</p>';
                 }
 
-                // Вывод данных из таблицы documents
-                if ($data_documents) {
-                    echo '<table class="wp-list-table widefat fixed striped">';
-                    echo '<thead><tr>';
-                    echo '<th>Название документа</th>';
-                    echo '<th>Тип документа</th>';
-                    echo '<th>Ссылка на документ</th>';
-                    echo '</tr></thead>';
-                    echo '<tbody>';
-
-                    foreach ($data_documents as $row) {
-                        
-                        echo '<tr>';
-                        echo '<td class="column-name"><input type="text" name="document_name[' . $row['id'] . ']" value="' . $row['document_name'] . '"></td>';
-                        echo '<td class="column-name">';                        
-                        // Создаем выпадающий список с типами документов
-                        echo '<select name="document_type[' . $row['id'] . ']">';
-                        
-                        foreach ($document_types as $type) {
-                            
-                            $selected = $type['id'] == $row['dt_id'] ? ' selected' : '';
-                            echo '<option value="' . $type['id'] . '"' . $selected . '>' . $type['document_type'] . '</option>';
-                        }
-
-                        echo '</select>';
-                        echo '</td>';
-                        echo '<td class="column-value"><input type="text" name="document_link[' . $row['id'] . ']" value="' . $row['document_link'] . '"></td>';
-                        echo '</tr>';
+                $table = new Documents_Table($subsection_id);
+                if ('delete' === $table->current_action()) {
+                    foreach ($_POST['item'] as $item_id) {
+                        $wpdb->delete($wpdb->prefix.'reginfoeduorg_documents', array('id' => $item_id));
                     }
-
-                    echo '</tbody>';
-                    echo '</table>';
-                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
+                }
+                $table->prepare_items();
+                
+                if (count($table->items) > 0) {
+                    $table->prepare_items();
+                    $table->display();
                 } else {
                     echo '<p>Данных о документах отсутствуют.</p>';
                 }
@@ -3913,125 +4485,49 @@ class RegInfoEduOrg
             case 9:
             case 10:
             case 11:
-                $data = $wpdb->get_results($wpdb->prepare("SELECT d.id, d.document_name, dt.id as dt_id, dt.document_type, d.document_link 
-             FROM {$wpdb->prefix}reginfoeduorg_documents as d
-             JOIN {$wpdb->prefix}reginfoeduorg_document_types as dt
-             ON d.document_type = dt.id
-             WHERE d.subsection_id = %d", $subsection_id), ARRAY_A);
-                $document_types = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_document_types", ARRAY_A);
-                
-                if ($data) {
-                    echo '<table class="wp-list-table widefat fixed striped">';
-                    echo '<thead><tr>';
-                    echo '<th scope="col" class="manage-column column-name">Название документа</th>';
-                    echo '<th scope="col" class="manage-column column-name">Тип документа</th>';
-                    echo '<th scope="col" class="manage-column column-value">Ссылка на документ</th>';
-                    echo '</tr></thead>';
-                    echo '<tbody>';
-
-                    foreach ($data as $row) {
-                        
-                        echo '<tr>';
-                        echo '<td class="column-name"><input type="text" name="document_name[' . $row['id'] . ']" value="' . $row['document_name'] . '"></td>';
-                        echo '<td class="column-name">';                        
-                        // Создаем выпадающий список с типами документов
-                        echo '<select name="document_type[' . $row['id'] . ']">';
-                        
-                        foreach ($document_types as $type) {
-                            
-                            $selected = $type['id'] == $row['dt_id'] ? ' selected' : '';
-                            echo '<option value="' . $type['id'] . '"' . $selected . '>' . $type['document_type'] . '</option>';
-                        }
-
-                        echo '</select>';
-                        echo '</td>';
-                        echo '<td class="column-value"><input type="text" name="document_link[' . $row['id'] . ']" value="' . $row['document_link'] . '"></td>';
-                        echo '</tr>';
+                $table = new Documents_Table($subsection_id);
+                if ('delete' === $table->current_action()) {
+                    foreach ($_POST['item'] as $item_id) {
+                        $wpdb->delete($wpdb->prefix.'reginfoeduorg_documents', array('id' => $item_id));
                     }
-
-                    echo '</tbody>';
-                    echo '</table>';
-                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
-
+                }
+                $table->prepare_items();
+                
+                if (count($table->items) > 0) {
+                    $table->prepare_items();
+                    $table->display();
                 } else {
                     echo '<p>Данные о документах отсутствуют.</p>';
                 }
-
                 break;
             case 12:
-                echo '<style>
-        .wp-list-table input, .wp-list-table textarea {
-            width: 100%;
-            box-sizing: border-box;
-        }
-    </style>
-    ';
-                // Запрос на получение данных из таблицы special_conditions
-                $data_special_conditions = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_special_conditions", ARRAY_A);
-                // Запрос на получение данных из таблицы documents
-                $data_documents = $wpdb->get_results($wpdb->prepare("SELECT d.id, d.document_name, dt.id as dt_id, dt.document_type, d.document_link 
-             FROM {$wpdb->prefix}reginfoeduorg_documents as d
-             JOIN {$wpdb->prefix}reginfoeduorg_document_types as dt
-             ON d.document_type = dt.id
-             WHERE d.subsection_id = %d", $subsection_id), ARRAY_A);
-                $resource_types = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_resource_types", ARRAY_A);
-
-                $document_types = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}reginfoeduorg_document_types", ARRAY_A);
-                // Вывод данных из таблицы documents
-                if ($data_documents) {
-                    echo '<table class="wp-list-table widefat fixed striped">';
-                    echo '<thead><tr>';
-                    echo '<th>Название документа</th>';
-                    echo '<th>Тип документа</th>';
-                    echo '<th>Ссылка на документ</th>';
-                    echo '</tr></thead>';
-                    echo '<tbody>';
-
-                    foreach ($data_documents as $row) {
-                        
-                        echo '<tr>';
-                        echo '<td class="column-name"><input type="text" name="document_name[' . $row['id'] . ']" value="' . $row['document_name'] . '"></td>';
-                        echo '<td class="column-name">';                        
-                        // Создаем выпадающий список с типами документов
-                        echo '<select name="document_type[' . $row['id'] . ']">';
-                        
-                        foreach ($document_types as $type) {
-                            
-                            $selected = $type['id'] == $row['dt_id'] ? ' selected' : '';
-                            echo '<option value="' . $type['id'] . '"' . $selected . '>' . $type['document_type'] . '</option>';
-                        }
-
-                        echo '</select>';
-                        echo '</td>';
-                        echo '<td class="column-value"><input type="text" name="document_link[' . $row['id'] . ']" value="' . $row['document_link'] . '"></td>';
-                        echo '</tr>';
+               
+                $table = new Documents_Table($subsection_id);
+                if ('delete' === $table->current_action()) {
+                    foreach ($_POST['item'] as $item_id) {
+                        $wpdb->delete($wpdb->prefix.'reginfoeduorg_documents', array('id' => $item_id));
                     }
-
-                    echo '</tbody>';
-                    echo '</table>';
-                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
+                }
+                $table->prepare_items();
+                
+                if (count($table->items) > 0) {
+                    $table->prepare_items();
+                    $table->display();
                 } else {
                     echo '<p>Данные о документах отсутствуют.</p>';
                 }
-                // Вывод данных из таблицы special_conditions
-                if ($data_special_conditions) {
-                    echo '<table class="wp-list-table widefat fixed striped">';
-                    echo '<thead><tr>';
-                    echo '<th>Информация</th>';
-                    echo '<th>Значение</th>';
-                    echo '</tr></thead>';
-                    echo '<tbody>';
-
-                    foreach ($data_special_conditions as $row) {
-                        echo '<tr>';
-                        echo '<td><input type="text" name="info[' . $row['id'] . ']" value="' . $row['info'] . '"></td>';
-                        echo '<td><input type="text" name="value[' . $row['id'] . ']" value="' . $row['value'] . '"></td>';
-                        echo '</tr>';
+                
+                $table = new Special_Conditions_Table($subsection_id);
+                if ('delete' === $table->current_action()) {
+                    foreach ($_POST['item'] as $item_id) {
+                        $wpdb->delete($wpdb->prefix.'reginfoeduorg_documents', array('id' => $item_id));
                     }
-
-                    echo '</tbody>';
-                    echo '</table>';
-                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
+                }
+                $table->prepare_items();
+                
+                if (count($table->items) > 0) {
+                    $table->prepare_items();
+                    $table->display();
                 } else {
                     echo '<p>Данные о специальных условиях отсутствуют.</p>';
                 }
@@ -4040,45 +4536,20 @@ class RegInfoEduOrg
 
                 break;
             case 13:
-                $data = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}reginfoeduorg_international_cooperation"), ARRAY_A);
-
-                if ($data) {
-                    echo '<style>
-       .column-name {
-    width: 70%;
-}
-
-.column-value {
-    width: 30%;
-}
-.wp-list-table input, .wp-list-table textarea {
-            width: 100%;
-            box-sizing: border-box;
-        }
-    </style>
-    ';
-                    echo '<table class="wp-list-table widefat fixed striped">';
-                    echo '<thead><tr>';
-                    echo '<th scope="col" class="manage-column column-name">Пункт</th>';
-                    echo '<th scope="col" class="manage-column column-value">Значение</th>';
-                    echo '</tr></thead>';
-                    echo '<tbody>';
-
-                    foreach ($data as $row) {
-                        echo '<tr>';
-                        echo '<td><textarea name="info[' . $row['id'] . ']">' . $row['info'] . '</textarea></td>';
-                        echo '<td class="column-value"><input type="text" name="value[' . $row['id'] . ']" value="' . $row['value'] . '"></td>';
-                        echo '</tr>';
+                $table = new International_Cooperation_Table();
+                if ('delete' === $table->current_action()) {
+                    foreach ($_POST['item'] as $item_id) {
+                        $wpdb->delete($wpdb->prefix.'reginfoeduorg_international_cooperation', array('id' => $item_id));
                     }
-
-                    echo '</tbody>';
-                    echo '</table>';
-                    echo '<input type="submit" name="save_table_changes" value="Сохранить изменения в таблице" class="button-primary">';
-
+                }
+                $table->prepare_items();
+                
+                if (count($table->items) > 0) {
+                    $table->prepare_items();
+                    $table->display();
                 } else {
                     echo '<p>Данные о международном сотрудничестве отсутствуют.</p>';
                 }
-
                 break;
 
             default:
@@ -4281,3 +4752,4 @@ if(class_exists('RegInfoEduOrg'))
 {
     new RegInfoEduOrg(__FILE__);
 }
+
