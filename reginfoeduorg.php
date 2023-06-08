@@ -4036,7 +4036,7 @@ margin: 5px 10px 5px 0;
                 echo '<input type="submit" name="" id="search-submit" class="button" value="Поиск" />';
                 echo '</div>';
                 
-                $table = $this->display_table('General_Information_Table', 'general_information', 'Данные о образовательном учреждении отсутствуют.', $subsection_id, $search_field, $_POST['item']);
+                $table = $this->display_table('General_Information_Table', 'general_information', 'Данные о образовательном учреждении отсутствуют.', $subsection_id, $search_field);
 
            
                 if ('edit' === $table->current_action()) {
@@ -4098,7 +4098,7 @@ margin: 5px 10px 5px 0;
                 echo '<input type="submit" name="" id="search-submit" class="button" value="Поиск" />';
                 echo '</div>';
 
-                $table = $this->display_table('Management_Structure_Table', 'management_structure', 'Данные о структуре и органах управления образовательной организации отсутствуют.', $subsection_id, $search_field, $_POST['item']);
+                $table = $this->display_table('Management_Structure_Table', 'management_structure', 'Данные о структуре и органах управления образовательной организации отсутствуют.', $subsection_id, $search_field);
 
                 if ('edit' === $table->current_action()) {
                     
@@ -4180,7 +4180,7 @@ margin: 5px 10px 5px 0;
                 echo '<input type="submit" name="" id="search-submit" class="button" value="Поиск" />';
                 echo '</div>';
 
-                $table = $this->display_table('Education_Programs_Table', 'education_programs', 'Данные о группах отсутствуют.', $subsection_id, $search_field, $_POST['item_education_programs']);
+                $table = $this->display_table('Education_Programs_Table', 'education_programs', 'Данные о группах отсутствуют.', $subsection_id, $search_field);
 
                 if ('edit_education_programs' === $table->current_action()) {
                     
@@ -4250,7 +4250,7 @@ margin: 5px 10px 5px 0;
                 echo '<input type="submit" name="" id="search-submit" class="button" value="Поиск" />';
                 echo '</div>';
 
-                $table = $this->display_table('Accreditation_Table', 'accreditation', 'Данные об аккредитации отсутствуют.', $subsection_id, $search_field, $_POST['item_accreditation']);
+                $table = $this->display_table('Accreditation_Table', 'accreditation', 'Данные об аккредитации отсутствуют.', $subsection_id, $search_field);
 
                 if ('edit_accreditation' === $table->current_action()) {
                     
@@ -4318,7 +4318,7 @@ margin: 5px 10px 5px 0;
                 echo '<input type="submit" name="" id="search-submit" class="button" value="Поиск" />';
                 echo '</div>';
 
-                $table = $this->display_table('Directions_Results_Scientific_Table', 'directions_results_scientific', 'Данные о направлениях и результатах научной (научно-исследовательской) деятельности отсутствуют.', $subsection_id, $search_field, $_POST['item_directions_results_scientific']);
+                $table = $this->display_table('Directions_Results_Scientific_Table', 'directions_results_scientific', 'Данные о направлениях и результатах научной (научно-исследовательской) деятельности отсутствуют.', $subsection_id, $search_field);
 
                 if ('edit_directions_results_scientific' === $table->current_action()) {
                     
@@ -4411,7 +4411,7 @@ margin: 5px 10px 5px 0;
                 echo '<input type="submit" name="" id="search-submit" class="button" value="Поиск" />';
                 echo '</div>';
 
-                $table = $this->display_table('contingent_Table', 'contingent', 'Данные о контингенте отсутствуют.', $subsection_id, $search_field, $_POST['item_contingent']);
+                $table = $this->display_table('contingent_Table', 'contingent', 'Данные о контингенте отсутствуют.', $subsection_id, $search_field);
 
                 if ('edit_contingent' === $table->current_action()) {
                     
@@ -4501,7 +4501,7 @@ margin: 5px 10px 5px 0;
                 echo '<input type="submit" name="" id="search-submit" class="button" value="Поиск" />';
                 echo '</div>';
 
-                $table =  $this->display_table('Staff_Table', 'staff', 'Данные о сотрудниках отсутствуют.', $subsection_id, $search_field, $_POST['item']);
+                $table =  $this->display_table('Staff_Table', 'staff', 'Данные о сотрудниках отсутствуют.', $subsection_id, $search_field);
                 
                 if ('edit' === $table->current_action()) {
                     
@@ -4556,7 +4556,7 @@ margin: 5px 10px 5px 0;
                 echo '<input type="search" id="search_resources" name="s_resources" value="' . $sf . '" style="margin-left: 10px;" />';
                 echo '<input type="submit" name="" id="search-submit" class="button" value="Поиск" />';
                 echo '</div>';
-                $resources_table = $this->display_table('Resources_Table', 'resources', 'Данные о ресурсах отсутствуют.', $subsection_id, $search_field_resources, $_POST['item_resources']);
+                $resources_table = $this->display_table('Resources_Table', 'resources', 'Данные о ресурсах отсутствуют.', $subsection_id, $search_field_resources);
 
                 if ('edit_resources' === $resources_table->current_action()) {
                     echo '<div><input type="submit" name="save_resources" class="button-primary" value="Сохранить изменения" /></div>';
@@ -4592,7 +4592,7 @@ margin: 5px 10px 5px 0;
                 echo '<input type="search" id="search_documents" name="s_documents" value="' . $s . '" style="margin-left: 10px;" />';
                 echo '<input type="submit" name="" id="search-submit" class="button" value="Поиск" />';
                 echo '</div>';
-                $documents_table = $this->display_table('Documents_Table', 'documents', 'Данные о документах отсутствуют.', $subsection_id,$search_field_documents, $_POST['item']);
+                $documents_table = $this->display_table('Documents_Table', 'documents', 'Данные о документах отсутствуют.', $subsection_id,$search_field_documents);
 
                 if ('edit' === $documents_table->current_action()) {
                     echo '<div><input type="submit" name="save_documents" class="button-primary" value="Сохранить изменения" /></div>';
@@ -4643,7 +4643,7 @@ margin: 5px 10px 5px 0;
                 echo '<input type="submit" name="" id="search-submit" class="button" value="Поиск" />';
                 echo '</div>';
                 
-                $table =  $this->display_table('Documents_Table', 'documents', 'Данные о документах отсутствуют.', $subsection_id, $search_field, $_POST['data']);
+                $table =  $this->display_table('Documents_Table', 'documents', 'Данные о документах отсутствуют.', $subsection_id, $search_field);
                 
                 if ('edit' === $table->current_action()) {
                     
@@ -4697,7 +4697,7 @@ margin: 5px 10px 5px 0;
                 echo '<input type="search" id="search_documents" name="s_documents" value="' . $s . '" style="margin-left: 10px;" />';
                 echo '<input type="submit" name="" id="search-submit" class="button" value="Поиск" />';
                 echo '</div>';
-                $documents_table = $this->display_table('Documents_Table', 'documents', 'Данные о документах отсутствуют.', $subsection_id,$search_field_documents, $_POST['item']);
+                $documents_table = $this->display_table('Documents_Table', 'documents', 'Данные о документах отсутствуют.', $subsection_id,$search_field_documents);
 
                 if ('edit' === $documents_table->current_action()) {
                     echo '<div><input type="submit" name="save_documents" class="button-primary" value="Сохранить изменения" /></div>';
@@ -4732,7 +4732,7 @@ margin: 5px 10px 5px 0;
                 echo '<input type="search" id="search_special_conditions" name="s_special_conditions" value="' . $sf . '" style="margin-left: 10px;" />';
                 echo '<input type="submit" name="" id="search-submit" class="button" value="Поиск" />';
                 echo '</div>';
-                $special_conditions_table = $this->display_table('Special_Conditions_Table', 'special_conditions', 'Данные о специальных условиях отсутствуют.', $subsection_id, $search_field_special_conditions, $_POST['item_special_conditions']);
+                $special_conditions_table = $this->display_table('Special_Conditions_Table', 'special_conditions', 'Данные о специальных условиях отсутствуют.', $subsection_id, $search_field_special_conditions);
 
                 if ('edit_special_conditions' === $special_conditions_table->current_action()) {
                     echo '<div><input type="submit" name="save_special_conditions" class="button-primary" value="Сохранить изменения" /></div>';
@@ -4774,7 +4774,7 @@ margin: 5px 10px 5px 0;
                 echo '<input type="submit" name="" id="search-submit" class="button" value="Поиск" />';
                 echo '</div>';
                                 
-                $table =  $this->display_table('International_Cooperation_Table', 'international_cooperation', 'Данные о международном сотрудничестве отсутствуют.', $subsection_id, $search_field, $_POST['item']);
+                $table =  $this->display_table('International_Cooperation_Table', 'international_cooperation', 'Данные о международном сотрудничестве отсутствуют.', $subsection_id, $search_field);
                 
                 if ('edit' === $table->current_action()) {
                     
@@ -4795,7 +4795,7 @@ margin: 5px 10px 5px 0;
     }
     
     //Вывод таблицы
-    function display_table($table_class, $table_name, $empty_message, $subsection_id, $search_field, $post_item) {
+    function display_table($table_class, $table_name, $empty_message, $subsection_id, $search_field) {
         global $wpdb;
         $table = new $table_class($subsection_id, $search_field);
         if('delete_special_conditions' === $table->current_action()) {
