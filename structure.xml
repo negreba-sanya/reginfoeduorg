@@ -1,296 +1,221 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <reginfoeduorg>
 	<section>
-		<section_title>Основные сведения</section_title>
-		<section_content>
-			<general_information>
-				<full_name>Полное название образовательной организации</full_name>
-				<short_name>Краткое название образовательной организации</short_name>
-				<creation_date>Дата создания образовательной организации</creation_date>
-				<founder>Учредитель</founder>
-				<location>Место нахождения образовательной организации</location>
-				<addresses_educational_activities>
-					<address_educational_activities>Адрес осуществления образовательной деятельности</address_educational_activities>
-				</addresses_educational_activities>
-				<addresses_structural_subdivisions>
-					<address_structural_subdivisions>Адрес расположения структурных подразделений</address_structural_subdivisions>
-				</addresses_structural_subdivisions>
-				<branches>Филиалы образовательной организации</branches>
-				<working_hours>График работы</working_hours>
-				<contact_phones>Контактные телефоны</contact_phones>
-				<email_addresses>Адреса электронной почты</email_addresses>
-			</general_information>
-		</section_content>
-	</section>
+    <section_title>Основные сведения</section_title>
+    <section_content>
+        <general_information>
+            <full_name></full_name>
+            <short_name></short_name>
+            <creation_date></creation_date>
+            <founder></founder>
+            <location></location>
+            <address_educational_activities></address_educational_activities>
+            <address_structural_subdivisions></address_structural_subdivisions>
+            <branches></branches>
+            <working_hours></working_hours>
+            <contact_phones></contact_phones>
+            <email_addresses></email_addresses>
+        </general_information>
+    </section_content>
+</section>
 
 	<section>
-		<section_title>Образование</section_title>
-		<section_content>
-			<education_levels>
-				<level_title>Уровни образования</level_title>
-				<level_info>Информация о реализуемых уровнях образования (начальное, основное, среднее), нормативных сроках обучения и формах обучения</level_info>
-			</education_levels>
-			<educational_programs>
-				<program_title>Образовательные программы</program_title>
-				<program_info>Информация о реализуемых образовательных программах, в том числе адаптированных, с указанием учебных предметов, курсов, дисциплин, практики, предусмотренных образовательной программой, а также о языках, на которых осуществляется обучение</program_info>
-				<program_attachment>Приложение с копией образовательной программы</program_attachment>
-			</educational_programs>
-			<educational_plan>
-				<plan_title>Учебный план</plan_title>
-				<plan_info>Информация об учебном плане, его копия</plan_info>
-			</educational_plan>
-			<educational_schedule>
-				<schedule_title>Календарный учебный график</schedule_title>
-				<schedule_info>Информация о календарном учебном графике, его копия</schedule_info>
-			</educational_schedule>
-			<educational_documents>
-				<documents_title>Документы для обеспечения образовательного процесса</documents_title>
-				<documents_info>Информация о методических и иных документах, разработанных образовательной организацией для обеспечения образовательного процесса</documents_info>
-			</educational_documents>
-		</section_content>
-	</section>
+    <section_title>Образование</section_title>
+    <section_content>
+        <educational_programs>
+            <program>
+                <major_group></major_group>
+                <training_program></training_program>
+                <level_of_training></level_of_training>
+                <qualification></qualification>
+                <form_of_education></form_of_education>
+                <term_based_on_9_class></term_based_on_9_class>
+                <term_based_on_11_class></term_based_on_11_class>
+                <study_group_prefix></study_group_prefix>
+            </program>
+        </educational_programs>
+        <accreditation>
+            <program>
+                <date_end></date_end>
+                <detail></detail>
+            </program>
+        </accreditation>
+        <scientific_activity>
+            <direction>
+                <detail></detail>
+            </direction>
+        </scientific_activity>
+        <contingent>
+            <program_type>                
+                <type_education></type_education>
+                <name></name><budget></budget><contract></contract><foreigners></foreigners>
+            </program_type>
+        </contingent>
+    </section_content>
+</section>
 
 	<section>
-		<section_title>Образовательные стандарты</section_title>
-		<section_content>
-			<federal_standards>
-				<standard_title>Федеральные государственные образовательные стандарты</standard_title>
-				<standard_info>Информация о ФГОС</standard_info>
-				<standard_copy>Копия ФГОС</standard_copy>
-			</federal_standards>
-			<educational_standards>
-				<standard_title>Образовательные стандарты</standard_title>
-				<standard_info>Информация об образовательных стандартах</standard_info>
-				<standard_copy>Копия образовательных стандартов</standard_copy>
-			</educational_standards>
-		</section_content>
-	</section>
-
-	<section>
-		<section_title>Структура и органы управления образовательной организацией</section_title>
-		<section_content>
-			<management_structure>
-				<structural_units>
-					<structural_unit>
-						<name>Наименование структурного подразделения</name>
-						<leader>ФИО руководителя структурного подразделения</leader>
-						<position>Должность руководителя структурного подразделения</position>
-						<location>Местонахождение структурного подразделения</location>
-						<official_website>Адрес официального сайта структурного подразделения</official_website>
-						<email>Адрес электронной почты структурного подразделения</email>
-						<regulations>Сведения о положении о структурном подразделении (об органе управления) с приложением копии указанного положения</regulations>
-					</structural_unit>
-				</structural_units>
-				<management_bodies>
-					<management_body>
-						<name>Наименование органа управления</name>
-						<leader>ФИО руководителя органа управления</leader>
-						<position>Должность руководителя органа управления</position>
-						<location>Местонахождение органа управления</location>
-						<official_website>Адрес официального сайта органа управления</official_website>
-						<email>Адрес электронной почты органа управления</email>
-						<regulations>Сведения о положении об органе управления с приложением копии указанного положения</regulations>
-					</management_body>
-				</management_bodies>
-			</management_structure>
-		</section_content>
-	</section>
-
-	<section>
-		<section_title>Документы</section_title>
+		<section_title>Образовательные стандарты и требования</section_title>
 		<section_content>
 			<documents>
 				<document>
-					<name>Устав образовательной организации</name>
-					<link>ссылка на файл устава образовательной организации</link>
+					<name></name>
+					<type></type>
+					<link></link>
 				</document>
 			</documents>
 		</section_content>
 	</section>
 
 	<section>
-		<section_title>Руководство. Педагогический (научно-педагогический) состав</section_title>
-		<section_content>
-			<management>
-				<director>
-					<full_name>Питенина Оксана Николаевна</full_name>
-					<position>Директор</position>
-					<email></email>
-					<phone></phone>
-					<disciplines>Организация учебной деятельности, экономика организации</disciplines>
-					<education>2004, ФГБОУ ВПО Сибирский государственный технологический университет, по специальности "Экономика и управление на предприятиях химико-лесного комплекса", экономист - менеджер</education>
-					<specialization>экономика и управление на предприятии</specialization>
-					<qualification_improvement>КГБОУ ДПО ПКС «Центр современных технологий профессионального образования» «организация и содержание методической работы в образовательном учреждении профессионального образования» удостоверение (72 часа) № 46-ОМР, 2013 2018, ЦРПО, по программе «Учебно-методический комплекс как условие обеспечения качества внедрения образовательных программ ТОП-50», 72 часа</qualification_improvement>
-					<career></career>
-					<overall_experience>16</overall_experience>
-					<specialization_experience>12</specialization_experience>
-				</director>
-				<deputy_directors>
-					<deputy_director>
-						<full_name>Константинова Наталья Андреевна</full_name>
-						<email></email>
-						<phone></phone>
-						<position>Заместитель директора по учебно-производственной работе</position>
-						<disciplines>Математика</disciplines>
-						<education>1994, Карагандинский государственный университет им. Е.А. Букетова, специальность «Математика», квалификация математик-преподаватель</education>
-						<specialization>математик-преподаватель</specialization>
-						<qualification_improvement>2018, ФГБОУ ДПО "Гос. Академия пром. менеджмента им. Н.П. Пастухова" по программе Применение моделей и механизмов непрерывного образования пед. работников СПО для подготовки высококвалифицированных рабочих кадров по перспективным и востребованным профессиям и специальностям, 48 часов</qualification_improvement>
-						<career></career>
-						<overall_experience>21</overall_experience>
-						<specialization_experience>21</specialization_experience>
-					</deputy_director>
-				</deputy_directors>
-				<branch_directors>
-					<branch_director>
-						<full_name>Мурзина Маргарита Геннадьевна</full_name>
-						<email></email>
-						<phone></phone>
-						<position>Руководитель Многофункционального центра прикладных квалификаций</position>
-						<disciplines>Основы алгоритмизации и программирования, МДК.02.01. Информационные технологии и платформы разработки информационных систем, МДК.01.02.Методы и средства проектирования информационных систем, МДК 01.01Эксплуатация иформационных систем, МДК 03.01 Сопровождение и продвижение программного обеспечения отраслевой направленности</disciplines>
-						<education>2009, Красноярский государственный педагогический университет им. В.П. Астафьева, специальность – информатика, квалификация – учитель информатики</education>
-						<specialization>информатика</specialization>
-						<qualification_improvement>2018, ОГБПОУ "Томский техникум информационных технологий" по программе «Практика и методика подготовки кадров по профессии "Разработчик Web и мультимедийных приложений" с учетом стандарта Ворлдскиллс Россия по компетенции "Веб дизайн и разработка", 78 часов</qualification_improvement>
-						<career></career>
-						<overall_experience>13</overall_experience>
-						<specialization_experience>6</specialization_experience>
-					</branch_director>
-				</branch_directors>
-			</management>
+            <section_title>Структура и органы управления образовательной организацией</section_title>
+            <section_content>
+                    <management_structure>
+                        <full_name></full_name>
+                        <position></position>
+                        <start_date></start_date>
+                        <basis_document></basis_document>
+                        <document_date></document_date>
+                        <document_number></document_number>
+                        <structure_image_url></structure_image_url>
+                    </management_structure>
+                </section_content>
+    </section>
 
-			<pedagogical_staff>
-				<pedagogical_worker>
-					<full_name>Степанова Ольга Викторовна</full_name>
-					<email></email>
-					<phone></phone>
-					<position>и.о. зам.директора по УМР, заведующая практикой, преподаватель</position>
-					<disciplines>Основы алгоритмизации и программирования, МДК.02.01. Информационные технологии и платформы разработки информационных систем, МДК.01.02.Методы и средства проектирования информационных систем, МДК 01.01Эксплуатация иформационных систем, МДК 03.01 Сопровождение и продвижение программного обеспечения отраслевой направленности</disciplines>
-					<education>2009, Красноярский государственный педагогический университет им. В.П. Астафьева, специальность – информатика, квалификация – учитель информатики</education>
-					<specialization>информатика</specialization>
-					<qualification_improvement>2018, ОГБПОУ "Томский техникум информационных технологий" по программе «Практика и методика подготовки кадров по профессии "Разработчик Web и мультимедийных приложений" с учетом стандарта Ворлдскиллс Россия по компетенции "Веб дизайн и разработка", 78 часов</qualification_improvement>
-					<career></career>
-					<overall_experience>13</overall_experience>
-					<specialization_experience>6</specialization_experience>
-				</pedagogical_worker>
-			</pedagogical_staff>
+	<section>
+		<section_title>Документы</section_title>
+		<section_content>
+			<documents>
+				<document>
+					<name></name>
+					<type></type>
+					<link></link>
+				</document>
+			</documents>
 		</section_content>
 	</section>
 
 	<section>
+	<section_title>Руководство. Педагогический (научно-педагогический) состав</section_title>
+	<section_content>
+		<staff >
+			<full_name></full_name>
+			<position></position>
+			<email></email>
+			<phone></phone>
+			<disciplines></disciplines>
+			<education></education>
+			<specialization></specialization>
+			<qualification_improvement></qualification_improvement>
+			<career></career>
+			<overall_experience></overall_experience>
+			<specialization_experience></specialization_experience>
+		</staff>
+	</section_content>
+</section>
+
+	<section>
 		<section_title>Стипендии и иные виды материальной поддержки</section_title>
 		<section_content>
-			<scholarships>
-				<scholarship_title>Студенческие стипендии</scholarship_title>
-				<scholarship_info>Условия предоставления стипендий для обучающихся</scholarship_info>
-			</scholarships>
-			<social_support>
-				<support_title>Меры социальной поддержки</support_title>
-				<support_info>Условия и порядок предоставления мер социальной поддержки</support_info>
-			</social_support>
-			<dormitories>
-				<dormitory_title>Общежития и интернаты</dormitory_title>
-				<dormitory_info>Информация о наличии общежитий и интернатов для иногородних обучающихся, в том числе приспособленных для использования инвалидами и лицами с ограниченными возможностями здоровья, количестве жилых помещений в общежитии, формировании платы за проживание</dormitory_info>
-			</dormitories>
-			<employment>
-				<employment_title>Трудоустройство выпускников</employment_title>
-				<employment_info>Информация о трудоустройстве выпускников</employment_info>
-			</employment>
+			<documents>
+				<document>
+					<name></name>
+					<type></type>
+					<link></link>
+				</document>
+			</documents>
 		</section_content>
 	</section>
 
 	<section>
 		<section_title>Платные образовательные услуги</section_title>
 		<section_content>
-			<paid_services_info>
+			<documents>
 				<document>
-					<name>Шаблон договора об образовании</name>
-					<link>https://disk.yandex.ru/i/xJvmeIFdZsJoAQ</link>
-				</document>				
-			</paid_services_info>
+					<name></name>
+					<type></type>
+					<link></link>
+				</document>
+			</documents>
 		</section_content>
 	</section>
 
 	<section>
 		<section_title>Финансово-хозяйственная деятельность</section_title>
 		<section_content>
-			<funding_sources>
-				<funding_title>Источники финансирования</funding_title>
-				<funding_info>Информация об объеме образовательной деятельности, финансовое обеспечение которой осуществляется за счет бюджетных ассигнований федерального бюджета, бюджетов субъектов Российской Федерации, местных бюджетов, по договорам об образовании за счет средств физических и (или) юридических лиц</funding_info>
-			</funding_sources>
-			<financial_report>
-				<report_title>Финансовый отчет</report_title>
-				<report_info>Информация о поступлении финансовых и материальных средств и об их расходовании по итогам финансового года</report_info>
-			</financial_report>
+			<documents>
+				<document>
+					<name></name>
+					<type></type>
+					<link></link>
+				</document>
+			</documents>
 		</section_content>
 	</section>
 
 	<section>
-		<section_title>Вакантные места для приема (перевода)</section_title>
+		<section_title>Вакантные места для приема (перевода) обучающихся</section_title>
 		<section_content>
-			<vacancies_info>
-				<vacancies_title>Информация о вакантных местах</vacancies_title>
-				<vacancies_list>
-					<program>
-						<program_name>Название образовательной программы</program_name>
-						<profession>Профессия</profession>
-						<specialization>Специальность</specialization>
-						<study_direction>Направление подготовки</study_direction>
-						<budget_vacancies>Количество вакантных мест за счет бюджетных ассигнований</budget_vacancies>
-						<contract_vacancies>Количество вакантных мест по договорам об образовании</contract_vacancies>
-					</program>
-				</vacancies_list>
-			</vacancies_info>
+			<documents>
+				<document>
+					<name></name>
+					<type></type>
+					<link></link>
+				</document>
+			</documents>
 		</section_content>
 	</section>
 
 	<section>
-		<section_title>Материально-техническое обеспечение и оснащенность образовательного процесса</section_title>
+    <section_title>Материально-техническое обеспечение и оснащенность образовательного процесса</section_title>
+    <section_content>
+        <technical_equipment>
+		<equipment>
+            <resource_type></resource_type>
+            <name></name>
+            <details></details>
+        </equipment>
+		</technical_equipment>
+        <documents>
+            <document>
+                <name></name>
+                <document_type></document_type>
+                <link></link>
+            </document>
+        </documents>
+    </section_content>
+</section>
+	
+	<section>
+    <section_title>Доступная среда</section_title>
+    <section_content>
+        <accessible_environment>
+            <documents>
+                <document>
+                    <name></name>
+                    <type></type>
+                    <link></link>
+                </document>
+            </documents>
+            <special_conditions>
+                <option_condition>
+                    <info></info>
+                    <value></value>
+                </option_condition>
+            </special_conditions>
+        </accessible_environment>
+    </section_content>
+</section>
+	
+	<section>
+		<section_title>Международное сотрудничество</section_title>
 		<section_content>
-			<technical_equipment>
-				<classrooms>
-					<classroom>
-						<name>Наименование учебного кабинета</name>
-						<type>Тип учебного кабинета</type>
-						<equipment>Список оборудования в кабинете</equipment>
-						<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
-					</classroom>
-				</classrooms>
-				<training_objects>
-					<training_object>
-						<name>Наименование объекта для практических занятий</name>
-						<type>Тип объекта</type>
-						<equipment>Список оборудования на объекте</equipment>
-						<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
-					</training_object>
-				</training_objects>
-				<library>
-					<name>Название библиотеки</name>
-					<collection>Описание коллекции книг и других материалов в библиотеке</collection>
-					<services>Описание услуг, предоставляемых библиотекой</services>
-					<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
-				</library>
-				<sports_facilities>
-					<sports_facility>
-						<name>Наименование объекта спорта</name>
-						<type>Тип объекта</type>
-						<equipment>Список оборудования на объекте</equipment>
-						<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
-					</sports_facility>
-				</sports_facilities>
-				<learning_resources>
-					<resource>
-						<name>Наименование средства обучения и воспитания</name>
-						<type>Тип средства</type>
-						<accessibility>Доступность для инвалидов и лиц с ограниченными возможностями здоровья</accessibility>
-					</resource>
-				</learning_resources>
-				<facilities_for_disabled>
-					<facility>
-						<name>Наименование объекта, оборудованного для использования инвалидами и лицами с ограниченными возможностями здоровья</name>
-						<type>Тип объекта</type>
-						<equipment>Список оборудования на объекте</equipment>
-					</facility>
-				</facilities_for_disabled>
-			</technical_equipment>
+			<international_cooperation>
+				<option_cooperation>
+					<info></info>
+					<value></value>
+				</option_cooperation>
+			</international_cooperation>
 		</section_content>
 	</section>
 
